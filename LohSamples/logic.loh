@@ -1,0 +1,14 @@
+
+assert !! is True
+assert !!! is False
+assert ~ is None
+
+x = ~
+y = !!
+z = !!!
+
+assert x is None
+assert y is True
+assert z is False
+
+print('logic.loh done!')

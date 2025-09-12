@@ -60,6 +60,11 @@ ELLIPSIS                '...'
 COLONEQUAL              ':='
 EXCLAMATION             '!'
 
+# True
+DOUBLEEXCLAMATION       '!!'
+# Fasle
+TRIPLEEXCLAMATION       '!!!'
+
 OP
 TYPE_IGNORE
 TYPE_COMMENT

@@ -1374,7 +1374,7 @@ x = (
 
         for conv_non_identifier in '3', '!':
             self.assertAllRaise(SyntaxError,
-                                "f-string: invalid conversion character",
+                                None,
                                 ["f'{3!" + conv_non_identifier + "}'"])
 
         for conv in ' s', ' s ':

@@ -1,0 +1,28 @@
+import sys
+import unittest
+from test.support import import_helper
+
+class Tests(unittest.TestCase):
+    def test_true(self):
+        assert !!
+        assert !! is True
+        assert !! == True
+        assert True == !!
+        assert !! is !!
+
+    def test_false(self):
+        assert not !!!
+
+        assert !!! is False
+        assert !!! == False
+        assert False == !!!
+
+    def test_none(self):
+        assert not ~
+        assert ~ is None
+        assert ~ == None
+        assert None == ~
+        assert None is ~
+
+if __name__ == "__main__":
+    unittest.main()
