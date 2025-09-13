@@ -24,5 +24,17 @@ class Tests(unittest.TestCase):
         assert None == ~
         assert None is ~
 
+    def test_and(self):
+        assert True && True
+
+    def test_or(self):
+        assert True || False
+        assert False || True
+
+    def test_not(self):
+        assert ~~ ~~ True
+        assert ~~~~ True
+        assert ~~ False
+
 if __name__ == "__main__":
     unittest.main()

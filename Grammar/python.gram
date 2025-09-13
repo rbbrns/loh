@@ -117,9 +117,13 @@ simple_stmts[asdl_stmt_seq*]:
     | a[asdl_stmt_seq*]=';'.simple_stmt+ [';'] NEWLINE { a }
 
 # Keyword Alieses
+# TODO: 'as', 'assert', 'async', 'await', 'break', 'class', 'continue', 'def', 'del', 'elif', 'else', 'except', 'finally', 'for', 'from', 'global', 'if', 'import', 'in', 'is', 'lambda', 'nonlocal', 'pass', 'raise', 'return', 'try', 'while', 'with', 'yield'
 false: ( 'False' | '!!!' )
 true: ( 'True' | '!!' )
 none:  ( 'None' | '~' )
+and: ( 'and' | '&&' )
+or: ( 'or' | '||' )
+not: ( 'not' | '~~' )
 
 # NOTE: assignment MUST precede expression, else parsing a simple assignment
 # will throw a SyntaxError.
@@ -746,21 +750,21 @@ named_expression[expr_ty]:
     | expression !':='
 
 disjunction[expr_ty] (memo):
-    | a=conjunction b=('or' c=conjunction { c })+ { _PyAST_BoolOp(
+    | a=conjunction b=(or c=conjunction { c })+ { _PyAST_BoolOp(
         Or,
         CHECK(asdl_expr_seq*, _PyPegen_seq_insert_in_front(p, a, b)),
         EXTRA) }
     | conjunction
 
 conjunction[expr_ty] (memo):
-    | a=inversion b=('and' c=inversion { c })+ { _PyAST_BoolOp(
+    | a=inversion b=(and c=inversion { c })+ { _PyAST_BoolOp(
         And,
         CHECK(asdl_expr_seq*, _PyPegen_seq_insert_in_front(p, a, b)),
         EXTRA) }
     | inversion
 
 inversion[expr_ty] (memo):
-    | 'not' a=inversion { _PyAST_UnaryOp(Not, a, EXTRA) }
+    | not a=inversion { _PyAST_UnaryOp(Not, a, EXTRA) }
     | comparison
 
 # Comparison operators
@@ -794,9 +798,9 @@ lte_bitwise_or[CmpopExprPair*]: '<=' a=bitwise_or { _PyPegen_cmpop_expr_pair(p, 
 lt_bitwise_or[CmpopExprPair*]: '<' a=bitwise_or { _PyPegen_cmpop_expr_pair(p, Lt, a) }
 gte_bitwise_or[CmpopExprPair*]: '>=' a=bitwise_or { _PyPegen_cmpop_expr_pair(p, GtE, a) }
 gt_bitwise_or[CmpopExprPair*]: '>' a=bitwise_or { _PyPegen_cmpop_expr_pair(p, Gt, a) }
-notin_bitwise_or[CmpopExprPair*]: 'not' 'in' a=bitwise_or { _PyPegen_cmpop_expr_pair(p, NotIn, a) }
+notin_bitwise_or[CmpopExprPair*]: not 'in' a=bitwise_or { _PyPegen_cmpop_expr_pair(p, NotIn, a) }
 in_bitwise_or[CmpopExprPair*]: 'in' a=bitwise_or { _PyPegen_cmpop_expr_pair(p, In, a) }
-isnot_bitwise_or[CmpopExprPair*]: 'is' 'not' a=bitwise_or { _PyPegen_cmpop_expr_pair(p, IsNot, a) }
+isnot_bitwise_or[CmpopExprPair*]: 'is' not a=bitwise_or { _PyPegen_cmpop_expr_pair(p, IsNot, a) }
 is_bitwise_or[CmpopExprPair*]: 'is' a=bitwise_or { _PyPegen_cmpop_expr_pair(p, Is, a) }
 
 # Bitwise operators
@@ -840,7 +844,7 @@ term[expr_ty]:
 factor[expr_ty] (memo):
     | '+' a=factor { _PyAST_UnaryOp(UAdd, a, EXTRA) }
     | '-' a=factor { _PyAST_UnaryOp(USub, a, EXTRA) }
-    | '~' a=factor { _PyAST_UnaryOp(Invert, a, EXTRA) }
+    | '~' !'~' a=factor { _PyAST_UnaryOp(Invert, a, EXTRA) }
     | power
 
 power[expr_ty]:
@@ -1563,9 +1567,9 @@ invalid_string_tstring_concat:
         RAISE_SYNTAX_ERROR_KNOWN_RANGE(PyPegen_last_item(a, expr_ty), b, "cannot mix t-string literals with string or bytes literals") }
 
 invalid_arithmetic:
-    | sum ('+'|'-'|'*'|'/'|'%'|'//'|'@') a='not' b=inversion { RAISE_SYNTAX_ERROR_KNOWN_RANGE(a, b, "'not' after an operator must be parenthesized") }
+    | sum ('+'|'-'|'*'|'/'|'%'|'//'|'@') a=not b=inversion { RAISE_SYNTAX_ERROR_KNOWN_RANGE(((expr_ty) a), ((expr_ty) b), "'not' after an operator must be parenthesized") }
 invalid_factor:
-    | ('+' | '-' | '~') a='not' b=factor { RAISE_SYNTAX_ERROR_KNOWN_RANGE(a, b, "'not' after an operator must be parenthesized") }
+    | ('+' | '-' | '~') a=not b=factor { RAISE_SYNTAX_ERROR_KNOWN_RANGE(((expr_ty) a), ((expr_ty) b), "'not' after an operator must be parenthesized") }
 
 invalid_type_params:
     | '[' token=']' {

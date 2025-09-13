@@ -64,6 +64,12 @@ EXCLAMATION             '!'
 DOUBLEEXCLAMATION       '!!'
 # Fasle
 TRIPLEEXCLAMATION       '!!!'
+# and
+DOUBLEAMPERS            '&&'
+# or
+DOUBLEVBAR              '||'
+# not
+DOUBLETILDE             '~~'
 
 OP
 TYPE_IGNORE
