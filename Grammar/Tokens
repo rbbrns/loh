@@ -70,6 +70,13 @@ DOUBLEAMPERS            '&&'
 DOUBLEVBAR              '||'
 # not
 DOUBLETILDE             '~~'
+# if
+QUESTION                '?'
+# elif
+QUESTIONQUESTION        '?~?'
+# else
+QUESTIONEXCLAMATION     '?~'
+
 
 OP
 TYPE_IGNORE

@@ -1531,7 +1531,7 @@ Specialized indentation errors:
    ... else:
    ... pass
    Traceback (most recent call last):
-   IndentationError: expected an indented block after 'else' statement on line 3
+   IndentationError: expected an indented block after 'else' statement on line 0
 
    >>> async for x in range(10):
    ... pass
@@ -1543,19 +1543,19 @@ Specialized indentation errors:
    ... else:
    ... pass
    Traceback (most recent call last):
-   IndentationError: expected an indented block after 'else' statement on line 3
+   IndentationError: expected an indented block after 'else' statement on line 0
 
    >>> if something:
    ... pass
    Traceback (most recent call last):
-   IndentationError: expected an indented block after 'if' statement on line 1
+   IndentationError: expected an indented block after 'if' statement on line 0
 
    >>> if something:
    ...     pass
    ... elif something_else:
    ... pass
    Traceback (most recent call last):
-   IndentationError: expected an indented block after 'elif' statement on line 3
+   IndentationError: expected an indented block after 'elif' statement on line 0
 
    >>> if something:
    ...     pass
@@ -1564,7 +1564,7 @@ Specialized indentation errors:
    ... else:
    ... pass
    Traceback (most recent call last):
-   IndentationError: expected an indented block after 'else' statement on line 5
+   IndentationError: expected an indented block after 'else' statement on line 0
 
    >>> try:
    ... pass
