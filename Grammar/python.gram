@@ -125,8 +125,8 @@ and: ( 'and' | '&&' )
 or: ( 'or' | '||' )
 not: ( 'not' | '~~' )
 if: ( 'if' | '?' )
-elif: ( 'elif' | '?~?' )
-else: ( 'else' | '?~' )
+elif: ( 'elif' | '?!?' )
+else: ( 'else' | '?!' )
 
 # NOTE: assignment MUST precede expression, else parsing a simple assignment
 # will throw a SyntaxError.

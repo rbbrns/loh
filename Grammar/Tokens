@@ -73,9 +73,9 @@ DOUBLETILDE             '~~'
 # if
 QUESTION                '?'
 # elif
-QUESTIONQUESTION        '?~?'
+QUESTIONQUESTION        '?!?'
 # else
-QUESTIONEXCLAMATION     '?~'
+QUESTIONEXCLAMATION     '?!'
 
 
 OP

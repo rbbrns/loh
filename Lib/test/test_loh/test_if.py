@@ -15,7 +15,7 @@ class Tests(unittest.TestCase):
         assert ran
 
         ran = False
-        ?!!:
+        ? !!:
             ran = True
         assert ran
     
@@ -36,7 +36,7 @@ class Tests(unittest.TestCase):
         assert not ran
 
         ran = False
-        ?!!!:
+        ? !!!:
             ran = True
         assert not ran
         
@@ -50,7 +50,7 @@ class Tests(unittest.TestCase):
         elif_ran = False
         ? False:
             if_ran = True
-        ?~? True:
+        ?!? True:
             elif_ran = True
         assert not if_ran
         assert elif_ran
@@ -59,7 +59,7 @@ class Tests(unittest.TestCase):
         elif_ran = False
         ? False:
             if_ran = True
-        ?~? False:
+        ?!? False:
             elif_ran = True
         assert not if_ran
         assert not elif_ran
@@ -69,7 +69,7 @@ class Tests(unittest.TestCase):
         else_ran = False
         ? False:
             if_ran = True
-        ?~:
+        ?!:
             else_ran = True
         assert not if_ran
         assert else_ran
@@ -78,7 +78,7 @@ class Tests(unittest.TestCase):
         else_ran = False
         ? True:
             if_ran = True
-        ?~ :
+        ?!:
             else_ran = True
         assert if_ran
         assert not else_ran
