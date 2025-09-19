@@ -1613,32 +1613,32 @@ Specialized indentation errors:
    >>> with A:
    ... pass
    Traceback (most recent call last):
-   IndentationError: expected an indented block after 'with' statement on line 1
+   IndentationError: expected an indented block after 'with' statement on line 0
 
    >>> with A as a, B as b:
    ... pass
    Traceback (most recent call last):
-   IndentationError: expected an indented block after 'with' statement on line 1
+   IndentationError: expected an indented block after 'with' statement on line 0
 
    >>> with (A as a, B as b):
    ... pass
    Traceback (most recent call last):
-   IndentationError: expected an indented block after 'with' statement on line 1
+   IndentationError: expected an indented block after 'with' statement on line 0
 
    >>> async with A:
    ... pass
    Traceback (most recent call last):
-   IndentationError: expected an indented block after 'with' statement on line 1
+   IndentationError: expected an indented block after 'with' statement on line 0
 
    >>> async with A as a, B as b:
    ... pass
    Traceback (most recent call last):
-   IndentationError: expected an indented block after 'with' statement on line 1
+   IndentationError: expected an indented block after 'with' statement on line 0
 
    >>> async with (A as a, B as b):
    ... pass
    Traceback (most recent call last):
-   IndentationError: expected an indented block after 'with' statement on line 1
+   IndentationError: expected an indented block after 'with' statement on line 0
 
    >>> def foo(x, /, y, *, z=2):
    ... pass

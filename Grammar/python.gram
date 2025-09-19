@@ -117,7 +117,7 @@ simple_stmts[asdl_stmt_seq*]:
     | a[asdl_stmt_seq*]=';'.simple_stmt+ [';'] NEWLINE { a }
 
 # Keyword Alieses
-# TODO: 'class', 'def', 'from', 'global', 'import', 'lambda', 'nonlocal', 'pass', 'with'
+# TODO: 'class', 'def', 'from', 'global', 'import', 'lambda', 'nonlocal', 'pass'
 # TODO: 'case', 'match', 'type'
 false: ( 'False' | '--' )
 true: ( 'True' | '++' )
@@ -145,6 +145,7 @@ await: ( 'await' | '%' )
 return: ( 'return' | '->' | '<-' )
 yield: ( 'yield' | '~>' | '<~' )
 del: ( 'del' | '=>')
+with: ( 'with' | '&' )
 
 # NOTE: assignment MUST precede expression, else parsing a simple assignment
 # will throw a SyntaxError.
@@ -168,7 +169,7 @@ compound_stmt[stmt_ty]:
     | &('def' | '@' | async) function_def
     | &if if_stmt
     | &('class' | '@') class_def
-    | &('with' | async) with_stmt
+    | &(with | async) with_stmt
     | &(for | async) for_stmt
     | &try try_stmt
     | &while while_stmt
@@ -452,13 +453,13 @@ for_stmt[stmt_ty]:
 
 with_stmt[stmt_ty]:
     | invalid_with_stmt_indent
-    | 'with' '(' a[asdl_withitem_seq*]=','.with_item+ ','? ')' ':' tc=[TYPE_COMMENT] b=block {
+    | with '(' a[asdl_withitem_seq*]=','.with_item+ ','? ')' ':' tc=[TYPE_COMMENT] b=block {
        _PyAST_With(a, b, NEW_TYPE_COMMENT(p, tc), EXTRA) }
-    | 'with' a[asdl_withitem_seq*]=','.with_item+ ':' tc=[TYPE_COMMENT] b=block {
+    | with a[asdl_withitem_seq*]=','.with_item+ ':' tc=[TYPE_COMMENT] b=block {
         _PyAST_With(a, b, NEW_TYPE_COMMENT(p, tc), EXTRA) }
-    | async 'with' '(' a[asdl_withitem_seq*]=','.with_item+ ','? ')' ':' b=block {
+    | async with '(' a[asdl_withitem_seq*]=','.with_item+ ','? ')' ':' b=block {
        CHECK_VERSION(stmt_ty, 5, "Async with statements are", _PyAST_AsyncWith(a, b, NULL, EXTRA)) }
-    | async 'with' a[asdl_withitem_seq*]=','.with_item+ ':' tc=[TYPE_COMMENT] b=block {
+    | async with a[asdl_withitem_seq*]=','.with_item+ ':' tc=[TYPE_COMMENT] b=block {
        CHECK_VERSION(stmt_ty, 5, "Async with statements are", _PyAST_AsyncWith(a, b, NEW_TYPE_COMMENT(p, tc), EXTRA)) }
     | invalid_with_stmt
 
@@ -1448,13 +1449,13 @@ invalid_import_from_targets:
         RAISE_SYNTAX_ERROR_STARTING_FROM(token, "Expected one or more names after 'import'") }
 
 invalid_with_stmt:
-    | [async] 'with' ','.(expression [as star_target])+ NEWLINE { RAISE_SYNTAX_ERROR("expected ':'") }
-    | [async] 'with' '(' ','.(expressions [as star_target])+ ','? ')' NEWLINE { RAISE_SYNTAX_ERROR("expected ':'") }
+    | [async] with ','.(expression [as star_target])+ NEWLINE { RAISE_SYNTAX_ERROR("expected ':'") }
+    | [async] with '(' ','.(expressions [as star_target])+ ','? ')' NEWLINE { RAISE_SYNTAX_ERROR("expected ':'") }
 invalid_with_stmt_indent:
-    | [async] a='with' ','.(expression [as star_target])+ ':' NEWLINE !INDENT {
-        RAISE_INDENTATION_ERROR("expected an indented block after 'with' statement on line %d", a->lineno) }
-    | [async] a='with' '(' ','.(expressions [as star_target])+ ','? ')' ':' NEWLINE !INDENT {
-        RAISE_INDENTATION_ERROR("expected an indented block after 'with' statement on line %d", a->lineno) }
+    | [async] a=with ','.(expression [as star_target])+ ':' NEWLINE !INDENT {
+        RAISE_INDENTATION_ERROR("expected an indented block after 'with' statement on line %d", 0) }
+    | [async] a=with '(' ','.(expressions [as star_target])+ ','? ')' ':' NEWLINE !INDENT {
+        RAISE_INDENTATION_ERROR("expected an indented block after 'with' statement on line %d", 0) }
 
 invalid_try_stmt:
     | a=try ':' NEWLINE !INDENT {
