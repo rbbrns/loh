@@ -4,20 +4,18 @@ from test.support import import_helper
 
 class Tests(unittest.TestCase):
     def test_if_true(self):
-        ran = False
+        ran = 0
         ? !!:
-            ran = True
-        assert ran
+            ran = 1
+        assert ran == 1
         
-        ran = False
         ?True:
-            ran = True
-        assert ran
+            ran = 2
+        assert ran == 2
 
-        ran = False
         ? !!:
-            ran = True
-        assert ran
+            ran = 3
+        assert ran == 3
     
     def test_if_false(self):
         ran = False
