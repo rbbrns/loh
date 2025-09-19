@@ -5668,7 +5668,7 @@ def _sqrt_nearest(n, a):
 
     b=0
     while a != b:
-        b, a = a, a--n//a>>1
+        b, a = a, a+n//a>>1
     return a
 
 def _rshift_nearest(x, shift):
