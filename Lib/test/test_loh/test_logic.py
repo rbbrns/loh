@@ -4,24 +4,12 @@ from test.support import import_helper
 
 class Tests(unittest.TestCase):
     def test_true(self):
-        assert !!
-        assert !! is True
-        assert !! == True
-        assert True == !!
-        assert !! is !!
-
         assert ++
         assert ++ === True
         assert True === ++
 
 
     def test_false(self):
-        assert not !!!
-
-        assert !!! is False
-        assert !!! == False
-        assert False == !!!
-
         assert not --
         assert -- === False
         assert False === --
@@ -47,12 +35,22 @@ class Tests(unittest.TestCase):
         assert ~~~~ True
         assert ~~ False
 
+        assert !!! False
+
+        if !!! False:
+            if_ran = True
+        assert if_ran
+
+        if !!!!!! True:
+            if_ran2 = False
+        assert not if_ran2
+
     def test_is(self):
         assert True === True
         assert False === False
         assert True === not False
         assert True === ~~ False
-        assert !!===~~!!!
+        assert ++===!!!--
 
 
 if __name__ == "__main__":

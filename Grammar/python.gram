@@ -118,12 +118,12 @@ simple_stmts[asdl_stmt_seq*]:
 
 # Keyword Alieses
 # TODO: 'async', 'await', 'class', 'def', 'del', 'from', 'global', 'import', 'lambda', 'nonlocal', 'pass', 'return', 'with', 'yield'
-false: ( 'False' | '!!!' | '--' )
-true: ( 'True' | '!!' | '++' )
+false: ( 'False' | '--' )
+true: ( 'True' | '++' )
 none:  ( 'None' | '~' )
 and: ( 'and' | '&&' )
 or: ( 'or' | '||' )
-not: ( 'not' | '~~' )
+not: ( 'not' | '~~' | '!!!' )
 if: ( 'if' | '?' )
 elif: ( 'elif' | '?!?' )
 else: ( 'else' | '?!' )
