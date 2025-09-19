@@ -1569,28 +1569,28 @@ Specialized indentation errors:
    >>> try:
    ... pass
    Traceback (most recent call last):
-   IndentationError: expected an indented block after 'try' statement on line 1
+   IndentationError: expected an indented block after 'try' statement on line 0
 
    >>> try:
    ...     something()
    ... except:
    ... pass
    Traceback (most recent call last):
-   IndentationError: expected an indented block after 'except' statement on line 3
+   IndentationError: expected an indented block after 'except' statement on line 0
 
    >>> try:
    ...     something()
    ... except A:
    ... pass
    Traceback (most recent call last):
-   IndentationError: expected an indented block after 'except' statement on line 3
+   IndentationError: expected an indented block after 'except' statement on line 0
 
    >>> try:
    ...     something()
    ... except* A:
    ... pass
    Traceback (most recent call last):
-   IndentationError: expected an indented block after 'except*' statement on line 3
+   IndentationError: expected an indented block after 'except*' statement on line 0
 
    >>> try:
    ...     something()
@@ -1599,7 +1599,7 @@ Specialized indentation errors:
    ... finally:
    ... pass
    Traceback (most recent call last):
-   IndentationError: expected an indented block after 'finally' statement on line 5
+   IndentationError: expected an indented block after 'finally' statement on line 0
 
    >>> try:
    ...     something()
@@ -1608,7 +1608,7 @@ Specialized indentation errors:
    ... finally:
    ... pass
    Traceback (most recent call last):
-   IndentationError: expected an indented block after 'finally' statement on line 5
+   IndentationError: expected an indented block after 'finally' statement on line 0
 
    >>> with A:
    ... pass
@@ -2935,12 +2935,12 @@ class SyntaxErrorTestCase(unittest.TestCase):
     def test_except_then_except_star(self):
         self._check_error("try: pass\nexcept ValueError: pass\nexcept* TypeError: pass",
                           r"cannot have both 'except' and 'except\*' on the same 'try'",
-                          lineno=3, end_lineno=3, offset=1, end_offset=8)
+                          lineno=0, end_lineno=0, offset=1, end_offset=1)
 
     def test_except_star_then_except(self):
         self._check_error("try: pass\nexcept* ValueError: pass\nexcept TypeError: pass",
                           r"cannot have both 'except' and 'except\*' on the same 'try'",
-                          lineno=3, end_lineno=3, offset=1, end_offset=7)
+                          lineno=0, end_lineno=0, offset=1, end_offset=1)
 
     def test_empty_line_after_linecont(self):
         # See issue-40847

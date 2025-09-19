@@ -76,6 +76,24 @@ QUESTION                '?'
 QUESTIONQUESTION        '?!?'
 # else
 QUESTIONEXCLAMATION     '?!'
+# assert_if
+CIRCUMFLEXQUESTION      '^?'
+# assert
+CIRCUMFLEXQUESTIONEXCLAMATION  '^?!'
+# dummy raise           
+DOUBLECIRCUMFLEX        '^^'
+# raise                 
+TRIPLECIRCUMFLEX        '^^^'
+# try
+TILDECIRCUMFLEX         '~^'
+# except
+QUESTIONCIRCUMFLEX      '?^'
+# try_else
+QUESTIONEXCLAMATIONCIRCUMFLEX  '?!^'
+# finally
+QUESTIONASTERISK        '?*'
+# as
+EQUALRARROW             '=>'
 
 
 OP
