@@ -1519,12 +1519,12 @@ Specialized indentation errors:
    >>> while condition:
    ... pass
    Traceback (most recent call last):
-   IndentationError: expected an indented block after 'while' statement on line 1
+   IndentationError: expected an indented block after 'while' statement on line 0
 
    >>> for x in range(10):
    ... pass
    Traceback (most recent call last):
-   IndentationError: expected an indented block after 'for' statement on line 1
+   IndentationError: expected an indented block after 'for' statement on line 0
 
    >>> for x in range(10):
    ...     pass
@@ -1536,7 +1536,7 @@ Specialized indentation errors:
    >>> async for x in range(10):
    ... pass
    Traceback (most recent call last):
-   IndentationError: expected an indented block after 'for' statement on line 1
+   IndentationError: expected an indented block after 'for' statement on line 0
 
    >>> async for x in range(10):
    ...     pass

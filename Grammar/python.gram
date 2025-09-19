@@ -117,7 +117,7 @@ simple_stmts[asdl_stmt_seq*]:
     | a[asdl_stmt_seq*]=';'.simple_stmt+ [';'] NEWLINE { a }
 
 # Keyword Alieses
-# TODO: 'async', 'await', 'break', 'class', 'continue', 'def', 'del', 'for', 'from', 'global', 'import', 'in', 'is', 'lambda', 'nonlocal', 'pass', 'return', 'while', 'with', 'yield'
+# TODO: 'async', 'await', 'class', 'def', 'del', 'from', 'global', 'import', 'is', 'lambda', 'nonlocal', 'pass', 'return', 'with', 'yield'
 false: ( 'False' | '!!!' )
 true: ( 'True' | '!!' )
 none:  ( 'None' | '~' )
@@ -134,6 +134,10 @@ except: ( 'except' | '?^' )
 try_else: ( 'else' | '?!^' )
 finally: ( 'finally' | '?*' )
 as: ( 'as' | '=>' )
+for: ( 'for' | '$' )
+while: ( 'while' | '$?' )
+break: ( 'break' | '$>>' )
+continue: ( 'continue' | '$<<' )
 
 # NOTE: assignment MUST precede expression, else parsing a simple assignment
 # will throw a SyntaxError.
@@ -148,8 +152,8 @@ simple_stmt[stmt_ty] (memo):
     | &'del' del_stmt
     | &'yield' yield_stmt
     | &assert assert_stmt
-    | &'break' break_stmt
-    | &'continue' continue_stmt
+    | &break break_stmt
+    | &continue continue_stmt
     | &'global' global_stmt
     | &'nonlocal' nonlocal_stmt
 
@@ -158,9 +162,9 @@ compound_stmt[stmt_ty]:
     | &if if_stmt
     | &('class' | '@') class_def
     | &('with' | 'async') with_stmt
-    | &('for' | 'async') for_stmt
+    | &(for | 'async') for_stmt
     | &try try_stmt
-    | &'while' while_stmt
+    | &while while_stmt
     | match_stmt
 
 # SIMPLE STATEMENTS
@@ -213,10 +217,10 @@ pass_stmt[stmt_ty]:
     | 'pass' { _PyAST_Pass(EXTRA) }
 
 break_stmt[stmt_ty]:
-    | 'break' { _PyAST_Break(EXTRA) }
+    | break { _PyAST_Break(EXTRA) }
 
 continue_stmt[stmt_ty]:
-    | 'continue' { _PyAST_Continue(EXTRA) }
+    | continue { _PyAST_Continue(EXTRA) }
 
 global_stmt[stmt_ty]: 'global' a[asdl_expr_seq*]=','.NAME+ {
     _PyAST_Global(CHECK(asdl_identifier_seq*, _PyPegen_map_names_to_ids(p, a)), EXTRA) }
@@ -410,21 +414,29 @@ else_block[asdl_stmt_seq*]:
     | invalid_else_stmt
     | else &&':' b=block { b }
 
+loop_else_block[asdl_stmt_seq*]:
+    | invalid_else_stmt
+    | '?!' break &&':' b=block { b }
+    | if not break &&':' b=block { b }
+    | 'else' &&':' b=block { b }
+    
 # While statement
 # ---------------
 
 while_stmt[stmt_ty]:
     | invalid_while_stmt
-    | 'while' a=named_expression ':' b=block c=[else_block] { _PyAST_While(a, b, c, EXTRA) }
+    | while a=named_expression ':' b=block c=[loop_else_block] { _PyAST_While(a, b, c, EXTRA) }
 
 # For statement
 # -------------
 
 for_stmt[stmt_ty]:
     | invalid_for_stmt
-    | 'for' t=star_targets 'in' ~ ex=star_expressions ':' tc=[TYPE_COMMENT] b=block el=[else_block] {
+    | for t=star_targets ':=' '*' ~ ex=star_expressions ':' tc=[TYPE_COMMENT] b=block el=[loop_else_block] {
         _PyAST_For(t, ex, b, el, NEW_TYPE_COMMENT(p, tc), EXTRA) }
-    | 'async' 'for' t=star_targets 'in' ~ ex=star_expressions ':' tc=[TYPE_COMMENT] b=block el=[else_block] {
+    | for t=star_targets 'in' ~ ex=star_expressions ':' tc=[TYPE_COMMENT] b=block el=[loop_else_block] {
+        _PyAST_For(t, ex, b, el, NEW_TYPE_COMMENT(p, tc), EXTRA) }
+    | 'async' for t=star_targets 'in' ~ ex=star_expressions ':' tc=[TYPE_COMMENT] b=block el=[loop_else_block] {
         CHECK_VERSION(stmt_ty, 5, "Async for loops are", _PyAST_AsyncFor(t, ex, b, el, NEW_TYPE_COMMENT(p, tc), EXTRA)) }
     | invalid_for_target
 
@@ -1050,9 +1062,13 @@ for_if_clauses[asdl_comprehension_seq*]:
     | a[asdl_comprehension_seq*]=for_if_clause+ { a }
 
 for_if_clause[comprehension_ty]:
-    | 'async' 'for' a=star_targets 'in' ~ b=disjunction c[asdl_expr_seq*]=(if z=disjunction { z })* {
+    | 'async' for a=star_targets ':=' '*' ~ b=disjunction c[asdl_expr_seq*]=(if z=disjunction { z })* {
         CHECK_VERSION(comprehension_ty, 6, "Async comprehensions are", _PyAST_comprehension(a, b, c, 1, p->arena)) }
-    | 'for' a=star_targets 'in' ~ b=disjunction c[asdl_expr_seq*]=(if z=disjunction { z })* {
+    | for a=star_targets ':=' '*' ~ b=disjunction c[asdl_expr_seq*]=(if z=disjunction { z })* {
+        _PyAST_comprehension(a, b, c, 0, p->arena) }
+    | 'async' for a=star_targets 'in' ~ b=disjunction c[asdl_expr_seq*]=(if z=disjunction { z })* {
+        CHECK_VERSION(comprehension_ty, 6, "Async comprehensions are", _PyAST_comprehension(a, b, c, 1, p->arena)) }
+    | for a=star_targets 'in' ~ b=disjunction c[asdl_expr_seq*]=(if z=disjunction { z })* {
         _PyAST_comprehension(a, b, c, 0, p->arena) }
     | invalid_for_if_clause
     | invalid_for_target
@@ -1392,11 +1408,11 @@ invalid_with_item:
         RAISE_SYNTAX_ERROR_INVALID_TARGET(STAR_TARGETS, a) }
 
 invalid_for_if_clause:
-    | 'async'? 'for' (bitwise_or (',' bitwise_or)* [',']) !'in' {
+    | 'async'? for (bitwise_or (',' bitwise_or)* [',']) !'in' {
         RAISE_SYNTAX_ERROR("'in' expected after for-loop variables") }
 
 invalid_for_target:
-    | 'async'? 'for' a=star_expressions {
+    | 'async'? for a=star_expressions {
         RAISE_SYNTAX_ERROR_INVALID_TARGET(FOR_TARGETS, a) }
 
 invalid_group:
@@ -1503,13 +1519,13 @@ invalid_else_stmt:
         RAISE_INDENTATION_ERROR("expected an indented block after 'else' statement on line %d", ((expr_ty)a)->lineno) }
     | else ':' block elif { RAISE_SYNTAX_ERROR("'elif' block follows an 'else' block")}
 invalid_while_stmt:
-    | 'while' named_expression NEWLINE { RAISE_SYNTAX_ERROR("expected ':'") }
-    | a='while' named_expression ':' NEWLINE !INDENT {
-        RAISE_INDENTATION_ERROR("expected an indented block after 'while' statement on line %d", a->lineno) }
+    | while named_expression NEWLINE { RAISE_SYNTAX_ERROR("expected ':'") }
+    | a=while named_expression ':' NEWLINE !INDENT {
+        RAISE_INDENTATION_ERROR("expected an indented block after 'while' statement on line %d", 0) }
 invalid_for_stmt:
-    | ['async'] 'for' star_targets 'in' star_expressions NEWLINE { RAISE_SYNTAX_ERROR("expected ':'") }
-    | ['async'] a='for' star_targets 'in' star_expressions ':' NEWLINE !INDENT {
-        RAISE_INDENTATION_ERROR("expected an indented block after 'for' statement on line %d", a->lineno) }
+    | ['async'] for star_targets 'in' star_expressions NEWLINE { RAISE_SYNTAX_ERROR("expected ':'") }
+    | ['async'] a=for star_targets 'in' star_expressions ':' NEWLINE !INDENT {
+        RAISE_INDENTATION_ERROR("expected an indented block after 'for' statement on line %d", 0) }
 invalid_def_raw:
     | ['async'] a='def' NAME [type_params] '(' [params] ')' ['->' expression] ':' NEWLINE !INDENT {
         RAISE_INDENTATION_ERROR("expected an indented block after function definition on line %d", a->lineno) }

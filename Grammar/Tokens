@@ -94,6 +94,18 @@ QUESTIONEXCLAMATIONCIRCUMFLEX  '?!^'
 QUESTIONASTERISK        '?*'
 # as
 EQUALRARROW             '=>'
+# for
+DOLLAR                  '$'
+# while
+DOLLARQUESTION          '$?'
+# dummy break
+DOLLARGREATER          '$>'
+# break
+DOLLARGREATERGREATER   '$>>'
+# dummy continue
+GREATERDOLLAR           '$<'
+# continue
+GREATERGREATERDOLLAR   '$<<'
 
 
 OP
