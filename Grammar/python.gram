@@ -141,7 +141,8 @@ continue: ( 'continue' | '$<<' )
 is: ( 'is' | '===' )
 async: ( 'async' | '%' )
 await: ( 'await' | '%' )
-
+return: ( 'return' | '->' | '<-' )
+yield: ( 'yield' | '~>' | '<~' )
 
 # NOTE: assignment MUST precede expression, else parsing a simple assignment
 # will throw a SyntaxError.
@@ -149,12 +150,12 @@ simple_stmt[stmt_ty] (memo):
     | assignment
     | &"type" type_alias
     | e=star_expressions { _PyAST_Expr(e, EXTRA) }
-    | &'return' return_stmt
+    | &return return_stmt
     | &('import' | 'from') import_stmt
     | &raise raise_stmt
     | &'pass' pass_stmt
     | &'del' del_stmt
-    | &'yield' yield_stmt
+    | &yield yield_stmt
     | &assert assert_stmt
     | &break break_stmt
     | &continue continue_stmt
@@ -210,7 +211,7 @@ augassign[AugOperator*]:
     | '//=' { _PyPegen_augoperator(p, FloorDiv) }
 
 return_stmt[stmt_ty]:
-    | 'return' a=[star_expressions] { _PyAST_Return(a, EXTRA) }
+    | return a=[star_expressions] { _PyAST_Return(a, EXTRA) }
 
 raise_stmt[stmt_ty]:
     | raise a=expression 'from' b=expression { _PyAST_Raise(a, b, EXTRA) }
@@ -750,8 +751,8 @@ expression[expr_ty] (memo):
     | lambdef
 
 yield_expr[expr_ty]:
-    | 'yield' 'from' a=expression { _PyAST_YieldFrom(a, EXTRA) }
-    | 'yield' a=[star_expressions] { _PyAST_Yield(a, EXTRA) }
+    | yield 'from' a=expression { _PyAST_YieldFrom(a, EXTRA) }
+    | yield a=[star_expressions] { _PyAST_Yield(a, EXTRA) }
 
 star_expressions[expr_ty]:
     | a=star_expression b=(',' c=star_expression { c })+ [','] {

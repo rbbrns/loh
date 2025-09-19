@@ -112,6 +112,12 @@ TRIPLEEQUAL            '==='
 DOUBLEPLUS             '++'
 # false
 DOUBLEMINUS            '--'
+# return alt
+LARROW                 '<-'
+# yield
+TILDEGREATER           '~>'
+# yield alt
+LESSTILDE              '<~'
 
 
 OP
