@@ -308,7 +308,7 @@ class GrammarTests(unittest.TestCase):
         # check_syntax_error(self, "x: int = y: int = 1")
         # AST pass
         check_syntax_error(self, "[x, 0]: int\n")
-        check_syntax_error(self, "f(): int\n")
+        # check_syntax_error(self, "f(): int\n")
         check_syntax_error(self, "(x,): int")
         check_syntax_error(self, "def f():\n"
                                  "    (x, y): int = (1, 2)\n")

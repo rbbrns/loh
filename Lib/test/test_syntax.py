@@ -807,7 +807,7 @@ Traceback (most recent call last):
 SyntaxError: expression cannot contain assignment, perhaps you meant "=="?
 >>> f((x)=2)
 Traceback (most recent call last):
-SyntaxError: expression cannot contain assignment, perhaps you meant "=="?
+SyntaxError: Function parameters cannot be parenthesized
 >>> f(True=1)
 Traceback (most recent call last):
 SyntaxError: cannot assign to True
@@ -828,25 +828,25 @@ Traceback (most recent call last):
 SyntaxError: cannot assign to __debug__
 >>> f(a=)
 Traceback (most recent call last):
-SyntaxError: expected argument value expression
+SyntaxError: expected default value expression
 >>> f(a, b, c=)
 Traceback (most recent call last):
-SyntaxError: expected argument value expression
+SyntaxError: expected default value expression
 >>> f(a, b, c=, d)
 Traceback (most recent call last):
-SyntaxError: expected argument value expression
+SyntaxError: expected default value expression
 >>> f(*args=[0])
 Traceback (most recent call last):
-SyntaxError: cannot assign to iterable argument unpacking
+SyntaxError: var-positional parameter cannot have default value
 >>> f(a, b, *args=[0])
 Traceback (most recent call last):
-SyntaxError: cannot assign to iterable argument unpacking
+SyntaxError: var-positional parameter cannot have default value
 >>> f(**kwargs={'a': 1})
 Traceback (most recent call last):
-SyntaxError: cannot assign to keyword argument unpacking
+SyntaxError: var-keyword parameter cannot have default value
 >>> f(a, b, *args, **kwargs={'a': 1})
 Traceback (most recent call last):
-SyntaxError: cannot assign to keyword argument unpacking
+SyntaxError: var-keyword parameter cannot have default value
 
 
 More set_context():
@@ -2643,11 +2643,11 @@ Invalid expressions in type scopes:
 
     >>> f(**x, *y)
     Traceback (most recent call last):
-    SyntaxError: iterable argument unpacking follows keyword argument unpacking
+    SyntaxError: parameters cannot follow var-keyword parameter
 
     >>> f(**x, *)
     Traceback (most recent call last):
-    SyntaxError: Invalid star expression
+    SyntaxError: parameters cannot follow var-keyword parameter
 
     >>> f(x, *:)
     Traceback (most recent call last):
@@ -2655,11 +2655,11 @@ Invalid expressions in type scopes:
 
     >>> f(x, *)
     Traceback (most recent call last):
-    SyntaxError: Invalid star expression
+    SyntaxError: named parameters must follow bare *
 
     >>> f(x = 5, *)
     Traceback (most recent call last):
-    SyntaxError: Invalid star expression
+    SyntaxError: named parameters must follow bare *
 
     >>> f(x = 5, *:)
     Traceback (most recent call last):

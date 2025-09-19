@@ -37,6 +37,11 @@ class Tests(unittest.TestCase):
                 return 1
         assert C().foo() == 1
 
+        C::
+            foo(self) -> Int:
+                return 2
+        assert C().foo() == 2
+
     def test_init(self):
         C::
             def __init__(self, v):
