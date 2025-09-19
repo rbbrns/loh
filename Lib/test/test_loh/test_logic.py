@@ -10,12 +10,23 @@ class Tests(unittest.TestCase):
         assert True == !!
         assert !! is !!
 
+        assert ++
+        assert ++ === True
+        assert True === ++
+
+
     def test_false(self):
         assert not !!!
 
         assert !!! is False
         assert !!! == False
         assert False == !!!
+
+        assert not --
+        assert -- === False
+        assert False === --
+        assert False == --
+        assert -- == False
 
     def test_none(self):
         assert not ~

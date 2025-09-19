@@ -1918,7 +1918,7 @@ Module(
         self.assertEqual(ast.literal_eval('+3.25'), 3.25)
         self.assertEqual(ast.literal_eval('-3.25'), -3.25)
         self.assertEqual(repr(ast.literal_eval('-0.0')), '-0.0')
-        self.assertRaises(ValueError, ast.literal_eval, '++6')
+        self.assertRaises(ValueError, ast.literal_eval, '+ +6')
         self.assertRaises(ValueError, ast.literal_eval, '+True')
         self.assertRaises(ValueError, ast.literal_eval, '2+3')
 
@@ -1966,7 +1966,7 @@ Module(
     def test_literal_eval_malformed_lineno(self):
         msg = r'malformed node or string on line 3:'
         with self.assertRaisesRegex(ValueError, msg):
-            ast.literal_eval("{'a': 1,\n'b':2,\n'c':++3,\n'd':4}")
+            ast.literal_eval("{'a': 1,\n'b':2,\n'c':+ +3,\n'd':4}")
 
         node = ast.UnaryOp(
             ast.UAdd(), ast.UnaryOp(ast.UAdd(), ast.Constant(6)))

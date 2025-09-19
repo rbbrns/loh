@@ -256,15 +256,15 @@ class TestTranforms(BytecodeTestCase):
             ('255 + 0', 255),
             ('255 + 1', None),
             ('-1', None),
-            ('--1', 1),
-            ('--255', 255),
-            ('--256', None),
+            ('- -1', 1),
+            ('- -255', 255),
+            ('- -256', None),
             ('~1', None),
             ('~(~1)', 1),
             ('~(~255)', 255),
             ('~(~256)', None),
-            ('++255', 255),
-            ('++256', None),
+            ('+ +255', 255),
+            ('+ +256', None),
         ]
         for expr, oparg in tests:
             with self.subTest(expr=expr, oparg=oparg):
@@ -283,15 +283,15 @@ class TestTranforms(BytecodeTestCase):
             ('-(1.0-1.0)', 'UNARY_NEGATIVE', None, True, 'LOAD_CONST', -0.0),
             ('-0.5', 'UNARY_NEGATIVE', None, True, 'LOAD_CONST', -0.5),
             ('---1', 'UNARY_NEGATIVE', None, True, 'LOAD_CONST', -1),
-            ('---""', 'UNARY_NEGATIVE', None, False, None, None),
+            ('- - -""', 'UNARY_NEGATIVE', None, False, None, None),
             ('~~~1', 'UNARY_INVERT', None, True, 'LOAD_CONST', -2),
             ('~~~""', 'UNARY_INVERT', None, False, None, None),
             ('not not True', 'UNARY_NOT', None, True, 'LOAD_CONST', True),
             ('not not x', 'UNARY_NOT', None, True, 'LOAD_NAME', 'x'),  # this should be optimized regardless of constant or not
-            ('+++1', 'CALL_INTRINSIC_1', intrinsic_positive, True, 'LOAD_SMALL_INT', 1),
-            ('---x', 'UNARY_NEGATIVE', None, False, None, None),
+            ('+ + +1', 'CALL_INTRINSIC_1', intrinsic_positive, True, 'LOAD_SMALL_INT', 1),
+            ('- - -x', 'UNARY_NEGATIVE', None, False, None, None),
             ('~~~x', 'UNARY_INVERT', None, False, None, None),
-            ('+++x', 'CALL_INTRINSIC_1', intrinsic_positive, False, None, None),
+            ('+ + +x', 'CALL_INTRINSIC_1', intrinsic_positive, False, None, None),
             ('~True', 'UNARY_INVERT', None, False, None, None),
         ]
 

@@ -108,6 +108,10 @@ GREATERDOLLAR           '$<'
 GREATERGREATERDOLLAR   '$<<'
 # is
 TRIPLEEQUAL            '==='
+# true
+DOUBLEPLUS             '++'
+# false
+DOUBLEMINUS            '--'
 
 
 OP

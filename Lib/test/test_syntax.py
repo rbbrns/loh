@@ -3208,7 +3208,7 @@ while 1:
 
     @support.cpython_only
     def test_error_on_parser_stack_overflow(self):
-        source = "-" * 100000 + "4"
+        source = "not " * 100000 + "True"
         for mode in ["exec", "eval", "single"]:
             with self.subTest(mode=mode):
                 with self.assertRaisesRegex(MemoryError, r"too complex"):
