@@ -117,7 +117,8 @@ simple_stmts[asdl_stmt_seq*]:
     | a[asdl_stmt_seq*]=';'.simple_stmt+ [';'] NEWLINE { a }
 
 # Keyword Alieses
-# TODO: 'class', 'def', 'del', 'from', 'global', 'import', 'lambda', 'nonlocal', 'pass', 'return', 'with', 'yield'
+# TODO: 'class', 'def', 'from', 'global', 'import', 'lambda', 'nonlocal', 'pass', 'with'
+# TODO: 'case', 'match', 'type'
 false: ( 'False' | '--' )
 true: ( 'True' | '++' )
 none:  ( 'None' | '~' )
@@ -143,6 +144,7 @@ async: ( 'async' | '%' )
 await: ( 'await' | '%' )
 return: ( 'return' | '->' | '<-' )
 yield: ( 'yield' | '~>' | '<~' )
+del: ( 'del' | '=>')
 
 # NOTE: assignment MUST precede expression, else parsing a simple assignment
 # will throw a SyntaxError.
@@ -154,7 +156,7 @@ simple_stmt[stmt_ty] (memo):
     | &('import' | 'from') import_stmt
     | &raise raise_stmt
     | &'pass' pass_stmt
-    | &'del' del_stmt
+    | &del del_stmt
     | &yield yield_stmt
     | &assert assert_stmt
     | &break break_stmt
@@ -234,7 +236,7 @@ nonlocal_stmt[stmt_ty]: 'nonlocal' a[asdl_expr_seq*]=','.NAME+ {
     _PyAST_Nonlocal(CHECK(asdl_identifier_seq*, _PyPegen_map_names_to_ids(p, a)), EXTRA) }
 
 del_stmt[stmt_ty]:
-    | 'del' a=del_targets &(';' | NEWLINE) { _PyAST_Delete(a, EXTRA) }
+    | del a=del_targets &(';' | NEWLINE) { _PyAST_Delete(a, EXTRA) }
     | invalid_del_stmt
 
 yield_stmt[stmt_ty]: y=yield_expr { _PyAST_Expr(y, EXTRA) }

@@ -52,6 +52,19 @@ class Tests(unittest.TestCase):
         assert True === ~~ False
         assert ++===!!!--
 
+    def test_del(self):
+        x = 1
+        del x
+        with self.assertRaises(NameError):
+            print(x)
+
+        x = 1
+        =>x
+        with self.assertRaises(NameError):
+            print(x)
+        
+
+
 
 if __name__ == "__main__":
     unittest.main()
