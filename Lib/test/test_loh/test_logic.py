@@ -36,5 +36,13 @@ class Tests(unittest.TestCase):
         assert ~~~~ True
         assert ~~ False
 
+    def test_is(self):
+        assert True === True
+        assert False === False
+        assert True === not False
+        assert True === ~~ False
+        assert !!===~~!!!
+
+
 if __name__ == "__main__":
     unittest.main()

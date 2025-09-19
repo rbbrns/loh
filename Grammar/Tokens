@@ -106,6 +106,8 @@ DOLLARGREATERGREATER   '$>>'
 GREATERDOLLAR           '$<'
 # continue
 GREATERGREATERDOLLAR   '$<<'
+# is
+TRIPLEEQUAL            '==='
 
 
 OP

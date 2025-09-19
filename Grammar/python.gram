@@ -117,7 +117,7 @@ simple_stmts[asdl_stmt_seq*]:
     | a[asdl_stmt_seq*]=';'.simple_stmt+ [';'] NEWLINE { a }
 
 # Keyword Alieses
-# TODO: 'async', 'await', 'class', 'def', 'del', 'from', 'global', 'import', 'is', 'lambda', 'nonlocal', 'pass', 'return', 'with', 'yield'
+# TODO: 'async', 'await', 'class', 'def', 'del', 'from', 'global', 'import', 'lambda', 'nonlocal', 'pass', 'return', 'with', 'yield'
 false: ( 'False' | '!!!' )
 true: ( 'True' | '!!' )
 none:  ( 'None' | '~' )
@@ -138,6 +138,7 @@ for: ( 'for' | '$' )
 while: ( 'while' | '$?' )
 break: ( 'break' | '$>>' )
 continue: ( 'continue' | '$<<' )
+is: ( 'is' | '===' )
 
 # NOTE: assignment MUST precede expression, else parsing a simple assignment
 # will throw a SyntaxError.
@@ -826,8 +827,8 @@ gte_bitwise_or[CmpopExprPair*]: '>=' a=bitwise_or { _PyPegen_cmpop_expr_pair(p, 
 gt_bitwise_or[CmpopExprPair*]: '>' a=bitwise_or { _PyPegen_cmpop_expr_pair(p, Gt, a) }
 notin_bitwise_or[CmpopExprPair*]: not 'in' a=bitwise_or { _PyPegen_cmpop_expr_pair(p, NotIn, a) }
 in_bitwise_or[CmpopExprPair*]: 'in' a=bitwise_or { _PyPegen_cmpop_expr_pair(p, In, a) }
-isnot_bitwise_or[CmpopExprPair*]: 'is' not a=bitwise_or { _PyPegen_cmpop_expr_pair(p, IsNot, a) }
-is_bitwise_or[CmpopExprPair*]: 'is' a=bitwise_or { _PyPegen_cmpop_expr_pair(p, Is, a) }
+isnot_bitwise_or[CmpopExprPair*]: is not a=bitwise_or { _PyPegen_cmpop_expr_pair(p, IsNot, a) }
+is_bitwise_or[CmpopExprPair*]: is a=bitwise_or { _PyPegen_cmpop_expr_pair(p, Is, a) }
 
 # Bitwise operators
 # -----------------
