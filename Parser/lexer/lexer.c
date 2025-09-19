@@ -830,6 +830,10 @@ tok_get_normal_mode(struct tok_state *tok, tokenizer_mode* current_tok, struct t
         c = tok_nextc(tok);
         if (Py_ISDIGIT(c)) {
             goto fraction;
+        } else if (c == '>') {
+            p_start = tok->start;
+            p_end = tok->cur;
+            return MAKE_TOKEN(DOTGREATER); 
         } else if (c == '.') {
             c = tok_nextc(tok);
             if (c == '.') {

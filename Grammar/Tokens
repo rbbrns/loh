@@ -118,7 +118,10 @@ LARROW                 '<-'
 TILDEGREATER           '~>'
 # yield alt
 LESSTILDE              '<~'
-
+# from
+DOTGREATER             '.>'
+# import
+LESSDOT                '<.'
 
 OP
 TYPE_IGNORE
