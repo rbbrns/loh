@@ -117,7 +117,7 @@ simple_stmts[asdl_stmt_seq*]:
     | a[asdl_stmt_seq*]=';'.simple_stmt+ [';'] NEWLINE { a }
 
 # Keyword Alieses
-# TODO: 'class', 'def', 'from', 'global', 'import', 'lambda', 'nonlocal', 'pass', "type"
+# TODO: 'def', 'from', 'global', 'import', 'lambda', 'nonlocal', 'pass', 'in', "type"
 false: ( 'False' | '--' )
 true: ( 'True' | '++' )
 none:  ( 'None' | '~' )
@@ -167,7 +167,7 @@ simple_stmt[stmt_ty] (memo):
 compound_stmt[stmt_ty]:
     | &('def' | '@' | async) function_def
     | &if if_stmt
-    | &('class' | '@') class_def
+    | class_def
     | &(with | async) with_stmt
     | &(for | async) for_stmt
     | &try try_stmt
@@ -304,6 +304,16 @@ class_def[stmt_ty]:
 class_def_raw[stmt_ty]:
     | invalid_class_def_raw
     | 'class' a=NAME t=[type_params] b=['(' z=[arguments] ')' { z }] ':' c=block {
+        _PyAST_ClassDef(a->v.Name.id,
+                     (b) ? ((expr_ty) b)->v.Call.args : NULL,
+                     (b) ? ((expr_ty) b)->v.Call.keywords : NULL,
+                     c, NULL, t, EXTRA) }
+    | a=NAME t=[type_params] ':' b=['(' z=[arguments] ')' { z }] ':' c=block {
+        _PyAST_ClassDef(a->v.Name.id,
+                     (b) ? ((expr_ty) b)->v.Call.args : NULL,
+                     (b) ? ((expr_ty) b)->v.Call.keywords : NULL,
+                     c, NULL, t, EXTRA) }
+    | a=NAME t=[type_params] ':' b=[ z=[arguments_no_paren] { z }] ':' c=block {
         _PyAST_ClassDef(a->v.Name.id,
                      (b) ? ((expr_ty) b)->v.Call.args : NULL,
                      (b) ? ((expr_ty) b)->v.Call.keywords : NULL,
@@ -1102,6 +1112,10 @@ dictcomp[expr_ty]:
 
 # FUNCTION CALL ARGUMENTS
 # =======================
+
+arguments_no_paren[expr_ty] (memo):
+    | a=args [','] { a }
+    | invalid_arguments
 
 arguments[expr_ty] (memo):
     | a=args [','] &')' { a }

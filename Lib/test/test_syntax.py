@@ -2421,7 +2421,7 @@ x: *b
     >>> x: *b = 1
     Traceback (most recent call last):
         ...
-    SyntaxError: invalid syntax
+    SyntaxError: cannot assign to iterable argument unpacking
 
 Invalid bytes literals:
 
