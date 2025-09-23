@@ -50,5 +50,36 @@ class Tests(unittest.TestCase):
             -> a + b + c
         assert test5(1) == 6
             
+    def test_lambda(self):
+        test1 = (x)->x
+        assert test1(1) == 1
+
+        test2 = (x, y)->x + y
+        assert test2(1, 2) == 3
+
+        test3 = ()->1
+        assert test3() == 1
+
+        def call_lambda(l):
+            return l(1)
+        assert call_lambda(l=(x) -> x + 1) == 2
+
+        assert ((x) -> x + 1)(1) == 2
+
+    def test_lambda_capture(self):
+        x = 1
+        test1 = (x)->x
+        assert test1(2) == 2
+        assert x == 1
+
+        def multiplier(n):
+            return lambda x: x * n
+
+        assert multiplier(2)(3) == 6
+        assert multiplier(3)(4) == 12
+
+
+    
         
+
         

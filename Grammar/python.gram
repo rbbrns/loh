@@ -147,6 +147,7 @@ del: ( 'del' | '=>')
 with: ( 'with' | '&' )
 from: ( 'from' | '.>' )
 import: ( 'import' | '<.' )
+lambda_postfix: ( '->' )
 
 
 # NOTE: assignment MUST precede expression, else parsing a simple assignment
@@ -766,8 +767,8 @@ expression[expr_ty] (memo):
     | invalid_expression
     | invalid_legacy_expression
     | a=disjunction if b=disjunction else c=expression { _PyAST_IfExp(b, a, c, EXTRA) }
-    | disjunction
     | lambdef
+    | disjunction
 
 yield_expr[expr_ty]:
     | yield from a=expression { _PyAST_YieldFrom(a, EXTRA) }
@@ -951,6 +952,8 @@ group[expr_ty]:
 lambdef[expr_ty]:
     | 'lambda' a=[lambda_params] ':' b=expression {
         _PyAST_Lambda((a) ? a : CHECK(arguments_ty, _PyPegen_empty_arguments(p)), b, EXTRA) }
+    | '(' a=[lambda_params] ')' lambda_postfix b=expression {
+        _PyAST_Lambda((a) ? a : CHECK(arguments_ty, _PyPegen_empty_arguments(p)), b, EXTRA) }
 
 lambda_params[arguments_ty]:
     | invalid_lambda_parameters
@@ -972,11 +975,11 @@ lambda_parameters[arguments_ty]:
 
 lambda_slash_no_default[asdl_arg_seq*]:
     | a[asdl_arg_seq*]=lambda_param_no_default+ '/' ',' { a }
-    | a[asdl_arg_seq*]=lambda_param_no_default+ '/' &':' { a }
+    | a[asdl_arg_seq*]=lambda_param_no_default+ '/' &(':' | ( ')' lambda_postfix )) { a }
 
 lambda_slash_with_default[SlashWithDefault*]:
     | a=lambda_param_no_default* b=lambda_param_with_default+ '/' ',' { _PyPegen_slash_with_default(p, (asdl_arg_seq *)a, b) }
-    | a=lambda_param_no_default* b=lambda_param_with_default+ '/' &':' { _PyPegen_slash_with_default(p, (asdl_arg_seq *)a, b) }
+    | a=lambda_param_no_default* b=lambda_param_with_default+ '/' &(':' | ( ')' lambda_postfix )) { _PyPegen_slash_with_default(p, (asdl_arg_seq *)a, b) }
 
 lambda_star_etc[StarEtc*]:
     | invalid_lambda_star_etc
@@ -992,13 +995,13 @@ lambda_kwds[arg_ty]:
 
 lambda_param_no_default[arg_ty]:
     | a=lambda_param ',' { a }
-    | a=lambda_param &':' { a }
+    | a=lambda_param &(':' | ( ')' lambda_postfix )) { a }
 lambda_param_with_default[NameDefaultPair*]:
     | a=lambda_param c=default ',' { _PyPegen_name_default_pair(p, a, c, NULL) }
-    | a=lambda_param c=default &':' { _PyPegen_name_default_pair(p, a, c, NULL) }
+    | a=lambda_param c=default &(':' | ( ')' lambda_postfix )) { _PyPegen_name_default_pair(p, a, c, NULL) }
 lambda_param_maybe_default[NameDefaultPair*]:
     | a=lambda_param c=default? ',' { _PyPegen_name_default_pair(p, a, c, NULL) }
-    | a=lambda_param c=default? &':' { _PyPegen_name_default_pair(p, a, c, NULL) }
+    | a=lambda_param c=default? &(':' | ( ')' lambda_postfix )) { _PyPegen_name_default_pair(p, a, c, NULL) }
 lambda_param[arg_ty]: a=NAME { _PyAST_arg(a->v.Name.id, NULL, NULL, EXTRA) }
 
 # LITERALS
@@ -1287,8 +1290,8 @@ invalid_kwarg:
 # IMPORTANT: Note that the "_without_invalid" suffix causes the rule to not call invalid rules under it
 expression_without_invalid[expr_ty]:
     | a=disjunction if b=disjunction else c=expression { _PyAST_IfExp(b, a, c, EXTRA) }
-    | disjunction
     | lambdef
+    | disjunction
 invalid_legacy_expression:
     | a=NAME !'(' b=star_expressions {
         _PyPegen_check_legacy_stmt(p, a) ? RAISE_SYNTAX_ERROR_KNOWN_RANGE(a, b,

@@ -2814,7 +2814,7 @@ class SyntaxErrorTestCase(unittest.TestCase):
         self._check_error("del a[0]()", "cannot delete function call")
         self._check_error("del x, f()", "cannot delete function call")
         self._check_error("del f(), x", "cannot delete function call")
-        self._check_error("del [a, b, ((c), (d,), e.f())]", "cannot delete function call")
+        self._check_error("del [a, b, ((c), (d,), e.f())]", "Lambda expression parameters cannot be parenthesized")
         self._check_error("del (a if True else b)", "cannot delete conditional")
         self._check_error("del +a", "cannot delete expression")
         self._check_error("del a, +b", "cannot delete expression")
