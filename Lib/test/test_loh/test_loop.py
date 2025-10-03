@@ -119,30 +119,30 @@ class Tests(unittest.TestCase):
         self.assertTrue(i == 10)
         self.assertTrue(else_ran)
 
-        $? !!: $>>
+        $? ++: $>>
         ?!$>>:
             ^^^ AssertionError
         
-        $?!!:$>>
+        $?++:$>>
         ?! break:
             ^^^ AssertionError
 
-        $?!!:$>>
+        $?++:$>>
         if not break:
             ^^^ AssertionError
 
-        $?!!:$>>
+        $?++:$>>
         if not $>>:
             ^^^ AssertionError
 
-        $?!!:$>>
+        $?++:$>>
         if ~~ $>>:
             ^^^ AssertionError
 
-        $?!!:$>>
+        $?++:$>>
         ? ~~ $>>:
             ^^^ AssertionError
 
-        $?!!:$>>
+        $?++:$>>
         ?~~$>>:
             ^^^ AssertionError

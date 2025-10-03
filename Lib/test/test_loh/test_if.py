@@ -5,7 +5,7 @@ from test.support import import_helper
 class Tests(unittest.TestCase):
     def test_if_true(self):
         ran = 0
-        ? !!:
+        ? ++:
             ran = 1
         assert ran == 1
         
@@ -13,18 +13,18 @@ class Tests(unittest.TestCase):
             ran = 2
         assert ran == 2
 
-        ? !!:
+        ?++:
             ran = 3
         assert ran == 3
     
     def test_if_false(self):
         ran = False
-        ? !!!:
+        ? --:
             ran = True
         assert not ran
 
         ran = False
-        ? False:
+        ?--:
             ran = True
         assert ~~ran
 
@@ -34,12 +34,12 @@ class Tests(unittest.TestCase):
         assert not ran
 
         ran = False
-        ? !!!:
+        ? !!! ~~ --:
             ran = True
         assert not ran
         
         ran = False
-        ? ~~!!:
+        ?--:
             ran = True
         assert not ran
 

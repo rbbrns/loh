@@ -10,10 +10,10 @@ class Tests(unittest.TestCase):
             ^?! False
         
         # assert true
-        ^?! !!
+        ^?! ++
 
         # assert not false
-        ^?! ~~ !!!
+        ^?! ~~ --
 
     def test_raise(self):
         with self.assertRaises(ValueError):
