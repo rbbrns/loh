@@ -58,8 +58,8 @@ INVALID_UNDERSCORE_LITERALS = [
     # Underscore right after a dot:
     '1._4',
     '1._4j',
-    '._5',
-    '._5j',
+    # '._5',
+    # '._5j',
     # Underscore right after a sign:
     '1.0e+_1',
     '1.0e+_1j',

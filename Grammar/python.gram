@@ -150,6 +150,13 @@ import: ( 'import' | '<.' )
 lambda_postfix: ( '->' )
 
 
+dot[expr_ty]:
+    | '.' { _PyAST_Name(_PyPegen_new_identifier(p, "."), Load, EXTRA) }
+
+name_or_dot[expr_ty]:
+    | NAME
+    | dot !NUMBER
+
 # NOTE: assignment MUST precede expression, else parsing a simple assignment
 # will throw a SyntaxError.
 simple_stmt[stmt_ty] (memo):
@@ -336,6 +343,10 @@ function_def_raw[stmt_ty]:
         _PyAST_FunctionDef(n->v.Name.id,
                         (params) ? params : CHECK(arguments_ty, _PyPegen_empty_arguments(p)),
                         b, NULL, a, NEW_TYPE_COMMENT(p, tc), t, EXTRA) }
+    | ['def'] d=dot n=NAME t=[type_params] '(' params=[params] ')' a=['->' z=expression { z }] ':' tc=[func_type_comment] b=block {
+        _PyAST_FunctionDef(n->v.Name.id, 
+                        _PyPegen_insert_arg_in_front(p, _PyAST_arg(d->v.Name.id, NULL, NULL, EXTRA), params),
+                        b, NULL, a, NEW_TYPE_COMMENT(p, tc), t, EXTRA) }
     | async ['def'] n=NAME t=[type_params] '(' params=[params] ')' a=['->' z=expression { z }] ':' tc=[func_type_comment] b=block {
         CHECK_VERSION(
             stmt_ty,
@@ -345,6 +356,10 @@ function_def_raw[stmt_ty]:
                             (params) ? params : CHECK(arguments_ty, _PyPegen_empty_arguments(p)),
                             b, NULL, a, NEW_TYPE_COMMENT(p, tc), t, EXTRA)
         ) }
+    | async ['def'] d=dot n=NAME t=[type_params] '(' params=[params] ')' a=['->' z=expression { z }] ':' tc=[func_type_comment] b=block {
+        _PyAST_AsyncFunctionDef(n->v.Name.id, 
+                        _PyPegen_insert_arg_in_front(p, _PyAST_arg(d->v.Name.id, NULL, NULL, EXTRA), params),
+                        b, NULL, a, NEW_TYPE_COMMENT(p, tc), t, EXTRA) }
 
 # Function parameters
 # -------------------
@@ -412,7 +427,7 @@ param_with_default[NameDefaultPair*]:
 param_maybe_default[NameDefaultPair*]:
     | a=param c=default? ',' tc=TYPE_COMMENT? { _PyPegen_name_default_pair(p, a, c, tc) }
     | a=param c=default? tc=TYPE_COMMENT? &')' { _PyPegen_name_default_pair(p, a, c, tc) }
-param[arg_ty]: a=NAME b=annotation? { _PyAST_arg(a->v.Name.id, b, NULL, EXTRA) }
+param[arg_ty]: a=name_or_dot b=annotation? { _PyAST_arg(a->v.Name.id, b, NULL, EXTRA) }
 param_star_annotation[arg_ty]: a=NAME b=star_annotation { _PyAST_arg(a->v.Name.id, b, NULL, EXTRA) }
 annotation[expr_ty]: ':' a=expression { a }
 star_annotation[expr_ty]: ':' a=star_expression { a }
@@ -932,6 +947,8 @@ slice[expr_ty]:
 
 atom[expr_ty]:
     | NAME
+    | a=dot b=NAME { _PyAST_Attribute(a, b->v.Name.id, Load, EXTRA) }
+    | dot
     | true { _PyAST_Constant(Py_True, NULL, EXTRA) }
     | false { _PyAST_Constant(Py_False, NULL, EXTRA) }
     | none { _PyAST_Constant(Py_None, NULL, EXTRA) }
@@ -1182,11 +1199,12 @@ star_target[expr_ty] (memo):
 
 target_with_star_atom[expr_ty] (memo):
     | a=t_primary '.' b=NAME !t_lookahead { _PyAST_Attribute(a, b->v.Name.id, Store, EXTRA) }
+    | a=dot b=NAME !t_lookahead { _PyAST_Attribute(a, b->v.Name.id, Store, EXTRA) }
     | a=t_primary '[' b=slices ']' !t_lookahead { _PyAST_Subscript(a, b, Store, EXTRA) }
     | star_atom
 
 star_atom[expr_ty]:
-    | a=NAME { _PyPegen_set_expr_context(p, a, Store) }
+    | a=name_or_dot { _PyPegen_set_expr_context(p, a, Store) }
     | '(' a=target_with_star_atom ')' { _PyPegen_set_expr_context(p, a, Store) }
     | '(' a=[star_targets_tuple_seq] ')' { _PyAST_Tuple(a, Store, EXTRA) }
     | '[' a=[star_targets_list_seq] ']' { _PyAST_List(a, Store, EXTRA) }

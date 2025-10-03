@@ -942,7 +942,7 @@ x = (
     def test_newlines_before_syntax_error(self):
         self.assertAllRaise(SyntaxError,
                             "f-string: expecting a valid expression after '{'",
-                ["f'{.}'", "\nf'{.}'", "\n\nf'{.}'"])
+                ["f'{*}'", "\nf'{*}'", "\n\nf'{*}'"])
 
     def test_backslashes_in_string_part(self):
         self.assertEqual(f'\t', '\t')

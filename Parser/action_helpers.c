@@ -677,6 +677,17 @@ _PyPegen_make_arguments(Parser *p, asdl_arg_seq *slash_without_default,
                             kwdefaults, kwarg, posdefaults, p->arena);
 }
 
+arguments_ty
+_PyPegen_insert_arg_in_front(Parser *p, arg_ty arg, arguments_ty args)
+{
+    if (args == NULL) {
+        args = _PyPegen_empty_arguments(p);
+    }
+    return _PyAST_arguments((asdl_arg_seq*)_PyPegen_seq_insert_in_front(p, arg, (asdl_seq*)args->posonlyargs), 
+                            args->args, args->vararg, args->kwonlyargs,
+                            args->kw_defaults, args->kwarg, args->defaults, p->arena);
+}
+
 
 /* Constructs an empty arguments_ty object, that gets used when a function accepts no
  * arguments. */
