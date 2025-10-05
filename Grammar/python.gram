@@ -117,7 +117,7 @@ simple_stmts[asdl_stmt_seq*]:
     | a[asdl_stmt_seq*]=';'.simple_stmt+ [';'] NEWLINE { a }
 
 # Keyword Alieses
-# TODO: 'global', 'lambda', 'nonlocal', 'pass', 'in', "type"
+# TODO:  'pass', 'in'
 false: ( 'False' | '--' )
 true: ( 'True' | '++' )
 none:  ( 'None' | '~' )
@@ -148,6 +148,7 @@ with: ( 'with' | '&' )
 from: ( 'from' | '.>' )
 import: ( 'import' | '<.' )
 lambda_postfix: ( '->' )
+type: ( "type" | ':' )
 
 
 dot[expr_ty]:
@@ -161,7 +162,7 @@ name_or_dot[expr_ty]:
 # will throw a SyntaxError.
 simple_stmt[stmt_ty] (memo):
     | assignment
-    | &"type" type_alias
+    | &type type_alias
     | e=star_expressions { _PyAST_Expr(e, EXTRA) }
     | &return return_stmt
     | &(import | from) import_stmt
@@ -759,7 +760,7 @@ keyword_pattern[KeyPatternPair*]:
 # ---------------
 
 type_alias[stmt_ty]:
-    | "type" n=NAME t=[type_params] '=' b=expression {
+    | type n=NAME t=[type_params] '=' b=expression {
         CHECK_VERSION(stmt_ty, 12, "Type statement is",
         _PyAST_TypeAlias(CHECK(expr_ty, _PyPegen_set_expr_context(p, n, Store)), t, b, EXTRA)) }
 
