@@ -234,7 +234,7 @@ class CodeopTests(unittest.TestCase):
         ai("a b @")
         ai("a ** @")
 
-        ai("a = ")
+        #ai("a = ")
         ai("a = 9 +")
 
         ai("def x():\n\npass\n")

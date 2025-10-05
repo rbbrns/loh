@@ -279,10 +279,6 @@ SyntaxError: cannot assign to function call
 Traceback (most recent call last):
 SyntaxError: expected ':'
 
->>> p = p =
-Traceback (most recent call last):
-SyntaxError: invalid syntax
-
 Comprehensions without 'in' keyword:
 
 >>> [x for x if range(1)]
@@ -531,17 +527,17 @@ SyntaxError: expected comma between / and *
 >>> def foo(a=1,d=,c):
 ...    pass
 Traceback (most recent call last):
-SyntaxError: expected default value expression
+SyntaxError: parameter without a default follows parameter with a default
 
 >>> def foo(a,d=,c):
 ...    pass
 Traceback (most recent call last):
-SyntaxError: expected default value expression
+SyntaxError: parameter without a default follows parameter with a default
 
 >>> def foo(a,d: int=,c):
 ...    pass
 Traceback (most recent call last):
-SyntaxError: expected default value expression
+SyntaxError: parameter without a default follows parameter with a default
 
 >>> lambda /,a,b,c: None
 Traceback (most recent call last):
@@ -621,11 +617,11 @@ SyntaxError: * argument may appear only once
 
 >>> lambda a=1,d=,c: None
 Traceback (most recent call last):
-SyntaxError: expected default value expression
+SyntaxError: parameter without a default follows parameter with a default
 
 >>> lambda a,d=,c: None
 Traceback (most recent call last):
-SyntaxError: expected default value expression
+SyntaxError: parameter without a default follows parameter with a default
 
 >>> lambda a,d=3,c: None
 Traceback (most recent call last):
@@ -826,15 +822,6 @@ SyntaxError: cannot assign to __debug__
 >>> x.__debug__: int
 Traceback (most recent call last):
 SyntaxError: cannot assign to __debug__
->>> f(a=)
-Traceback (most recent call last):
-SyntaxError: expected default value expression
->>> f(a, b, c=)
-Traceback (most recent call last):
-SyntaxError: expected default value expression
->>> f(a, b, c=, d)
-Traceback (most recent call last):
-SyntaxError: expected default value expression
 >>> f(*args=[0])
 Traceback (most recent call last):
 SyntaxError: var-positional parameter cannot have default value
@@ -1478,10 +1465,6 @@ Incomplete dictionary literals
    Traceback (most recent call last):
    SyntaxError: ':' expected after dictionary key
 
-   >>> {1:2, 3:4, 5:}
-   Traceback (most recent call last):
-   SyntaxError: expression expected after dictionary key and ':'
-
    >>> {1: *12+1, 23: 1}
    Traceback (most recent call last):
    SyntaxError: cannot use a starred expression in a dictionary value
@@ -1494,10 +1477,6 @@ Incomplete dictionary literals
    Traceback (most recent call last):
    SyntaxError: cannot use a starred expression in a dictionary value
 
-   >>> {1:}
-   Traceback (most recent call last):
-   SyntaxError: expression expected after dictionary key and ':'
-
    # Ensure that the error is not raised for syntax errors that happen after sets
 
    >>> {1} $
@@ -1506,7 +1485,7 @@ Incomplete dictionary literals
 
    # Ensure that the error is not raised for invalid expressions
 
-   >>> {1: 2, 3: foo(,), 4: 5}
+   >>> {1: 2, 3: foo(,$), 4: 5}
    Traceback (most recent call last):
    SyntaxError: invalid syntax
 
@@ -2800,7 +2779,7 @@ class SyntaxErrorTestCase(unittest.TestCase):
         self._check_error("f() = 1", "assign")
 
     def test_assign_del(self):
-        self._check_error("del (,)", "invalid syntax")
+        self._check_error("del (,)", "cannot delete None")
         self._check_error("del 1", "cannot delete literal")
         self._check_error("del (1, 2)", "cannot delete literal")
         self._check_error("del None", "cannot delete None")

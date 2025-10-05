@@ -188,8 +188,21 @@ compound_stmt[stmt_ty]:
 # SIMPLE STATEMENTS
 # =================
 
+assignment_none[stmt_ty]:
+    | a=NAME ':' b=expression '=' &(';' | NEWLINE | ENDMARKER) {
+            _PyAST_AnnAssign(CHECK(expr_ty, _PyPegen_set_expr_context(p, a, Store)), b,  _PyAST_Constant(Py_None, NULL, EXTRA), 1, EXTRA)
+    }
+    | a=('(' b=single_target ')' { b }
+         | single_subscript_attribute_target) ':' b=expression '=' &(';' | NEWLINE | ENDMARKER) {
+        _PyAST_AnnAssign(a, b,  _PyAST_Constant(Py_None, NULL, EXTRA), 0, EXTRA) }
+    | a[asdl_expr_seq*]=(z=star_targets '=' { z })+  &(';' | NEWLINE | ENDMARKER) {
+         _PyAST_Assign(a,  _PyAST_Constant(Py_None, NULL, EXTRA), NULL, EXTRA) }
+    | a=single_target b=augassign &(';' | NEWLINE | ENDMARKER) {
+         _PyAST_AugAssign(a, b->kind,  _PyAST_Constant(Py_None, NULL, EXTRA), EXTRA) }
+
 # NOTE: annotated_rhs may start with 'yield'; yield_expr must start with 'yield'
 assignment[stmt_ty]:
+    | assignment_none
     | a=NAME ':' b=expression c=['=' d=annotated_rhs { d }] {
         CHECK_VERSION(
             stmt_ty,
@@ -431,7 +444,10 @@ param[arg_ty]: a=name_or_dot b=annotation? { _PyAST_arg(a->v.Name.id, b, NULL, E
 param_star_annotation[arg_ty]: a=NAME b=star_annotation { _PyAST_arg(a->v.Name.id, b, NULL, EXTRA) }
 annotation[expr_ty]: ':' a=expression { a }
 star_annotation[expr_ty]: ':' a=star_expression { a }
-default[expr_ty]: '=' a=expression { a } | invalid_default
+default[expr_ty]: 
+    | '=' a=expression { a } 
+    | '=' &(',' | ')') { _PyAST_Constant(Py_None, NULL, EXTRA) }
+    | invalid_default
 
 # If statement
 # ------------
@@ -772,6 +788,8 @@ type_param_starred_default[expr_ty]: '=' e=star_expression {
 # EXPRESSIONS
 # -----------
 
+implicit_none[expr_ty]: &(',' | ')' | '}' | ';' | ':' | NEWLINE) { _PyAST_Constant(Py_None, NULL, EXTRA) }
+
 expressions[expr_ty]:
     | a=expression b=(',' c=expression { c })+ [','] {
         _PyAST_Tuple(CHECK(asdl_expr_seq*, _PyPegen_seq_insert_in_front(p, a, b)), Load, EXTRA) }
@@ -803,7 +821,8 @@ star_named_expressions[asdl_expr_seq*]: a[asdl_expr_seq*]=','.star_named_express
 
 star_named_expression[expr_ty]:
     | '*' a=bitwise_or { _PyAST_Starred(a, Load, EXTRA) }
-    | named_expression
+    | named_expression 
+    | implicit_none_arg
 
 assignment_expression[expr_ty]:
     | a=NAME ':=' ~ b=expression {
@@ -857,17 +876,17 @@ compare_op_bitwise_or_pair[CmpopExprPair*]:
     | isnot_bitwise_or
     | is_bitwise_or
 
-eq_bitwise_or[CmpopExprPair*]: '==' a=bitwise_or { _PyPegen_cmpop_expr_pair(p, Eq, a) }
+eq_bitwise_or[CmpopExprPair*]: '==' a=(bitwise_or | implicit_none) { _PyPegen_cmpop_expr_pair(p, Eq, a) }
 noteq_bitwise_or[CmpopExprPair*]:
-    | (tok='!=' { _PyPegen_check_barry_as_flufl(p, tok) ? NULL : tok}) a=bitwise_or {_PyPegen_cmpop_expr_pair(p, NotEq, a) }
+    | (tok='!=' { _PyPegen_check_barry_as_flufl(p, tok) ? NULL : tok}) a=(bitwise_or | implicit_none) {_PyPegen_cmpop_expr_pair(p, NotEq, a) }
 lte_bitwise_or[CmpopExprPair*]: '<=' a=bitwise_or { _PyPegen_cmpop_expr_pair(p, LtE, a) }
 lt_bitwise_or[CmpopExprPair*]: '<' a=bitwise_or { _PyPegen_cmpop_expr_pair(p, Lt, a) }
 gte_bitwise_or[CmpopExprPair*]: '>=' a=bitwise_or { _PyPegen_cmpop_expr_pair(p, GtE, a) }
 gt_bitwise_or[CmpopExprPair*]: '>' a=bitwise_or { _PyPegen_cmpop_expr_pair(p, Gt, a) }
 notin_bitwise_or[CmpopExprPair*]: not 'in' a=bitwise_or { _PyPegen_cmpop_expr_pair(p, NotIn, a) }
 in_bitwise_or[CmpopExprPair*]: 'in' a=bitwise_or { _PyPegen_cmpop_expr_pair(p, In, a) }
-isnot_bitwise_or[CmpopExprPair*]: is not a=bitwise_or { _PyPegen_cmpop_expr_pair(p, IsNot, a) }
-is_bitwise_or[CmpopExprPair*]: is a=bitwise_or { _PyPegen_cmpop_expr_pair(p, Is, a) }
+isnot_bitwise_or[CmpopExprPair*]: is not a=(bitwise_or | implicit_none)  { _PyPegen_cmpop_expr_pair(p, IsNot, a) }
+is_bitwise_or[CmpopExprPair*]: is a=(bitwise_or | implicit_none) { _PyPegen_cmpop_expr_pair(p, Is, a) }
 
 # Bitwise operators
 # -----------------
@@ -1097,7 +1116,7 @@ double_starred_kvpair[KeyValuePair*]:
     | '**' a=bitwise_or { _PyPegen_key_value_pair(p, NULL, a) }
     | kvpair
 
-kvpair[KeyValuePair*]: a=expression ':' b=expression { _PyPegen_key_value_pair(p, a, b) }
+kvpair[KeyValuePair*]: a=expression ':' b=(expression | implicit_none) { _PyPegen_key_value_pair(p, a, b) }
 
 # Comprehensions & Generators
 # ---------------------------
@@ -1136,6 +1155,8 @@ dictcomp[expr_ty]:
 # FUNCTION CALL ARGUMENTS
 # =======================
 
+implicit_none_arg[expr_ty]: &',' { _PyAST_Constant(Py_None, NULL, EXTRA) }
+
 arguments_no_paren[expr_ty] (memo):
     | a=args [','] { a }
     | invalid_arguments
@@ -1145,7 +1166,7 @@ arguments[expr_ty] (memo):
     | invalid_arguments
 
 args[expr_ty]:
-    | a[asdl_expr_seq*]=','.(starred_expression | ( assignment_expression | expression !':=') !'=')+ b=[',' k=kwargs {k}] {
+    | a[asdl_expr_seq*]=','.(starred_expression | (( assignment_expression | expression !':=') !'=') | (implicit_none_arg !( '=' | ')' )))+ b=[',' k=kwargs {k}] {
         _PyPegen_collect_call_seqs(p, a, b, EXTRA) }
     | a=kwargs { _PyAST_Call(_PyPegen_dummy_name(p),
                           CHECK_NULL_ALLOWED(asdl_expr_seq*, _PyPegen_seq_extract_starred_exprs(p, a)),
@@ -1164,12 +1185,16 @@ starred_expression[expr_ty]:
 
 kwarg_or_starred[KeywordOrStarred*]:
     | invalid_kwarg
+    | a=NAME '=' &(',' | ')' | '}') {
+        _PyPegen_keyword_or_starred(p, CHECK(keyword_ty, _PyAST_keyword(a->v.Name.id, _PyAST_Constant(Py_None, NULL, EXTRA), EXTRA)), 1) }
     | a=NAME '=' b=expression {
         _PyPegen_keyword_or_starred(p, CHECK(keyword_ty, _PyAST_keyword(a->v.Name.id, b, EXTRA)), 1) }
     | a=starred_expression { _PyPegen_keyword_or_starred(p, a, 0) }
 
 kwarg_or_double_starred[KeywordOrStarred*]:
     | invalid_kwarg
+    | a=NAME '=' &(',' | ')' | '}') {
+        _PyPegen_keyword_or_starred(p, CHECK(keyword_ty, _PyAST_keyword(a->v.Name.id, _PyAST_Constant(Py_None, NULL, EXTRA), EXTRA)), 1) }
     | a=NAME '=' b=expression {
         _PyPegen_keyword_or_starred(p, CHECK(keyword_ty, _PyAST_keyword(a->v.Name.id, b, EXTRA)), 1) }
     | '**' a=expression { _PyPegen_keyword_or_starred(p, CHECK(keyword_ty, _PyAST_keyword(NULL, a, EXTRA)), 1) }
