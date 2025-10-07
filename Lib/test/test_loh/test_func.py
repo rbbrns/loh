@@ -9,7 +9,7 @@ class Tests(unittest.TestCase):
         assert test() == 1
 
         def test2():
-            <- 2
+            -> 2
         assert test2() == 2
 
         def test_none():
@@ -22,12 +22,6 @@ class Tests(unittest.TestCase):
             ~> 2
             ~> 3
         assert list(test()) == [1, 2, 3]
-
-        def test2():
-            <~ 1
-            <~ 2
-            <~ 3
-        assert list(test2()) == [1, 2, 3]
 
     def test_def(self):
         test1():

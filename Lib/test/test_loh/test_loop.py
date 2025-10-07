@@ -40,55 +40,59 @@ class Tests(unittest.TestCase):
             pass
         self.assertTrue(i == 9)
 
-        $ i := *range(10):
+        $ i := range(10):
             pass
         self.assertTrue(i == 9)
 
-        $i:=*range(10):
+        $i:=range(10):
             pass
         self.assertTrue(i == 9)
         
-        $ i := * range(10):
+        $ i :=  range(10):
             pass
         self.assertTrue(i == 9)
 
     def test_for_else(self):
-        $ i := *range(10): $>>
+        $ i := range(10): $>>
         ?!$>>: ^^^ AssertionError
 
-        $ i := *range(10): $>>
+        $ i := range(10): $>>
         ?! $>>: ^^^ AssertionError
 
-        $ i := *range(10): $>>
+        $ i := range(10): $>>
         else: ^^^ AssertionError
 
-        $ i := *range(10): $>>
+        $ i := range(10): $>>
         if not break: ^^^ AssertionError
 
-        $ i := *range(10): $>>
+        $ i := range(10): $>>
         ? ~~ $>>: ^^^ AssertionError
 
-        $ i := *range(10): $>>
+        $ i := range(10): $>>
         ?~~$>>: ^^^ AssertionError
 
     def test_for_comprehension(self):
         self.assertEqual([ i $ i in range(10) ], list(range(10)))
-        self.assertEqual([ i $ i := *range(10) ], list(range(10)))
+        self.assertEqual([ i $ i <~ range(10) ], list(range(10)))
 
         self.assertEqual([i$i in range(10)], list(range(10)))
-        self.assertEqual([i$i:=*range(10)], list(range(10)))
+        self.assertEqual([i$i<~range(10)], list(range(10)))
 
-        self.assertEqual([ i $ i := *range(10) if i < 5], list(range(5)))
-        self.assertEqual([ i $ i := *range(10) ? i < 5], list(range(5)))
+        self.assertEqual([ i $ i <~ range(10) if i < 5], list(range(5)))
+        self.assertEqual([ i $ i <~ range(10) ? i < 5], list(range(5)))
 
-        self.assertEqual([ i+1 $ i := *range(10) ], list(range(1,11)))
+        self.assertEqual([ i+1 $ i <~ range(10) ], list(range(1,11)))
 
         data = [(1, 2, 3), (4, 5, 6, 7)]
         first = [first for first, *rest in data]
         self.assertEqual(first, [1, 4])
 
-        first = [first $ first, *rest := *data]
+        first = [first $ first, *rest <~ data]
         self.assertEqual(first, [1, 4])
+
+    def test_for_if_comprehension(self):
+        self.assertEqual([i $ i in range(10) if i < 5], list(range(5)))
+        self.assertEqual([i $ i <~ range(10) ? i < 5], list(range(5)))
 
     def test_while(self):
         i = 0

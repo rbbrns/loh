@@ -62,9 +62,12 @@ class Tests(unittest.TestCase):
         =>x
         with self.assertRaises(NameError):
             print(x)
-        
 
-
+    
+    def test_in(self):
+        assert 'a' <~ 'abc'
+        assert 'a' not <~ 'def'
+        assert 'a' ~~ <~ 'def'        
 
 if __name__ == "__main__":
     unittest.main()

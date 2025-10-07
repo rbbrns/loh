@@ -117,7 +117,7 @@ simple_stmts[asdl_stmt_seq*]:
     | a[asdl_stmt_seq*]=';'.simple_stmt+ [';'] NEWLINE { a }
 
 # Keyword Alieses
-# TODO:  'pass', 'in'
+# TODO:  'pass'
 false: ( 'False' | '--' )
 true: ( 'True' | '++' )
 none:  ( 'None' | '~' )
@@ -141,14 +141,15 @@ continue: ( 'continue' | '$<<' )
 is: ( 'is' | '===' )
 async: ( 'async' | '%' )
 await: ( 'await' | '%' )
-return: ( 'return' | '->' | '<-' )
-yield: ( 'yield' | '~>' | '<~' )
+return: ( 'return' | '->' )
+yield: ( 'yield' | '~>' )
 del: ( 'del' | '=>')
 with: ( 'with' | '&' )
 from: ( 'from' | '.>' )
 import: ( 'import' | '<.' )
 lambda_postfix: ( '->' )
 type: ( "type" | ':' )
+in: ( 'in' | '<~' )
 
 
 dot[expr_ty]:
@@ -485,7 +486,7 @@ while_stmt[stmt_ty]:
 
 for_stmt[stmt_ty]:
     | invalid_for_stmt
-    | for t=star_targets ':=' '*' ~ ex=star_expressions ':' tc=[TYPE_COMMENT] b=block el=[loop_else_block] {
+    | for t=star_targets ':=' ~ ex=star_expressions ':' tc=[TYPE_COMMENT] b=block el=[loop_else_block] {
         _PyAST_For(t, ex, b, el, NEW_TYPE_COMMENT(p, tc), EXTRA) }
     | for t=star_targets 'in' ~ ex=star_expressions ':' tc=[TYPE_COMMENT] b=block el=[loop_else_block] {
         _PyAST_For(t, ex, b, el, NEW_TYPE_COMMENT(p, tc), EXTRA) }
@@ -884,8 +885,8 @@ lte_bitwise_or[CmpopExprPair*]: '<=' a=bitwise_or { _PyPegen_cmpop_expr_pair(p, 
 lt_bitwise_or[CmpopExprPair*]: '<' a=bitwise_or { _PyPegen_cmpop_expr_pair(p, Lt, a) }
 gte_bitwise_or[CmpopExprPair*]: '>=' a=bitwise_or { _PyPegen_cmpop_expr_pair(p, GtE, a) }
 gt_bitwise_or[CmpopExprPair*]: '>' a=bitwise_or { _PyPegen_cmpop_expr_pair(p, Gt, a) }
-notin_bitwise_or[CmpopExprPair*]: not 'in' a=bitwise_or { _PyPegen_cmpop_expr_pair(p, NotIn, a) }
-in_bitwise_or[CmpopExprPair*]: 'in' a=bitwise_or { _PyPegen_cmpop_expr_pair(p, In, a) }
+notin_bitwise_or[CmpopExprPair*]: not in a=bitwise_or { _PyPegen_cmpop_expr_pair(p, NotIn, a) }
+in_bitwise_or[CmpopExprPair*]: in a=bitwise_or { _PyPegen_cmpop_expr_pair(p, In, a) }
 isnot_bitwise_or[CmpopExprPair*]: is not a=(bitwise_or | implicit_none)  { _PyPegen_cmpop_expr_pair(p, IsNot, a) }
 is_bitwise_or[CmpopExprPair*]: is a=(bitwise_or | implicit_none) { _PyPegen_cmpop_expr_pair(p, Is, a) }
 
@@ -1126,13 +1127,9 @@ for_if_clauses[asdl_comprehension_seq*]:
     | a[asdl_comprehension_seq*]=for_if_clause+ { a }
 
 for_if_clause[comprehension_ty]:
-    | async for a=star_targets ':=' '*' ~ b=disjunction c[asdl_expr_seq*]=(if z=disjunction { z })* {
+    | async for a=star_targets in ~ b=disjunction c[asdl_expr_seq*]=(if z=disjunction { z })* {
         CHECK_VERSION(comprehension_ty, 6, "Async comprehensions are", _PyAST_comprehension(a, b, c, 1, p->arena)) }
-    | for a=star_targets ':=' '*' ~ b=disjunction c[asdl_expr_seq*]=(if z=disjunction { z })* {
-        _PyAST_comprehension(a, b, c, 0, p->arena) }
-    | async for a=star_targets 'in' ~ b=disjunction c[asdl_expr_seq*]=(if z=disjunction { z })* {
-        CHECK_VERSION(comprehension_ty, 6, "Async comprehensions are", _PyAST_comprehension(a, b, c, 1, p->arena)) }
-    | for a=star_targets 'in' ~ b=disjunction c[asdl_expr_seq*]=(if z=disjunction { z })* {
+    | for a=star_targets in ~ b=disjunction c[asdl_expr_seq*]=(if z=disjunction { z })* {
         _PyAST_comprehension(a, b, c, 0, p->arena) }
     | invalid_for_if_clause
     | invalid_for_target
@@ -1483,7 +1480,7 @@ invalid_with_item:
         RAISE_SYNTAX_ERROR_INVALID_TARGET(STAR_TARGETS, a) }
 
 invalid_for_if_clause:
-    | async? for (bitwise_or (',' bitwise_or)* [',']) !'in' {
+    | async? for (bitwise_or (',' bitwise_or)* [',']) !in {
         RAISE_SYNTAX_ERROR("'in' expected after for-loop variables") }
 
 invalid_for_target:
