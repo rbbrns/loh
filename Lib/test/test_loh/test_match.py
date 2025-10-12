@@ -13,7 +13,7 @@ class Tests(unittest.TestCase):
                 ^^^ AssertionError
         assert case_ran == 1
 
-        ? x ==:
+        ?== x:
             1:
                 case_ran = 1
             2:
@@ -23,7 +23,7 @@ class Tests(unittest.TestCase):
         assert case_ran == 1
 
         x = -1
-        ? x ==:
+        ?== x:
             1:
                 ^^^ AssertionError
             2:
@@ -33,16 +33,18 @@ class Tests(unittest.TestCase):
         assert guard_ran
 
         x = 'str'
-        ? x ==:
+        ?== x:
             str() => s:
                 str_ran = s
         assert str_ran == 'str'
 
         x = 2
-        match y:= x:
+        match y := x:
             case 2:
                 case_ran = y
             case _:
                 ^^^ AssertionError
+
+        
         assert case_ran == 2
                 

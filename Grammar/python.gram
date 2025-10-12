@@ -150,6 +150,7 @@ import: ( 'import' | '<.' )
 lambda_postfix: ( '->' )
 type: ( "type" | ':' )
 in: ( 'in' | '<~' )
+match: ( "match" | '?==' )
 
 
 dot[expr_ty]:
@@ -567,9 +568,7 @@ finally_block[asdl_stmt_seq*]:
 # ---------------
 
 match_stmt[stmt_ty]:
-    | "match" subject=subject_expr ':' NEWLINE INDENT cases[asdl_match_case_seq*]=case_block+ DEDENT {
-        CHECK_VERSION(stmt_ty, 10, "Pattern matching is", _PyAST_Match(subject, cases, EXTRA)) }
-    | '?' subject=subject_expr '==' ':' NEWLINE INDENT cases[asdl_match_case_seq*]=case_block+ DEDENT {
+    | match subject=subject_expr ':' NEWLINE INDENT cases[asdl_match_case_seq*]=case_block+ DEDENT {
         CHECK_VERSION(stmt_ty, 10, "Pattern matching is", _PyAST_Match(subject, cases, EXTRA)) }
     | invalid_match_stmt
 
@@ -1556,9 +1555,9 @@ invalid_except_star_stmt_indent:
     | a=except '*' expression [as NAME ] ':' NEWLINE !INDENT {
         RAISE_INDENTATION_ERROR("expected an indented block after 'except*' statement on line %d", 0) }
 invalid_match_stmt:
-    | "match" subject_expr NEWLINE { CHECK_VERSION(void*, 10, "Pattern matching is", RAISE_SYNTAX_ERROR("expected ':'") ) }
-    | a="match" subject=subject_expr ':' NEWLINE !INDENT {
-        RAISE_INDENTATION_ERROR("expected an indented block after 'match' statement on line %d", a->lineno) }
+    | match subject_expr NEWLINE { CHECK_VERSION(void*, 10, "Pattern matching is", RAISE_SYNTAX_ERROR("expected ':'") ) }
+    | a=match subject=subject_expr ':' NEWLINE !INDENT {
+        RAISE_INDENTATION_ERROR("expected an indented block after 'match' statement") }
 invalid_case_block:
     | "case" patterns guard? NEWLINE { RAISE_SYNTAX_ERROR("expected ':'") }
     | a="case" patterns guard? ':' NEWLINE !INDENT {

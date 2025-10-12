@@ -122,6 +122,10 @@ LESSTILDE              '<~'
 DOTGREATER             '.>'
 # import
 LESSDOT                '<.'
+# dummy match
+QUESTIONEQUAL          '?='
+# match
+QUESTIONDOUBLEEQUAL    '?=='
 
 OP
 TYPE_IGNORE
