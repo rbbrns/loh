@@ -203,9 +203,16 @@ assignment_none[stmt_ty]:
     | a=single_target b=augassign &(';' | NEWLINE | ENDMARKER) {
          _PyAST_AugAssign(a, b->kind,  _PyAST_Constant(Py_None, NULL, EXTRA), EXTRA) }
 
+assignment_implicit[stmt_ty]:
+    | '=' a=NAME &(';' | NEWLINE | ENDMARKER) {
+         _PyAST_Assign(CHECK(asdl_expr_seq*, _PyPegen_singleton_seq(p, a)), _PyPegen_set_expr_context(p, a, Load), NULL, EXTRA) }
+    | '=' a=t_primary '.' b=NAME &(';' | NEWLINE | ENDMARKER) {
+         _PyAST_Assign(CHECK(asdl_expr_seq*, _PyPegen_singleton_seq(p, _PyPegen_set_expr_context(p, b, Store))), _PyAST_Attribute(a, b->v.Name.id, Load, EXTRA), NULL, EXTRA) }
+
 # NOTE: annotated_rhs may start with 'yield'; yield_expr must start with 'yield'
 assignment[stmt_ty]:
     | assignment_none
+    | assignment_implicit
     | a=NAME ':' b=expression c=['=' d=annotated_rhs { d }] {
         CHECK_VERSION(
             stmt_ty,
@@ -440,6 +447,12 @@ param_no_default_star_annotation[arg_ty]:
 param_with_default[NameDefaultPair*]:
     | a=param c=default ',' tc=TYPE_COMMENT? { _PyPegen_name_default_pair(p, a, c, tc) }
     | a=param c=default tc=TYPE_COMMENT? &')' { _PyPegen_name_default_pair(p, a, c, tc) }
+    | param_implicit
+param_implicit[NameDefaultPair*]:
+    | '=' a=NAME ',' { _PyPegen_name_default_pair(p, _PyAST_arg(a->v.Name.id, NULL, NULL, EXTRA), a, NULL) }
+    | '=' a=NAME &')' { _PyPegen_name_default_pair(p, _PyAST_arg(a->v.Name.id, NULL, NULL, EXTRA), a, NULL) }
+    | '=' a=t_primary '.' b=NAME ',' { _PyPegen_name_default_pair(p, _PyAST_arg(b->v.Name.id, NULL, NULL, EXTRA), _PyAST_Attribute(a, b->v.Name.id, Load, EXTRA), NULL) }
+    | '=' a=t_primary '.' b=NAME &')' { _PyPegen_name_default_pair(p, _PyAST_arg(b->v.Name.id, NULL, NULL, EXTRA), _PyAST_Attribute(a, b->v.Name.id, Load, EXTRA), NULL) }
 param_maybe_default[NameDefaultPair*]:
     | a=param c=default? ',' tc=TYPE_COMMENT? { _PyPegen_name_default_pair(p, a, c, tc) }
     | a=param c=default? tc=TYPE_COMMENT? &')' { _PyPegen_name_default_pair(p, a, c, tc) }
@@ -1184,6 +1197,10 @@ kwarg_or_starred[KeywordOrStarred*]:
     | invalid_kwarg
     | a=NAME '=' &(',' | ')' | '}') {
         _PyPegen_keyword_or_starred(p, CHECK(keyword_ty, _PyAST_keyword(a->v.Name.id, _PyAST_Constant(Py_None, NULL, EXTRA), EXTRA)), 1) }
+    | '=' a=NAME  &(',' | ')' | '}') {
+        _PyPegen_keyword_or_starred(p, CHECK(keyword_ty, _PyAST_keyword(a->v.Name.id, a, EXTRA)), 1) }
+    | '=' a=t_primary '.' b=NAME  &(',' | ')' | '}') {
+        _PyPegen_keyword_or_starred(p, CHECK(keyword_ty, _PyAST_keyword(b->v.Name.id, _PyAST_Attribute(a, b->v.Name.id, Load, EXTRA), EXTRA)), 1) }
     | a=NAME '=' b=expression {
         _PyPegen_keyword_or_starred(p, CHECK(keyword_ty, _PyAST_keyword(a->v.Name.id, b, EXTRA)), 1) }
     | a=starred_expression { _PyPegen_keyword_or_starred(p, a, 0) }
