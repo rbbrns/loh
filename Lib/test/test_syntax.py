@@ -1655,7 +1655,7 @@ Specialized indentation errors:
    >>> match something:
    ... pass
    Traceback (most recent call last):
-   IndentationError: expected an indented block after 'match' statement on line 1
+   IndentationError: expected an indented block after 'match' statement
 
    >>> match something:
    ...     case []:
