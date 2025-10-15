@@ -1069,6 +1069,8 @@ _PyPegen_get_expr_name(expr_ty e)
             return "lambda";
         case Call_kind:
             return "function call";
+        case Pipe_kind:
+            return "pipe expression";
         case BoolOp_kind:
         case BinOp_kind:
         case UnaryOp_kind:

@@ -1996,6 +1996,80 @@ codegen_ifexp(compiler *c, expr_ty e)
 }
 
 static int
+codegen_pipe(compiler *c, expr_ty e)
+{
+    /* Compile pipe operator: left |> right (Python 3.11+)
+     * 
+     * Transforms:
+     *   x |> f        into f(x)
+     *   x |> f |> g   into g(f(x))
+     * 
+     * For chains like: a |> f |> g |> h
+     * We generate: h(g(f(a)))
+     * 
+     * Python 3.11+ calling convention:
+     *   Stack layout for CALL: [NULL, function, arg1, arg2, ...]
+     *   We need to set up this exact layout for each call
+     */
+    
+    assert(e->kind == Pipe_kind);
+    location loc = LOC(e);
+    
+    /* Compile the leftmost expression (the initial value) */
+    VISIT(c, expr, e->v.Pipe.left);
+    
+    /* Process the pipe chain */
+    expr_ty current = e->v.Pipe.right;
+    
+    while (current) {
+        if (current->kind == Pipe_kind) {
+            /* Middle function in a chain: compile it and call */
+            VISIT(c, expr, current->v.Pipe.left);
+            
+            /* Stack is now: [value, function]
+             * We need:      [NULL, function, value]
+             */
+            ADDOP(c, loc, PUSH_NULL);
+            /* Stack: [value, function, NULL] */
+            
+            ADDOP_I(c, loc, SWAP, 2);
+            /* Stack: [value, NULL, function] */
+            
+            ADDOP_I(c, loc, SWAP, 3);
+            /* Stack: [NULL, function, value] */
+            
+            /* Call with 1 argument */
+            ADDOP_I(c, loc, CALL, 1);
+            /* Stack: [result] */
+            
+            /* Continue with the rest of the chain */
+            current = current->v.Pipe.right;
+        }
+        else {
+            /* Last function in the chain */
+            VISIT(c, expr, current);
+            /* Stack: [value, function] */
+            
+            ADDOP(c, loc, PUSH_NULL);
+            /* Stack: [value, function, NULL] */
+            
+            ADDOP_I(c, loc, SWAP, 2);
+            /* Stack: [value, NULL, function] */
+            
+            ADDOP_I(c, loc, SWAP, 3);
+            /* Stack: [NULL, function, value] */
+            
+            ADDOP_I(c, loc, CALL, 1);
+            /* Stack: [result] */
+            
+            break;
+        }
+    }
+    
+    return SUCCESS;
+}
+
+static int
 codegen_lambda(compiler *c, expr_ty e)
 {
     PyCodeObject *co;
@@ -5196,6 +5270,9 @@ codegen_visit_expr(compiler *c, expr_ty e)
         else {
             ADDOP(c, loc, unaryop(e->v.UnaryOp.op));
         }
+        break;
+    case Pipe_kind:
+        codegen_pipe(c, e);
         break;
     case Lambda_kind:
         return codegen_lambda(c, e);

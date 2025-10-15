@@ -2405,6 +2405,10 @@ symtable_visit_expr(struct symtable *st, expr_ty e)
         VISIT(st, expr, e->v.BinOp.left);
         VISIT(st, expr, e->v.BinOp.right);
         break;
+    case Pipe_kind:
+        VISIT(st, expr, e->v.Pipe.left);
+        VISIT(st, expr, e->v.Pipe.right);
+        break;
     case UnaryOp_kind:
         VISIT(st, expr, e->v.UnaryOp.operand);
         break;

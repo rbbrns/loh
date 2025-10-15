@@ -126,6 +126,8 @@ LESSDOT                '<.'
 QUESTIONEQUAL          '?='
 # match
 QUESTIONDOUBLEEQUAL    '?=='
+# pipe
+VBARGREATER             '|>'
 
 OP
 TYPE_IGNORE
