@@ -128,6 +128,8 @@ QUESTIONEQUAL          '?='
 QUESTIONDOUBLEEQUAL    '?=='
 # pipe
 VBARGREATER             '|>'
+# is_not
+NOTEQUALEQUAL           '!=='
 # del
 LESSGREATER             '<>'
 

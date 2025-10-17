@@ -139,6 +139,7 @@ while: ( 'while' | '$?' )
 break: ( 'break' | '$>>' )
 continue: ( 'continue' | '$<<' )
 is: ( 'is' | '===' )
+is_not: ( '!==' )
 async: ( 'async' | '%' )
 await: ( 'await' | '%' )
 return: ( 'return' | '->' )
@@ -902,7 +903,7 @@ gte_bitwise_or[CmpopExprPair*]: '>=' a=bitwise_or { _PyPegen_cmpop_expr_pair(p, 
 gt_bitwise_or[CmpopExprPair*]: '>' a=bitwise_or { _PyPegen_cmpop_expr_pair(p, Gt, a) }
 notin_bitwise_or[CmpopExprPair*]: not in a=bitwise_or { _PyPegen_cmpop_expr_pair(p, NotIn, a) }
 in_bitwise_or[CmpopExprPair*]: in a=bitwise_or { _PyPegen_cmpop_expr_pair(p, In, a) }
-isnot_bitwise_or[CmpopExprPair*]: is not a=(bitwise_or | implicit_none)  { _PyPegen_cmpop_expr_pair(p, IsNot, a) }
+isnot_bitwise_or[CmpopExprPair*]: ((is not)|is_not) a=(bitwise_or | implicit_none)  { _PyPegen_cmpop_expr_pair(p, IsNot, a) }
 is_bitwise_or[CmpopExprPair*]: is a=(bitwise_or | implicit_none) { _PyPegen_cmpop_expr_pair(p, Is, a) }
 
 # Bitwise operators

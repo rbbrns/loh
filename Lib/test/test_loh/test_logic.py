@@ -16,6 +16,13 @@ class Tests(unittest.TestCase):
         assert False == --
         assert -- == False
 
+    def test_is_not(self):
+        x = [1,2]
+        y = [1,2]
+        assert x == y
+        assert x !== y
+        assert x is not y
+
     def test_none(self):
         assert not ~
         assert ~ is None
