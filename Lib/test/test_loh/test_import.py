@@ -5,7 +5,7 @@ class Tests(unittest.TestCase):
         import math
         assert math.sqrt(4) == 2
         
-        => math
+        <> math
         <. math
         assert math.sqrt(4) == 2
 

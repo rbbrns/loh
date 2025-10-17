@@ -178,7 +178,7 @@ def generate_chars_to_token(mapping, n=1):
 
 def make_c(infile, outfile='Parser/token.c'):
     tok_names, ERRORTOKEN, string_to_tok = load_tokens(infile)
-    string_to_tok['<>'] = string_to_tok['!=']
+    # string_to_tok['<>'] = string_to_tok['!=']
     chars_to_token = {}
     for string, value in string_to_tok.items():
         assert 1 <= len(string) <= 3

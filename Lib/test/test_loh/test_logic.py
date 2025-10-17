@@ -59,7 +59,7 @@ class Tests(unittest.TestCase):
             print(x)
 
         x = 1
-        =>x
+        <> x
         with self.assertRaises(NameError):
             print(x)
 

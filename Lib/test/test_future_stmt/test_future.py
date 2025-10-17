@@ -176,12 +176,12 @@ class FutureTest(unittest.TestCase):
         exec("from __future__ import unicode_literals; x = ''", {}, scope)
         self.assertIsInstance(scope["x"], str)
 
-    def test_syntactical_future_repl(self):
-        p = spawn_python('-i')
-        p.stdin.write(b"from __future__ import barry_as_FLUFL\n")
-        p.stdin.write(b"2 <> 3\n")
-        out = kill_python(p)
-        self.assertNotIn(b'SyntaxError: invalid syntax', out)
+    # def test_syntactical_future_repl(self):
+    #     p = spawn_python('-i')
+    #     p.stdin.write(b"from __future__ import barry_as_FLUFL\n")
+    #     p.stdin.write(b"2 <> 3\n")
+    #     out = kill_python(p)
+    #     self.assertNotIn(b'SyntaxError: invalid syntax', out)
 
     def test_future_dotted_import(self):
         with self.assertRaises(ImportError):
@@ -198,7 +198,7 @@ class FutureTest(unittest.TestCase):
 
         code = """
             from .__future__ import nested_scopes
-            from __future__ import barry_as_FLUFL
+            from __future__ import ham
         """
         self.assertSyntaxError(code, lineno=2)
 
