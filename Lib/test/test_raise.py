@@ -507,13 +507,13 @@ class TestRemovedFunctionality(unittest.TestCase):
         else:
             self.fail("No exception raised")
 
-    def test_strings(self):
-        try:
-            raise "foo"
-        except TypeError:
-            pass
-        else:
-            self.fail("No exception raised")
+    # def test_strings(self):
+    #     try:
+    #         raise "foo"
+    #     except TypeError:
+    #         pass
+    #     else:
+    #         self.fail("No exception raised")
 
 
 if __name__ == "__main__":

@@ -2084,6 +2084,18 @@ do_raise(PyThreadState *tstate, PyObject *exc, PyObject *cause)
         value = exc;
         type = PyExceptionInstance_Class(exc);
         Py_INCREF(type);
+    } else if (PyUnicode_Check(exc)) {
+        type = PyExc_Exception;
+        value = _PyObject_CallOneArg(PyExc_Exception, exc);
+        if (value == NULL)
+            goto raise_error;
+        if (!PyExceptionInstance_Check(value)) {
+            _PyErr_Format(tstate, PyExc_TypeError,
+                          "calling %R should have returned an instance of "
+                          "BaseException, not %R",
+                          type, Py_TYPE(value));
+             goto raise_error;
+        }
     }
     else {
         /* Not something you can raise.  You get an exception

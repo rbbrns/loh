@@ -133,6 +133,33 @@ class Tests(unittest.TestCase):
             self.assertIsInstance(e, Exception)
         self.assertEqual(seq, ['except'])
 
+    def test_raise_string(self):
+        with self.assertRaisesRegex(Exception, "Test1"):
+            ^^^ "Test1"
+
+        with self.assertRaisesRegex(Exception, "Test2"):
+            ^^^ "Test" "2"
+
+        with self.assertRaisesRegex(Exception, "Test3"):
+            ^^^ 'Test3'
+        
+        with self.assertRaisesRegex(Exception, "Test4"):
+            ^^^ f'Test{4}'
+
+        with self.assertRaisesRegex(Exception, "Test5"):
+            ^^^ str('Test5')
+
+        with self.assertRaisesRegex(BaseException, "exceptions must derive from BaseException"):
+            ^^^ 100
+
+    def test_raise_string_from(self):
+        with self.assertRaisesRegex(Exception, "Level 2") as cm:
+            try:
+                ^^^ "Level 1"
+            except Exception as e:
+                assert("Level 1" in str(e))
+                ^^^ "Level 2" from e
+
 
 
 

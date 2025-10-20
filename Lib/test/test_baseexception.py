@@ -185,9 +185,9 @@ class UsageTests(unittest.TestCase):
         self.raise_fails(NewStyleClass)
         self.raise_fails(NewStyleClass())
 
-    def test_raise_string(self):
-        # Raising a string raises TypeError.
-        self.raise_fails("spam")
+    # def test_raise_string(self):
+    #     # Raising a string raises TypeError.
+    #     self.raise_fails("spam")
 
     def test_catch_non_BaseException(self):
         # Trying to catch an object that does not inherit from BaseException
