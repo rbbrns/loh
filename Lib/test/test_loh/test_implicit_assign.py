@@ -69,6 +69,30 @@ class Tests(unittest.TestCase):
         assert a == 1
         assert b == 2
 
+    def test_implicit_false_true(self):
+        def foo(a++, b--):
+            return a, b
+
+        assert foo() == (True, False)
+
+        def foo(a ++, b --):
+            return a, b
+
+        assert foo() == (True, False)
+        # assert foo(a--, b++) == (False, True)
+
+        x++
+        y--
+
+        assert x == True
+        assert x === True
+        assert y == False
+        assert y === False
+
+
+
+    
+
 
 
 

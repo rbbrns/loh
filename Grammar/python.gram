@@ -204,6 +204,18 @@ assignment_none[stmt_ty]:
     | a=single_target b=augassign &(';' | NEWLINE | ENDMARKER) {
          _PyAST_AugAssign(a, b->kind,  _PyAST_Constant(Py_None, NULL, EXTRA), EXTRA) }
 
+assignment_true[stmt_ty]:
+    | a=NAME '++' &(';' | NEWLINE | ENDMARKER) {
+         _PyAST_Assign(CHECK(asdl_expr_seq*, _PyPegen_singleton_seq(p, _PyPegen_set_expr_context(p, a, Store))),  _PyAST_Constant(Py_True, NULL, EXTRA), NULL, EXTRA) }
+    | a=t_primary '.' b=NAME '++' &(';' | NEWLINE | ENDMARKER) {
+         _PyAST_Assign(CHECK(asdl_expr_seq*, _PyPegen_singleton_seq(p, _PyPegen_set_expr_context(p, b, Store))),  _PyAST_Constant(Py_True, NULL, EXTRA), NULL, EXTRA) }
+
+assignment_false[stmt_ty]:
+    | a=NAME '--' &(';' | NEWLINE | ENDMARKER) {
+         _PyAST_Assign(CHECK(asdl_expr_seq*, _PyPegen_singleton_seq(p, _PyPegen_set_expr_context(p, a, Store))),  _PyAST_Constant(Py_False, NULL, EXTRA), NULL, EXTRA) }
+    | a=t_primary '.' b=NAME '--' &(';' | NEWLINE | ENDMARKER) {
+         _PyAST_Assign(CHECK(asdl_expr_seq*, _PyPegen_singleton_seq(p, _PyPegen_set_expr_context(p, b, Store))),  _PyAST_Constant(Py_False, NULL, EXTRA), NULL, EXTRA) }
+
 assignment_implicit[stmt_ty]:
     | '=' a=NAME &(';' | NEWLINE | ENDMARKER) {
          _PyAST_Assign(CHECK(asdl_expr_seq*, _PyPegen_singleton_seq(p, _PyPegen_set_expr_context(p, a, Store))), _PyPegen_set_expr_context(p, a, Load), NULL, EXTRA) }
@@ -213,6 +225,8 @@ assignment_implicit[stmt_ty]:
 # NOTE: annotated_rhs may start with 'yield'; yield_expr must start with 'yield'
 assignment[stmt_ty]:
     | assignment_none
+    | assignment_true
+    | assignment_false
     | assignment_implicit
     | a=NAME ':' b=expression c=['=' d=annotated_rhs { d }] {
         CHECK_VERSION(
@@ -454,6 +468,8 @@ param_implicit[NameDefaultPair*]:
     | '=' a=NAME &')' { _PyPegen_name_default_pair(p, _PyAST_arg(a->v.Name.id, NULL, NULL, EXTRA), a, NULL) }
     | '=' a=t_primary '.' b=NAME ',' { _PyPegen_name_default_pair(p, _PyAST_arg(b->v.Name.id, NULL, NULL, EXTRA), _PyAST_Attribute(a, b->v.Name.id, Load, EXTRA), NULL) }
     | '=' a=t_primary '.' b=NAME &')' { _PyPegen_name_default_pair(p, _PyAST_arg(b->v.Name.id, NULL, NULL, EXTRA), _PyAST_Attribute(a, b->v.Name.id, Load, EXTRA), NULL) }
+    | a=NAME '++' ',' { _PyPegen_name_default_pair(p, _PyAST_arg(a->v.Name.id, NULL, NULL, EXTRA), _PyAST_Constant(Py_True, NULL, EXTRA), NULL) }
+    | a=NAME '--' &')' { _PyPegen_name_default_pair(p, _PyAST_arg(a->v.Name.id, NULL, NULL, EXTRA), _PyAST_Constant(Py_False, NULL, EXTRA), NULL) }
 param_maybe_default[NameDefaultPair*]:
     | a=param c=default? ',' tc=TYPE_COMMENT? { _PyPegen_name_default_pair(p, a, c, tc) }
     | a=param c=default? tc=TYPE_COMMENT? &')' { _PyPegen_name_default_pair(p, a, c, tc) }
@@ -840,8 +856,7 @@ star_named_expressions[asdl_expr_seq*]: a[asdl_expr_seq*]=','.star_named_express
 
 star_named_expression[expr_ty]:
     | '*' a=bitwise_or { _PyAST_Starred(a, Load, EXTRA) }
-    | named_expression 
-    | implicit_none_arg
+    | named_expression
 
 assignment_expression[expr_ty]:
     | a=NAME ':=' ~ b=expression {
@@ -1169,8 +1184,6 @@ dictcomp[expr_ty]:
 # FUNCTION CALL ARGUMENTS
 # =======================
 
-implicit_none_arg[expr_ty]: &',' { _PyAST_Constant(Py_None, NULL, EXTRA) }
-
 arguments_no_paren[expr_ty] (memo):
     | a=args [','] { a }
     | invalid_arguments
@@ -1180,7 +1193,7 @@ arguments[expr_ty] (memo):
     | invalid_arguments
 
 args[expr_ty]:
-    | a[asdl_expr_seq*]=','.(starred_expression | (( assignment_expression | expression !':=') !'=') | (implicit_none_arg !( '=' | ')' )))+ b=[',' k=kwargs {k}] {
+    | a[asdl_expr_seq*]=','.(starred_expression | (( assignment_expression | expression !':=') !'=') )+ b=[',' k=kwargs {k}] {
         _PyPegen_collect_call_seqs(p, a, b, EXTRA) }
     | a=kwargs { _PyAST_Call(_PyPegen_dummy_name(p),
                           CHECK_NULL_ALLOWED(asdl_expr_seq*, _PyPegen_seq_extract_starred_exprs(p, a)),
@@ -1205,6 +1218,10 @@ kwarg_or_starred[KeywordOrStarred*]:
         _PyPegen_keyword_or_starred(p, CHECK(keyword_ty, _PyAST_keyword(a->v.Name.id, a, EXTRA)), 1) }
     | '=' a=t_primary '.' b=NAME  &(',' | ')' | '}') {
         _PyPegen_keyword_or_starred(p, CHECK(keyword_ty, _PyAST_keyword(b->v.Name.id, _PyAST_Attribute(a, b->v.Name.id, Load, EXTRA), EXTRA)), 1) }
+    | a=NAME '++'  &(',' | ')' | '}') {
+        _PyPegen_keyword_or_starred(p, CHECK(keyword_ty, _PyAST_keyword(a->v.Name.id, _PyAST_Constant(Py_True, NULL, EXTRA), EXTRA)), 1) }
+    | a=NAME '--'  &(',' | ')' | '}') {
+        _PyPegen_keyword_or_starred(p, CHECK(keyword_ty, _PyAST_keyword(a->v.Name.id, _PyAST_Constant(Py_False, NULL, EXTRA), EXTRA)), 1) }
     | a=NAME '=' b=expression {
         _PyPegen_keyword_or_starred(p, CHECK(keyword_ty, _PyAST_keyword(a->v.Name.id, b, EXTRA)), 1) }
     | a=starred_expression { _PyPegen_keyword_or_starred(p, a, 0) }

@@ -2779,7 +2779,7 @@ class SyntaxErrorTestCase(unittest.TestCase):
         self._check_error("f() = 1", "assign")
 
     def test_assign_del(self):
-        self._check_error("del (,)", "cannot delete None")
+        self._check_error("del (,)", "invalid syntax")
         self._check_error("del 1", "cannot delete literal")
         self._check_error("del (1, 2)", "cannot delete literal")
         self._check_error("del None", "cannot delete None")
