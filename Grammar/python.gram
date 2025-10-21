@@ -832,6 +832,7 @@ expression[expr_ty] (memo):
     | invalid_legacy_expression
     | pipe_expression
     | a=disjunction if b=disjunction else c=expression { _PyAST_IfExp(b, a, c, EXTRA) }
+    | a=disjunction if b=disjunction { _PyAST_IfExp(b, a, _PyAST_Constant(Py_None, NULL, EXTRA), EXTRA) }
     | lambdef
     | disjunction
 

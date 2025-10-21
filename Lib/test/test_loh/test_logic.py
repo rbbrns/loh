@@ -76,5 +76,12 @@ class Tests(unittest.TestCase):
         assert 'a' not <~ 'def'
         assert 'a' ~~ <~ 'def'        
 
+    def test_just_if_expression(self):
+        assert (True if True) is True
+        assert (True if False) is None
+
+        assert (True ? True) is True
+        assert (False ? False) is None
+
 if __name__ == "__main__":
     unittest.main()
