@@ -1,15 +1,15 @@
 # **Loh: A Superset of Python**
 
-Welcome to **Loh** is superset of the Python syntax focused on making Python more concise, intuitive, and enjoyable to read and write. Loh provides symbol-based alternatives for all Python keywords and introduces extra syntactic sugar to reduce boilerplate and improve clarity.
+**Loh** is superset of the Python syntax focused on making Python more concise, intuitive, and enjoyable to read and write. Loh provides symbol-based alternatives for all Python keywords and adds extra syntactic sugar to reduce boilerplate code.
 
 Since Loh is a superset, **all existing Python code is valid Loh code**.
 
 ## Getting Started
 ```
-./configure --prefix=$INSTALL_DIR
+./configure
 make regen-all
-make install
-ln -s /usr/local/bin/loh $INSTALL_DIR/bin/python3 
+make
+ln -s /usr/local/bin/loh ./python
 ```
 
 ## Keyword Mapping
@@ -19,16 +19,19 @@ Loh provides symbolic aliases for Python's keywords.
 | **Python** |    **Loh**      |
 | ---------- | --------------- |
 | True       | ++              |
+| x = True    | x++            |
 | False      | --              |
+| x = False   | x--
 | None       | \~  *or Implict*|
 | and        | &&              |
 | or         | \|\|            |
-| not        | \~\~ or !!!     |
+| not        |   !             |
 | is         | ===             |
+| is not     | !==.             |
 | in         | <\~             |
 | if         | ?               |
-| else       | ?!              |
-| elif       | ?!?             |
+| else       | ??              |
+| elif       | ??            |
 | for        | $               |
 | while      | $?              |
 | break      | $>>             |
@@ -37,22 +40,23 @@ Loh provides symbolic aliases for Python's keywords.
 | except     | ?^              |
 | finally    | ?\*             |
 | raise      | ^^^             |
+| raise Exception("msg") | ^^^ "msg" |
 | assert     | ^?!             |
+| assert not | ^?              |
 | with       | &               |
 | as         | =>              |
-| import     | <.              |
-| from       | .>              |
-| del        | =>              |
+| import     | /              |
+| from       | /              |
+| del        | <>              |
 | return     | ->              |
 | yield      | \~>             |
 | async      | %               |
 | await      | %               |
 | lambda     | (params)->...   |
-| pass       | ...             |
-| class      | Name::          |
+| class      | Name:params:    |
 | def        | (params):       |
 | type       | :               |
-| match      | ? ... ==:       |
+| match      | ? *subject* ==: |
 | case       | *pattern*:      |
 
 
@@ -63,7 +67,7 @@ Loh provides symbolic aliases for Python's keywords.
 if (x is True and y is not False) or z is None:
     print("Logic!")
 # Loh
-? (x === ++ && y === !!! --) || z ===:
+? (x === ++ && y === !!! --) || z === ~:
     print("Logic!")
 ```
 
@@ -80,9 +84,9 @@ else:
 # Loh
 ? score > 90:
     grade = 'A'
-?!? score > 80:
+?? score > 80:
     grade = 'B'
-?!:
+??:
     grade = 'C'
 ```
 
@@ -112,9 +116,11 @@ finally:\
 # Python
 import math
 from math import sqrt
+from math import floor as flr
 # Loh
-<. math
-.> math <. sqrt
+/math
+/math/sqrt
+/math/floor => flr
 ```
 
 ### Match
@@ -129,7 +135,7 @@ match status:
     case _:
         return "Something else"
 # Loh
-?== status:
+?status==:
     400:
         -> "Bad request"
     404:
@@ -142,17 +148,19 @@ match status:
 
 ```python
 # Python
-def foo(a=None, b=None):
-  ...
+def foo(a=None, b=False):
+  pass
     
 # Loh
-foo(a=, b=):
+foo(a=, b--):
     ...
 
 # Python
 x = None
+y = True
 # Loh
 x =
+y++
 
 # Python
 none_tuple = (None, None)
@@ -166,7 +174,6 @@ none_set = {,,}
 none_dict = {'a':, 'b':}
 
 ```
-
 
 ### Function Definition **
 ```python
@@ -225,11 +232,11 @@ for i in range(10):
     total += i
 # Loh
 total = 0
-$ i := range(10):
-    total += i
+$ i <~ range(10):
+      total += i
 
 # Python
 evens = [i for i in range(10) if i % 2 == 0]
 # Loh
-evens = [i $ i ~> range(10) ? i % 2 == 0]
+evens = [i $ i <~ range(10) ? i % 2 == 0]
 ```
