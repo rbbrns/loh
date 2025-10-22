@@ -377,7 +377,11 @@ function_def[stmt_ty]:
 
 function_def_raw[stmt_ty]:
     | invalid_def_raw
-    | ['def'] n=NAME t=[type_params] '(' params=[params] ')' a=['->' z=expression { z }] ':' tc=[func_type_comment] b=block {
+    | !"match" n=NAME t=[type_params] '(' params=[params] ')' a=['->' z=expression { z }] ':' tc=[func_type_comment] b=block {
+        _PyAST_FunctionDef(n->v.Name.id,
+                        (params) ? params : CHECK(arguments_ty, _PyPegen_empty_arguments(p)),
+                        b, NULL, a, NEW_TYPE_COMMENT(p, tc), t, EXTRA) }
+    | 'def' n=NAME t=[type_params] '(' params=[params] ')' a=['->' z=expression { z }] ':' tc=[func_type_comment] b=block {
         _PyAST_FunctionDef(n->v.Name.id,
                         (params) ? params : CHECK(arguments_ty, _PyPegen_empty_arguments(p)),
                         b, NULL, a, NEW_TYPE_COMMENT(p, tc), t, EXTRA) }
@@ -1389,7 +1393,7 @@ invalid_type_param:
 
 invalid_expression:
    | a=NAME ('++'|'--') {
-        RAISE_SYNTAX_ERROR_KNOWN_LOCATION(a, "implict true/false assignment is not a valid expression") }
+        RAISE_SYNTAX_ERROR_KNOWN_LOCATION(a, "implicit true/false assignment is not a valid expression") }
    |  STRING a=(!STRING expression_without_invalid)+ STRING {
         RAISE_SYNTAX_ERROR_KNOWN_RANGE( PyPegen_first_item(a, expr_ty), PyPegen_last_item(a, expr_ty),
         "invalid syntax. Is this intended to be part of the string?") }
