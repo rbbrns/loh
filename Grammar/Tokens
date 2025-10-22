@@ -60,16 +60,10 @@ ELLIPSIS                '...'
 COLONEQUAL              ':='
 EXCLAMATION             '!'
 
-# True
-DOUBLEEXCLAMATION       '!!'
-# Fasle
-TRIPLEEXCLAMATION       '!!!'
 # and
 DOUBLEAMPERS            '&&'
 # or
 DOUBLEVBAR              '||'
-# not
-DOUBLETILDE             '~~'
 # if
 QUESTION                '?'
 # elif

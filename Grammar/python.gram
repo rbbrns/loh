@@ -123,7 +123,7 @@ true: ( 'True' | '++' )
 none:  ( 'None' | '~' )
 and: ( 'and' | '&&' )
 or: ( 'or' | '||' )
-not: ( 'not' | '~~' | '!!!' )
+not: ( 'not' | '!' )
 if: ( 'if' | '?' )
 elif: ( 'elif' | '?!?' )
 else: ( 'else' | '?!' )
@@ -963,7 +963,7 @@ term[expr_ty]:
 factor[expr_ty] (memo):
     | '+' a=factor { _PyAST_UnaryOp(UAdd, a, EXTRA) }
     | '-' a=factor { _PyAST_UnaryOp(USub, a, EXTRA) }
-    | '~' !'~' a=factor { _PyAST_UnaryOp(Invert, a, EXTRA) }
+    | '~' a=factor { _PyAST_UnaryOp(Invert, a, EXTRA) }
     | power
 
 power[expr_ty]:

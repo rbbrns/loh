@@ -68,7 +68,7 @@ class TracebackCases(unittest.TestCase):
             raise ValueError("call did not raise exception")
 
     def syntax_error_with_caret(self):
-        compile("def fact(x):\n\treturn x!\n", "?", "exec")
+        compile("def fact(x):\n\treturn x$\n", "?", "exec")
 
     def syntax_error_with_caret_2(self):
         compile("1 +\n", "?", "exec")
@@ -92,9 +92,9 @@ class TracebackCases(unittest.TestCase):
         err = self.get_exception_format(self.syntax_error_with_caret,
                                         SyntaxError)
         self.assertEqual(len(err), 4)
-        self.assertEqual(err[1].strip(), "return x!")
+        self.assertEqual(err[1].strip(), "return x$")
         self.assertIn("^", err[2]) # third line has caret
-        self.assertEqual(err[1].find("!"), err[2].find("^")) # in the right place
+        self.assertEqual(err[1].find("$"), err[2].find("^")) # in the right place
         self.assertEqual(err[2].count("^"), 1)
 
         err = self.get_exception_format(self.syntax_error_with_caret_2,

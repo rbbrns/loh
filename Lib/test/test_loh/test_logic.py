@@ -38,26 +38,37 @@ class Tests(unittest.TestCase):
         assert False || True
 
     def test_not(self):
-        assert ~~ ~~ True
-        assert ~~~~ True
-        assert ~~ False
+        assert !! True
+        assert ! False
+        assert !False
+        assert! False
+        assert!False
 
-        assert !!! False
+        ^?! !! ++
+        ^?! ! --
+        ^?!!--
 
-        if !!! False:
-            if_ran = True
+        if_ran--
+        if ! False:
+            if_ran++
         assert if_ran
 
-        if !!!!!! True:
-            if_ran2 = False
-        assert not if_ran2
+        if_ran--
+        ? ! --:
+            if_ran++
+        assert if_ran
+
+        assert True ? ! False
+        assert False ? ! True ?! ! False
+        
+        assert ! False
 
     def test_is(self):
         assert True === True
         assert False === False
         assert True === not False
-        assert True === ~~ False
-        assert ++===!!!--
+        assert True === !False
+        assert ++ === !--
 
     def test_del(self):
         x = 1
@@ -74,7 +85,7 @@ class Tests(unittest.TestCase):
     def test_in(self):
         assert 'a' <~ 'abc'
         assert 'a' not <~ 'def'
-        assert 'a' ~~ <~ 'def'        
+        assert 'a' !<~ 'def'        
 
     def test_just_if_expression(self):
         assert (True if True) is True

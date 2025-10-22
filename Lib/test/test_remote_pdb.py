@@ -395,7 +395,7 @@ class PdbClientTestCase(unittest.TestCase):
         """Test re-prompting after a SyntaxError in a Python expression."""
         incoming = [
             ("server", {"prompt": ">>> ", "state": "interact"}),
-            ("user", {"prompt": ">>> ", "input": "!lst ["}),
+            ("user", {"prompt": ">>> ", "input": "^lst ["}),
             ("user", {"prompt": ">>> ", "input": "lst ["}),
             ("user", {"prompt": "... ", "input": " 0 ]"}),
         ]

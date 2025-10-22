@@ -232,7 +232,7 @@ class ExceptionTests(unittest.TestCase):
 
     def testSyntaxErrorOffset(self):
         check = self.check
-        check('def fact(x):\n\treturn x!\n', 2, 10)
+        check('def fact(x):\n\treturn x$\n', 2, 10)
         check('1 +\n', 1, 4)
         check('def spam():\n  print(1)\n print(2)', 3, 10)
         check('Python = "Python" +', 1, 20)
