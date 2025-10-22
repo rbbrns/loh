@@ -66,10 +66,10 @@ class Tests(unittest.TestCase):
         if not break: ^^^ AssertionError
 
         $ i := range(10): $>>
-        ? ~~ $>>: ^^^ AssertionError
+        ? ! $>>: ^^^ AssertionError
 
         $ i := range(10): $>>
-        ?~~$>>: ^^^ AssertionError
+        ?!$>>: ^^^ AssertionError
 
     def test_for_comprehension(self):
         self.assertEqual([ i $ i in range(10) ], list(range(10)))
@@ -140,13 +140,13 @@ class Tests(unittest.TestCase):
             ^^^ AssertionError
 
         $?++:$>>
-        if ~~ $>>:
+        ?!$>>:
             ^^^ AssertionError
 
         $?++:$>>
-        ? ~~ $>>:
+        ? ! $>>:
             ^^^ AssertionError
 
         $?++:$>>
-        ?~~$>>:
+        ?!$>>:
             ^^^ AssertionError

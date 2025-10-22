@@ -49,7 +49,7 @@ class Tests(unittest.TestCase):
         ^?!!--
 
         if_ran--
-        if ! False:
+        ? ! False:
             if_ran++
         assert if_ran
 
@@ -58,8 +58,9 @@ class Tests(unittest.TestCase):
             if_ran++
         assert if_ran
 
-        assert True ? ! False
-        assert False ? ! True ?! ! False
+        assert True ?! False
+        assert False ?! True ?? True
+        assert False ?! True ??! False
         
         assert ! False
 

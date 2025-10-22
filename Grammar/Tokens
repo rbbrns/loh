@@ -66,10 +66,8 @@ DOUBLEAMPERS            '&&'
 DOUBLEVBAR              '||'
 # if
 QUESTION                '?'
-# elif
-QUESTIONQUESTION        '?!?'
-# else
-QUESTIONEXCLAMATION     '?!'
+# else / elsif
+QUESTIONQUESTION        '??'
 # assert_if
 CIRCUMFLEXQUESTION      '^?'
 # assert
@@ -80,12 +78,6 @@ DOUBLECIRCUMFLEX        '^^'
 TRIPLECIRCUMFLEX        '^^^'
 # try
 TILDECIRCUMFLEX         '~^'
-# except
-QUESTIONCIRCUMFLEX      '?^'
-# try_else
-QUESTIONEXCLAMATIONCIRCUMFLEX  '?!^'
-# finally
-QUESTIONASTERISK        '?*'
 # as
 EQUALRARROW             '=>'
 # for

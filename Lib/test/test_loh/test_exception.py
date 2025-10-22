@@ -13,7 +13,7 @@ class Tests(unittest.TestCase):
         ^?! ++
 
         # assert not false
-        ^?! ~~ --
+        ^?! ! --
 
     def test_raise(self):
         with self.assertRaises(ValueError):
@@ -34,6 +34,15 @@ class Tests(unittest.TestCase):
         ?^ ValueError:
             except_ran = True
         ?^: 
+            ^^^ AssertionError 
+        self.assertTrue(except_ran)
+
+        ~^: 
+            ^^^ ValueError
+            ^^^ AssertionError
+        ? ^ ValueError:
+            except_ran = True
+        ? ^: 
             ^^^ AssertionError 
         self.assertTrue(except_ran)
 
