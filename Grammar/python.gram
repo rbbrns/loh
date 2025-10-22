@@ -1194,7 +1194,7 @@ arguments[expr_ty] (memo):
     | invalid_arguments
 
 args[expr_ty]:
-    | a[asdl_expr_seq*]=','.(starred_expression | (( assignment_expression | expression !':=') !'=') )+ b=[',' k=kwargs {k}] {
+    | a[asdl_expr_seq*]=','.(starred_expression | (( assignment_expression | expression !':=') !('=' | '++' | '--')))+ b=[',' k=kwargs {k}] {
         _PyPegen_collect_call_seqs(p, a, b, EXTRA) }
     | a=kwargs { _PyAST_Call(_PyPegen_dummy_name(p),
                           CHECK_NULL_ALLOWED(asdl_expr_seq*, _PyPegen_seq_extract_starred_exprs(p, a)),
@@ -1389,6 +1389,8 @@ invalid_type_param:
         }
 
 invalid_expression:
+   | a=NAME ('++'|'--') {
+        RAISE_SYNTAX_ERROR_KNOWN_LOCATION(a, "implict true/false assignment is not a valid expression") }
    |  STRING a=(!STRING expression_without_invalid)+ STRING {
         RAISE_SYNTAX_ERROR_KNOWN_RANGE( PyPegen_first_item(a, expr_ty), PyPegen_last_item(a, expr_ty),
         "invalid syntax. Is this intended to be part of the string?") }

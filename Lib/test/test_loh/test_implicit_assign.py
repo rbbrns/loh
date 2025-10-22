@@ -79,7 +79,7 @@ class Tests(unittest.TestCase):
             return a, b
 
         assert foo() == (True, False)
-        # assert foo(a--, b++) == (False, True)
+        assert foo(a--, b++) == (False, True)
 
         x++
         y--
@@ -88,14 +88,3 @@ class Tests(unittest.TestCase):
         assert x === True
         assert y == False
         assert y === False
-
-
-
-    
-
-
-
-
-
-
-
