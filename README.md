@@ -19,19 +19,19 @@ Loh provides symbolic aliases for Python's keywords.
 | **Python** |    **Loh**      |
 | ---------- | --------------- |
 | True       | ++              |
-| x = True    | x++            |
+| x = True   | x++             |
 | False      | --              |
-| x = False   | x--
+| x = False  | x--
 | None       | \~  *or Implict*|
 | and        | &&              |
 | or         | \|\|            |
-| not        |   !             |
+| not        |  !              |
 | is         | ===             |
-| is not     | !==.             |
+| is not     | !==             |
 | in         | <\~             |
 | if         | ?               |
 | else       | ??              |
-| elif       | ??            |
+| elif       | ??              |
 | for        | $               |
 | while      | $?              |
 | break      | $>>             |
@@ -45,8 +45,8 @@ Loh provides symbolic aliases for Python's keywords.
 | assert not | ^?              |
 | with       | &               |
 | as         | =>              |
-| import     | /              |
-| from       | /              |
+| import     | /               |
+| from       | /               |
 | del        | <>              |
 | return     | ->              |
 | yield      | \~>             |
@@ -58,7 +58,6 @@ Loh provides symbolic aliases for Python's keywords.
 | type       | :               |
 | match      | ? *subject* ==: |
 | case       | *pattern*:      |
-
 
 ### Logic
 
