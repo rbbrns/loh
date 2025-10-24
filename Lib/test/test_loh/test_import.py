@@ -50,7 +50,5 @@ class Tests(unittest.TestCase):
         / xml.etree / ElementTree => ET
         assert ET
 
-    def test_relative_import(self):
-        pass
-    
+
     
