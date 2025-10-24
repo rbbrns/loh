@@ -146,8 +146,8 @@ return: ( 'return' | '->' )
 yield: ( 'yield' | '~>' )
 del: ( 'del' | '<>')
 with: ( 'with' | '&' )
-from: ( 'from' | '.>' )
-import: ( 'import' | '<.' )
+from: ( 'from' | '/' )
+import: ( 'import' | '/' )
 lambda_postfix: ( '->' )
 type: ( "type" | ':' )
 in: ( 'in' | '<~' )
@@ -294,8 +294,8 @@ assert_stmt[stmt_ty]: assert a=expression b=[',' z=expression { z }] { _PyAST_As
 
 import_stmt[stmt_ty]:
     | invalid_import
-    | import_name
     | import_from
+    | import_name
 
 # Import statements
 # -----------------
