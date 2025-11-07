@@ -4383,7 +4383,7 @@ ex_call:
                 if (nseen) {
                     RETURN_IF_ERROR(codegen_subkwargs(c, loc, keywords, i - nseen, i));
                     if (have_dict) {
-                        ADDOP_I(c, loc, DICT_MERGE, 1);
+                        ADDOP_I(c, loc, DICT_UPDATE, 1);
                     }
                     have_dict = 1;
                     nseen = 0;
@@ -4393,7 +4393,7 @@ ex_call:
                     have_dict = 1;
                 }
                 VISIT(c, expr, kw->value);
-                ADDOP_I(c, loc, DICT_MERGE, 1);
+                ADDOP_I(c, loc, DICT_UPDATE, 1);
             }
             else {
                 nseen++;
@@ -4403,7 +4403,7 @@ ex_call:
             /* Pack up any trailing keyword arguments. */
             RETURN_IF_ERROR(codegen_subkwargs(c, loc, keywords, nkwelts - nseen, nkwelts));
             if (have_dict) {
-                ADDOP_I(c, loc, DICT_MERGE, 1);
+                ADDOP_I(c, loc, DICT_UPDATE, 1);
             }
             have_dict = 1;
         }
