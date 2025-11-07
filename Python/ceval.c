@@ -1687,12 +1687,12 @@ initialize_locals(PyThreadState *tstate, PyFunctionObject *func,
             goto fail_post_args;
 
         kw_found:
-            if (PyStackRef_AsPyObjectBorrow(localsplus[j]) != NULL) {
-                _PyErr_Format(tstate, PyExc_TypeError,
-                            "%U() got multiple values for argument '%S'",
-                          func->func_qualname, keyword);
-                goto kw_fail;
-            }
+            // if (PyStackRef_AsPyObjectBorrow(localsplus[j]) != NULL) {
+            //     _PyErr_Format(tstate, PyExc_TypeError,
+            //                 "%U() got multiple values for argument '%S'",
+            //               func->func_qualname, keyword);
+            //     goto kw_fail;
+            // }
             localsplus[j] = value_stackref;
         }
     }
