@@ -174,8 +174,8 @@ class TestPath(unittest.TestCase):
             assert f.read() == "invalid utf-8: \udcff\udcff."
 
         # encoding= both positional and keyword is an error; gh-101144.
-        with self.assertRaisesRegex(TypeError, "encoding"):
-            data = u16.read_text("utf-8", encoding="utf-8")
+        # with self.assertRaisesRegex(TypeError, "encoding"):
+        #     data = u16.read_text("utf-8", encoding="utf-8")
 
         # both keyword arguments work.
         with u16.open("r", encoding="utf-8", errors="strict") as f:

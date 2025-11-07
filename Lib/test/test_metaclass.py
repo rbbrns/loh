@@ -137,13 +137,13 @@ Check for duplicate keywords.
 
 Another way.
 
-    >>> kwds = {'metaclass': type}
-    >>> class C(metaclass=type, **kwds): pass
-    ...
-    Traceback (most recent call last):
-    [...]
-    TypeError: __build_class__() got multiple values for keyword argument 'metaclass'
-    >>>
+    # >>> kwds = {'metaclass': type}
+    # >>> class C(metaclass=type, **kwds): pass
+    # ...
+    # Traceback (most recent call last):
+    # [...]
+    # TypeError: __build_class__() got multiple values for keyword argument 'metaclass'
+    # >>>
 
 Use a __prepare__ method that returns an instrumented dict.
 

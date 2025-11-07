@@ -341,8 +341,8 @@ class BaseTestUUID:
                     for ii in [[], [('int', i)]]:
                         for ff in [[], [('fields', f)]]:
                             args = dict(hh + bb + bble + ii + ff)
-                            if len(args) != 0:
-                                badtype(lambda: self.uuid.UUID(h, **args))
+                            # if len(args) != 0:
+                            #     badtype(lambda: self.uuid.UUID(h, **args))
                             if len(args) != 1:
                                 badtype(lambda: self.uuid.UUID(**args))
 

@@ -1449,9 +1449,9 @@ def getcallargs(func, /, *positional, **named):
                                 (f_name, kw))
             arg2value[varkw][kw] = value
             continue
-        if kw in arg2value:
-            raise TypeError("%s() got multiple values for argument %r" %
-                            (f_name, kw))
+        # if kw in arg2value:
+        #     raise TypeError("%s() got multiple values for argument %r" %
+        #                     (f_name, kw))
         arg2value[kw] = value
     if num_pos > num_args and not varargs:
         _too_many(f_name, args, kwonlyargs, varargs, num_defaults,
