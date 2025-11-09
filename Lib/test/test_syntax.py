@@ -2345,12 +2345,12 @@ A[*]
         ...
     SyntaxError: Invalid star expression
 
-A[**]
+# A[**]
 
-    >>> A[**]
-    Traceback (most recent call last):
-        ...
-    SyntaxError: invalid syntax
+#     >>> A[**]
+#     Traceback (most recent call last):
+#         ...
+#     SyntaxError: invalid syntax
 
 A[**b]
 

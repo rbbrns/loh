@@ -157,6 +157,9 @@ match: ( "match" | '?==' )
 dot[expr_ty]:
     | '.' { _PyAST_Name(_PyPegen_new_identifier(p, "."), Load, EXTRA) }
 
+double_star[expr_ty]:
+    | '**' { _PyAST_Name(_PyPegen_new_identifier(p, "**"), Load, EXTRA) }
+
 name_or_dot[expr_ty]:
     | NAME
     | dot !NUMBER
@@ -443,6 +446,7 @@ star_etc[StarEtc*]:
 kwds[arg_ty]:
     | invalid_kwds
     | '**' a=param_no_default { a }
+    | a=double_star &')' { _PyAST_arg(a->v.Name.id, NULL, NULL, EXTRA) }
 
 # One parameter.  This *includes* a following comma and type comment.
 #
@@ -1005,6 +1009,7 @@ atom[expr_ty]:
     | NAME
     | a=dot b=NAME { _PyAST_Attribute(a, b->v.Name.id, Load, EXTRA) }
     | dot
+    | double_star ! ( NAME | '{' )
     | true { _PyAST_Constant(Py_True, NULL, EXTRA) }
     | false { _PyAST_Constant(Py_False, NULL, EXTRA) }
     | none { _PyAST_Constant(Py_None, NULL, EXTRA) }
@@ -1197,7 +1202,7 @@ arguments[expr_ty] (memo):
     | invalid_arguments
 
 args[expr_ty]:
-    | a[asdl_expr_seq*]=','.(starred_expression | (( assignment_expression | expression !':=') !('=' | '++' | '--')))+ b=[',' k=kwargs {k}] {
+    | a[asdl_expr_seq*]=','.(starred_expression | (!('**') ( assignment_expression | expression !':=') !('=' | '++' | '--')))+ b=[',' k=kwargs {k}] {
         _PyPegen_collect_call_seqs(p, a, b, EXTRA) }
     | a=kwargs { _PyAST_Call(_PyPegen_dummy_name(p),
                           CHECK_NULL_ALLOWED(asdl_expr_seq*, _PyPegen_seq_extract_starred_exprs(p, a)),
@@ -1237,6 +1242,7 @@ kwarg_or_double_starred[KeywordOrStarred*]:
     | a=NAME '=' b=expression {
         _PyPegen_keyword_or_starred(p, CHECK(keyword_ty, _PyAST_keyword(a->v.Name.id, b, EXTRA)), 1) }
     | '**' a=expression { _PyPegen_keyword_or_starred(p, CHECK(keyword_ty, _PyAST_keyword(NULL, a, EXTRA)), 1) }
+    | a=double_star & (',' | ')' ) { _PyPegen_keyword_or_starred(p, CHECK(keyword_ty, _PyAST_keyword(NULL, a, EXTRA)), 1) }
 
 # ASSIGNMENT TARGETS
 # ==================

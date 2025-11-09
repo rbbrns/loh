@@ -57,7 +57,6 @@ class Tests(unittest.TestCase):
         def call_lambda(l):
             return l(1)
         assert call_lambda(l=(x) -> x + 1) == 2
-
         assert ((x) -> x + 1)(1) == 2
 
     def test_lambda_capture(self):
@@ -80,3 +79,28 @@ class Tests(unittest.TestCase):
         assert test1(1, b=2, c=3, a=10) == (10, 2, 3)
         assert test1(a=1, b=2, c=3, **{'a': 10, 'b': 20, 'c': 30}) == (10, 20, 30)
         assert test1(**{'a': 10, 'b': 20, 'c': 30}, b=-2, **{'a': 1}) == (1, -2, 30)
+
+    def test_implicit_kwargs(self):
+        def test1(a, b=2, **):
+            c = 3
+            -> a,b,**,c
+        
+        assert test1(1) == (1, 2, {}, 3)
+        assert test1(1, x=10) == (1, 2, {'x': 10}, 3)
+        
+        def test2(**):
+            -> (**)
+        assert test2() == {}
+        assert test2(a=1) == {'a': 1}
+        assert test2(a=1, b=2) == {'a': 1, 'b': 2}
+        
+        def test3(**):
+            **['x'] = 10
+            -> **
+        assert test3(x=1) == {'x': 10}
+        
+        def test4(**):
+            def inner(**):
+                -> (**)
+            -> inner(**)
+        assert test4(a=5, b=6) == {'a': 5, 'b': 6}
