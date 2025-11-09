@@ -71,9 +71,12 @@ class Tests(unittest.TestCase):
 
         assert multiplier(2)(3) == 6
         assert multiplier(3)(4) == 12
-
-
-    
         
-
-        
+    def test_duplicate_kwargs(self):
+        def test1(a, b, c):
+            -> a, b, c
+        assert test1(1, 2, 3) == (1, 2, 3)
+        assert test1(a=1, b=2, c=3) == (1, 2, 3)
+        assert test1(1, b=2, c=3, a=10) == (10, 2, 3)
+        assert test1(a=1, b=2, c=3, **{'a': 10, 'b': 20, 'c': 30}) == (10, 20, 30)
+        assert test1(**{'a': 10, 'b': 20, 'c': 30}, b=-2, **{'a': 1}) == (1, -2, 30)
