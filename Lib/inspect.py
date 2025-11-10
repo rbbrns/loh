@@ -2710,7 +2710,7 @@ class Parameter:
         # It's possible for C functions to have a positional-only parameter
         # where the name is a keyword, so for compatibility we'll allow it.
         is_keyword = iskeyword(name) and self._kind is not _POSITIONAL_ONLY
-        if is_keyword or not name.isidentifier():
+        if is_keyword or (not name.isidentifier() and name not in ['**', '.']):
             raise ValueError('{!r} is not a valid parameter name'.format(name))
 
         self._name = name
