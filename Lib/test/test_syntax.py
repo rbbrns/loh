@@ -818,16 +818,16 @@ Traceback (most recent call last):
 SyntaxError: cannot assign to __debug__
 >>> f(*args=[0])
 Traceback (most recent call last):
-SyntaxError: var-positional parameter cannot have default value
+SyntaxError: var-positional argument cannot have default value
 >>> f(a, b, *args=[0])
 Traceback (most recent call last):
-SyntaxError: var-positional parameter cannot have default value
+SyntaxError: var-positional argument cannot have default value
 >>> f(**kwargs={'a': 1})
 Traceback (most recent call last):
-SyntaxError: var-keyword parameter cannot have default value
+SyntaxError: var-keyword argument cannot have default value
 >>> f(a, b, *args, **kwargs={'a': 1})
 Traceback (most recent call last):
-SyntaxError: var-keyword parameter cannot have default value
+SyntaxError: var-keyword argument cannot have default value
 
 
 More set_context():
@@ -2616,11 +2616,11 @@ Invalid expressions in type scopes:
 
     >>> f(**x, *y)
     Traceback (most recent call last):
-    SyntaxError: parameters cannot follow var-keyword parameter
+    SyntaxError: arguments cannot follow var-keyword argument
 
     >>> f(**x, *)
     Traceback (most recent call last):
-    SyntaxError: parameters cannot follow var-keyword parameter
+    SyntaxError: arguments cannot follow var-keyword argument
 
     >>> f(x, *:)
     Traceback (most recent call last):
@@ -2628,11 +2628,11 @@ Invalid expressions in type scopes:
 
     >>> f(x, *)
     Traceback (most recent call last):
-    SyntaxError: named parameters must follow bare *
+    SyntaxError: named arguments must follow bare *
 
     >>> f(x = 5, *)
     Traceback (most recent call last):
-    SyntaxError: named parameters must follow bare *
+    SyntaxError: named arguments must follow bare *
 
     >>> f(x = 5, *:)
     Traceback (most recent call last):
