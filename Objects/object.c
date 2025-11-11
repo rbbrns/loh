@@ -2077,7 +2077,7 @@ none_str(PyObject *op)
             return PyUnicode_FromString("");
         }
     }
-    return PyUnicode_FromString("None_str");
+    return PyUnicode_FromString("None");
 }
 
 static void
