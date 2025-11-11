@@ -1970,9 +1970,9 @@ SyntaxError: invalid syntax. Maybe you meant '==' or ':=' instead of '='?
 Traceback (most recent call last):
 SyntaxError: invalid syntax. Maybe you meant '==' or ':=' instead of '='?
 
->>> {z=3}
-Traceback (most recent call last):
-SyntaxError: invalid syntax. Maybe you meant '==' or ':=' instead of '='?
+# >>> {z=3}
+# Traceback (most recent call last):
+# SyntaxError: invalid syntax. Maybe you meant '==' or ':=' instead of '='?
 
 >>> from t import x,
 Traceback (most recent call last):

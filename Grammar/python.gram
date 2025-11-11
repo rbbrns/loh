@@ -389,7 +389,7 @@ function_def_raw[stmt_ty]:
                         (params) ? params : CHECK(arguments_ty, _PyPegen_empty_arguments(p)),
                         b, NULL, a, NEW_TYPE_COMMENT(p, tc), t, EXTRA) }
     | ['def'] d=dot n=NAME t=[type_params] '(' params=[params] ')' a=['->' z=expression { z }] ':' tc=[func_type_comment] b=block {
-        _PyAST_FunctionDef(n->v.Name.id, 
+        _PyAST_FunctionDef(n->v.Name.id,
                         _PyPegen_insert_arg_in_front(p, _PyAST_arg(d->v.Name.id, NULL, NULL, EXTRA), params),
                         b, NULL, a, NEW_TYPE_COMMENT(p, tc), t, EXTRA) }
     | async ['def'] n=NAME t=[type_params] '(' params=[params] ')' a=['->' z=expression { z }] ':' tc=[func_type_comment] b=block {
@@ -402,7 +402,7 @@ function_def_raw[stmt_ty]:
                             b, NULL, a, NEW_TYPE_COMMENT(p, tc), t, EXTRA)
         ) }
     | async ['def'] d=dot n=NAME t=[type_params] '(' params=[params] ')' a=['->' z=expression { z }] ':' tc=[func_type_comment] b=block {
-        _PyAST_AsyncFunctionDef(n->v.Name.id, 
+        _PyAST_AsyncFunctionDef(n->v.Name.id,
                         _PyPegen_insert_arg_in_front(p, _PyAST_arg(d->v.Name.id, NULL, NULL, EXTRA), params),
                         b, NULL, a, NEW_TYPE_COMMENT(p, tc), t, EXTRA) }
 
@@ -485,8 +485,8 @@ param[arg_ty]: a=name_or_dot b=annotation? { _PyAST_arg(a->v.Name.id, b, NULL, E
 param_star_annotation[arg_ty]: a=NAME b=star_annotation { _PyAST_arg(a->v.Name.id, b, NULL, EXTRA) }
 annotation[expr_ty]: ':' a=expression { a }
 star_annotation[expr_ty]: ':' a=star_expression { a }
-default[expr_ty]: 
-    | '=' a=expression { a } 
+default[expr_ty]:
+    | '=' a=expression { a }
     | '=' &(',' | ')') { _PyAST_Constant(Py_None, NULL, EXTRA) }
     | invalid_default
 
@@ -511,7 +511,7 @@ loop_else_block[asdl_stmt_seq*]:
     | invalid_else_stmt
     | if not break &&':' b=block { b }
     | 'else' &&':' b=block { b }
-    
+
 # While statement
 # ---------------
 
@@ -1158,8 +1158,11 @@ double_starred_kvpair[KeyValuePair*]:
     | '**' a=bitwise_or { _PyPegen_key_value_pair(p, NULL, a) }
     | kvpair
 
-kvpair[KeyValuePair*]: a=expression ':' b=(expression | implicit_none) { _PyPegen_key_value_pair(p, a, b) }
-
+kvpair[KeyValuePair*]:
+    | a=expression ':' b=(expression | implicit_none) { _PyPegen_key_value_pair(p, a, b) }
+    | a=NAME '=' b=(expression | implicit_none) {
+        _PyPegen_key_value_pair(p, _PyAST_Constant(a->v.Name.id, NULL, EXTRA), b)
+    }
 # Comprehensions & Generators
 # ---------------------------
 
@@ -1274,14 +1277,14 @@ target_with_star_atom[expr_ty] (memo):
     | star_atom
 
 star_atom[expr_ty]:
-    | a=name_or_dot { _PyPegen_set_expr_context(p, a, Store) }
+    | a=NAME { _PyPegen_set_expr_context(p, a, Store) }
     | '(' a=target_with_star_atom ')' { _PyPegen_set_expr_context(p, a, Store) }
     | '(' a=[star_targets_tuple_seq] ')' { _PyAST_Tuple(a, Store, EXTRA) }
     | '[' a=[star_targets_list_seq] ']' { _PyAST_List(a, Store, EXTRA) }
 
 single_target[expr_ty]:
     | single_subscript_attribute_target
-    | a=NAME { _PyPegen_set_expr_context(p, a, Store) }
+    | a=(NAME | dot | double_star) { _PyPegen_set_expr_context(p, a, Store) }
     | '(' a=single_target ')' { a }
 
 single_subscript_attribute_target[expr_ty]:
