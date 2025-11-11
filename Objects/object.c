@@ -5,6 +5,7 @@
 #include "pycore_brc.h"           // _Py_brc_queue_object()
 #include "pycore_call.h"          // _PyObject_CallNoArgs()
 #include "pycore_ceval.h"         // _Py_EnterRecursiveCallTstate()
+#include "pycore_interpframe.h"
 #include "pycore_context.h"       // _PyContextTokenMissing_Type
 #include "pycore_critical_section.h" // Py_BEGIN_CRITICAL_SECTION
 #include "pycore_descrobject.h"   // _PyMethodWrapper_Type
@@ -2065,6 +2066,20 @@ none_repr(PyObject *op)
     return PyUnicode_FromString("None");
 }
 
+/* ARGSUSED */
+static PyObject *
+none_str(PyObject *op)
+{
+    _PyInterpreterFrame *frame = _PyEval_GetFrame();
+    if (frame) {
+        PyCodeObject *code = _PyFrame_GetCode(frame);
+        if (code->co_flags & CO_FUTURE_EMPTY_NONE_STR) {
+            return PyUnicode_FromString("");
+        }
+    }
+    return PyUnicode_FromString("None_str");
+}
+
 static void
 none_dealloc(PyObject* none)
 {
@@ -2154,7 +2169,7 @@ PyTypeObject _PyNone_Type = {
     0,                  /*tp_as_mapping*/
     none_hash,          /*tp_hash */
     0,                  /*tp_call */
-    0,                  /*tp_str */
+    none_str,           /*tp_str */
     0,                  /*tp_getattro */
     0,                  /*tp_setattro */
     0,                  /*tp_as_buffer */

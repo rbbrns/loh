@@ -2752,6 +2752,7 @@ class POSIXProcessTestCase(BaseTestCase):
             # test str with surrogates
             script = "import os; print(ascii(os.getenv(%s)))" % repr(key)
             env = os.environ.copy()
+            print(key,value)
             env[key] = value
             # Use C locale to get ASCII for the locale encoding to force
             # surrogate-escaping of \xFF in the child process
