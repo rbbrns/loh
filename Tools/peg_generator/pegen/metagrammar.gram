@@ -90,7 +90,7 @@ named_item[NamedItem]:
     | it=lookahead {NamedItem(None, it)}
 
 forced_atom[Forced]:
-    | '&''&' ~ atom {Forced(atom)}
+    | '&&' ~ atom {Forced(atom)}
 
 lookahead[LookaheadOrCut]:
     | '&' ~ atom {PositiveLookahead(atom)}

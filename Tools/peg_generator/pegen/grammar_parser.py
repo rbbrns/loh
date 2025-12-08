@@ -382,13 +382,11 @@ class GeneratedParser(Parser):
 
     @memoize
     def forced_atom(self) -> Optional[Forced]:
-        # forced_atom: '&' '&' ~ atom
+        # forced_atom: '&&' ~ atom
         mark = self._mark()
         cut = False
         if (
-            (literal := self.expect('&'))
-            and
-            (literal_1 := self.expect('&'))
+            (literal := self.expect('&&'))
             and
             (cut := True)
             and
