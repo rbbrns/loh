@@ -10,11 +10,8 @@ Since Loh is a superset, **all existing Python code is valid Loh code**.
 make -j8 python.exe
 make regen-all PYTHON_FOR_REGEN=./python.exe
 make -j8
-```
 
-If you regenerate often, set:
-```
-export PYTHON_FOR_REGEN=./python.exe
+ln -s /usr/local/bin/loh ./python
 ```
 
 ## Keyword Mapping
