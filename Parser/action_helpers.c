@@ -940,6 +940,13 @@ _PyPegen_check_legacy_stmt(Parser *p, expr_ty name) {
     return 0;
 }
 
+int
+_PyPegen_check_barry_as_flufl(Parser *p, Token *t)
+{
+    // Loh currently treats "!=" normally even when Barry mode is enabled.
+    return 0;
+}
+
 static ResultTokenWithMetadata *
 result_token_with_metadata(Parser *p, void *result, PyObject *metadata)
 {

@@ -293,7 +293,9 @@ del_stmt[stmt_ty]:
 
 yield_stmt[stmt_ty]: y=yield_expr { _PyAST_Expr(y, EXTRA) }
 
-assert_stmt[stmt_ty]: assert a=expression b=[',' z=expression { z }] { _PyAST_Assert(a, b, EXTRA) }
+assert_stmt[stmt_ty]:
+    | assert a=expression b=[',' z=expression { z }] { _PyAST_Assert(a, b, EXTRA) }
+    | '^?' a=expression b=[',' z=expression { z }] { _PyAST_Assert(_PyAST_UnaryOp(Not, a, EXTRA), b, EXTRA) }
 
 import_stmt[stmt_ty]:
     | invalid_import
@@ -1277,7 +1279,7 @@ target_with_star_atom[expr_ty] (memo):
     | star_atom
 
 star_atom[expr_ty]:
-    | a=NAME { _PyPegen_set_expr_context(p, a, Store) }
+    | a=(NAME | dot) { _PyPegen_set_expr_context(p, a, Store) }
     | '(' a=target_with_star_atom ')' { _PyPegen_set_expr_context(p, a, Store) }
     | '(' a=[star_targets_tuple_seq] ')' { _PyAST_Tuple(a, Store, EXTRA) }
     | '[' a=[star_targets_list_seq] ']' { _PyAST_List(a, Store, EXTRA) }
