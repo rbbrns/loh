@@ -1,15 +1,20 @@
 # **Loh: A Superset of Python**
 
-**Loh** is superset of the Python syntax focused on making Python more concise, intuitive, and enjoyable to read and write. Loh provides symbol-based alternatives for all Python keywords and adds extra syntactic sugar to reduce boilerplate code.
+**Loh** is a superset of the Python syntax focused on making Python more concise, intuitive, and enjoyable to read and write. Loh provides symbol-based alternatives for all Python keywords and adds extra syntactic sugar to reduce boilerplate code.
 
 Since Loh is a superset, **all existing Python code is valid Loh code**.
 
 ## Getting Started
 ```
 ./configure
-make regen-all
-make
-ln -s /usr/local/bin/loh ./python
+make -j8 python.exe
+make regen-all PYTHON_FOR_REGEN=./python.exe
+make -j8
+```
+
+If you regenerate often, set:
+```
+export PYTHON_FOR_REGEN=./python.exe
 ```
 
 ## Keyword Mapping
@@ -21,8 +26,8 @@ Loh provides symbolic aliases for Python's keywords.
 | True       | ++              |
 | x = True   | x++             |
 | False      | --              |
-| x = False  | x--
-| None       | \~  *or Implict*|
+| x = False  | x--             |
+| None       | \~ *or implicit*|
 | and        | &&              |
 | or         | \|\|            |
 | not        |  !              |
@@ -42,7 +47,7 @@ Loh provides symbolic aliases for Python's keywords.
 | raise      | ^^^             |
 | raise Exception("msg") | ^^^ "msg" |
 | assert     | ^?!             |
-| assert not | ^?              |
+| assert not x | ^? x          |
 | with       | &               |
 | as         | =>              |
 | import     | /               |
@@ -56,7 +61,7 @@ Loh provides symbolic aliases for Python's keywords.
 | class      | Name:params:    |
 | def        | (params):       |
 | type       | :               |
-| match      | ? *subject* ==: |
+| match      | ?== *subject*:  |
 | case       | *pattern*:      |
 
 ### Logic
@@ -66,7 +71,7 @@ Loh provides symbolic aliases for Python's keywords.
 if (x is True and y is not False) or z is None:
     print("Logic!")
 # Loh
-? (x === ++ && y === !!! --) || z === ~:
+? (x === ++ && y !== --) || z === ~:
     print("Logic!")
 ```
 
@@ -74,7 +79,7 @@ if (x is True and y is not False) or z is None:
 
 ```python
 # Python
-if score > 90:\
+if score > 90:
     grade = 'A'
 elif score > 80:
     grade = 'B'
@@ -98,7 +103,7 @@ try:
     result = 10 / 0
 except ZeroDivisionError as e:
     print("Error!")
-finally:\
+finally:
     print("Done.")
 # Loh
 ~^:
@@ -134,7 +139,7 @@ match status:
     case _:
         return "Something else"
 # Loh
-?status==:
+?== status:
     400:
         -> "Bad request"
     404:
@@ -174,7 +179,7 @@ none_dict = {'a':, 'b':}
 
 ```
 
-### Function Definition **
+### Function Definition
 ```python
 # Python
 def my_func(a, b):
@@ -231,8 +236,8 @@ for i in range(10):
     total += i
 # Loh
 total = 0
-$ i <~ range(10):
-      total += i
+$ i in range(10):
+    total += i
 
 # Python
 evens = [i for i in range(10) if i % 2 == 0]
