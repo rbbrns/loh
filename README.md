@@ -157,12 +157,6 @@ for i in range(10):
     total += i
 else:
     print("Loop finished")
-
-# Alternative loop syntax and comprehensions
-for i in range(10):
-    pass
-evens = [i for i in range(10) if i % 2 == 0]
-firsts = [first for first, *rest in data]
 ```
 
 #### **Loh**
@@ -176,7 +170,27 @@ $ i in range(10):
     total += i
 ?!$>>:
     print("Loop finished")
+```
 
+> **Note:** The loop `else:` block can be written as `?!$>>:` or `?! break:` (literally translating to "if not break"), which clarifies when the block will execute. Standard `else:` is also supported.
+
+---
+
+### **4. Comprehensions**
+
+> **Motivation:** Standard list, set, and dictionary comprehensions are wordy. Combining the loop sigil `$` and condition sigil `?` creates highly compact collections.
+
+#### **Python**
+```python
+# Alternative loop syntax and comprehensions
+for i in range(10):
+    pass
+evens = [i for i in range(10) if i % 2 == 0]
+firsts = [first for first, *rest in data]
+```
+
+#### **Loh**
+```python
 # Alternative loop syntax and comprehensions
 $ i := range(10):
     pass
@@ -184,17 +198,13 @@ evens = [i $ i <~ range(10) ? i % 2 == 0]
 firsts = [first $ first, *rest <~ data]
 ```
 
-> **Note:** The loop `else:` block can be written as `?!$>>:` or `?! break:` (literally translating to "if not break"), which clarifies when the block will execute. Standard `else:` is also supported.
-
 ---
 
-### **4. Functions, Lambdas, & Duplicate Kwargs**
+### **5. Function Definitions**
 
-> **Motivation:** Function definitions often contain redundant keywords. Since parameter lists and colons already denote function declarations, the `def` keyword can be safely omitted. Arrow lambdas `(args) -> expr` align with modern anonymous functions, runtime duplicate keywords allow robust configurations to override positional defaults smoothly, and naming the keyword collector variable `**` removes the boilerplate of naming/unpacking `**kwargs` manually.
+> **Motivation:** Function definitions often contain redundant keywords like `def` and `return`. Since parameter lists and colons already denote function declarations, the `def` keyword can be safely omitted. Using arrows for return and yield aligns with modern programming syntax.
 
-#### **Function Definitions**
-
-##### **Python**
+#### **Python**
 ```python
 def calculate_total(price: float, tax: float) -> float:
     return price * (1 + tax)
@@ -205,7 +215,7 @@ def countdown(n):
         n -= 1
 ```
 
-##### **Loh**
+#### **Loh**
 ```python
 calculate_total(price: float, tax: float) -> float:
     -> price * (1 + tax)
@@ -216,23 +226,31 @@ countdown(n) -> Generator:
         n -= 1
 ```
 
-#### **Lambda Functions**
+---
 
-##### **Python**
+### **6. Arrow Lambdas**
+
+> **Motivation:** The standard anonymous function keyword `lambda` is verbose. Arrow lambdas `(args) -> expr` align with modern anonymous functions.
+
+#### **Python**
 ```python
 map(lambda x: x * 2, [1, 2, 3])
 add = lambda x, y: x + y
 ```
 
-##### **Loh**
+#### **Loh**
 ```python
 map((x) -> x * 2, [1, 2, 3])
 add = (x, y) -> x + y
 ```
 
-#### **Duplicate Keyword Arguments & Kwarg Collection (`**`)**
+---
 
-##### **Python**
+### **7. Keyword Arguments & Kwarg Collection (`**`)**
+
+> **Motivation:** Overriding duplicate keyword arguments at runtime enables cleaner configuration patterns. Naming the keyword collector variable `**` removes the boilerplate of naming and unpacking `**kwargs` manually.
+
+#### **Python**
 ```python
 # Standard Python raises TypeError for duplicate keys
 # and requires naming the kwargs collector (e.g. **kwargs)
@@ -243,7 +261,7 @@ def setup_config(name, **kwargs):
 setup_config("test", **{"a": 1, "b": 2})
 ```
 
-##### **Loh**
+#### **Loh**
 ```python
 # Loh allows runtime overriding and binds local collector to `**`
 setup_config(name, **):
@@ -255,13 +273,11 @@ setup_config("test", a=1, **{"a": 2})  # overrides 'a' to 2
 
 ---
 
-### **5. Classes, Object Properties, & Type Aliases**
+### **8. Classes & Object Properties**
 
 > **Motivation:** Standard Python classes suffer from a heavy "self-clutter" tax. By auto-injecting the instance parameter (normally `self`) when methods start with a dot (`.`) and mapping `.attribute` directly to `self.attribute`, Loh retains Python's explicit instance model while removing the repetitive manual typing of `self`.
 
-#### **Classes & Object Properties**
-
-##### **Python**
+#### **Python**
 ```python
 class Account(BaseAccount):
     def __init__(self, owner, balance):
@@ -273,7 +289,7 @@ class Account(BaseAccount):
         return self.balance
 ```
 
-##### **Loh**
+#### **Loh**
 ```python
 Account:BaseAccount:
     .__init__(owner, balance):
@@ -286,27 +302,29 @@ Account:BaseAccount:
 ```
 *Note: A class with no base classes can be declared using `MyClass::`.*
 
-#### **Type Aliases**
+---
 
-##### **Python**
+### **9. Type Aliases**
+
+> **Motivation:** Type statements are common in modern type-annotated codebases. Mapping them to a simple colon (`:`) keeps type definitions neat and visual.
+
+#### **Python**
 ```python
 type IntOrFloat = int | float
 ```
 
-##### **Loh**
+#### **Loh**
 ```python
 : IntOrFloat = int | float
 ```
 
 ---
 
-### **6. Exceptions & Assertions**
+### **10. Exceptions & Try-Except-Finally**
 
-> **Motivation:** Error-handling flow is highly visual and fits symbolic mapping perfectly (`~^` represents the boundary entry, `?^` catches issues). Providing string raising (`^^^ "message"`) eliminates constructor boilerplate for basic exceptions, and caret assertion rules (`^?!` and `^?`) compress testing and defensive checks down to a single line.
+> **Motivation:** Error-handling flow is highly visual and fits symbolic mapping perfectly (`~^` represents the boundary entry, `?^` catches issues). Providing string raising (`^^^ "message"`) eliminates constructor boilerplate for basic exceptions.
 
-#### **Try-Except-Finally Blocks**
-
-##### **Python**
+#### **Python**
 ```python
 try:
     result = 10 / 0
@@ -316,9 +334,14 @@ else:
     print("Success")
 finally:
     print("Cleanup")
+
+# Raising Exceptions
+raise ValueError("Invalid code")
+raise Exception("Something went wrong")
+raise Exception("Failed") from error
 ```
 
-##### **Loh**
+#### **Loh**
 ```python
 ~^:
     result = 10 / 0
@@ -328,33 +351,26 @@ finally:
     print("Success")
 ?*:
     print("Cleanup")
-```
 
-#### **Raising Exceptions & Raising Strings**
-
-##### **Python**
-```python
-raise ValueError("Invalid code")
-raise Exception("Something went wrong")
-raise Exception("Failed") from error
-```
-
-##### **Loh**
-```python
+# Raising Exceptions
 ^^^ ValueError("Invalid code")
 ^^^ "Something went wrong"
 ^^^ "Failed" from error
 ```
 
-#### **Assert & Assert Not**
+---
 
-##### **Python**
+### **11. Assertions & Assert Not**
+
+> **Motivation:** Defensive programming requires clean, readable validation checks. Caret assertions (`^?!` and `^?`) compress validation checks down to a single line.
+
+#### **Python**
 ```python
 assert x > 10, "x is too small"
 assert not x, "x must be False or None"
 ```
 
-##### **Loh**
+#### **Loh**
 ```python
 ^?! x > 10, "x is too small"
 ^? x, "x must be False or None"
@@ -362,7 +378,7 @@ assert not x, "x must be False or None"
 
 ---
 
-### **7. Module Imports & Aliasing**
+### **12. Module Imports & Aliasing**
 
 > **Motivation:** Imports in Python represent modules stored in a hierarchical directory layout. Using `/` matches filesystem paths, making import structures and relative imports (`/ . / helper`) immediately intuitive and visually distinct from standard logical code.
 
@@ -405,85 +421,55 @@ from .. import helper
 
 ---
 
-### **8. Implicit None ("The Empty Space")**
+### **13. Implicit None ("The Empty Space")**
 
 > **Motivation:** In Python, the absence of a value is traditionally represented by the keyword `None`. Loh codifies the "empty space" as an implicit representation of `None` in assignments, comparison operands, dictionary pairs, and parameter defaults, eliminating the repetition of typing `None`.
 
 Loh treats empty syntax spaces as implicit `None` values, simplifying default assignments and None-checks.
 
-#### **Empty Assignment**
-
-##### **Python**
+#### **Python**
 ```python
 x = None
 y: float = None
-```
 
-##### **Loh**
-```python
-x =
-y: float =
-```
-
-#### **Default Arguments**
-
-##### **Python**
-```python
 def foo(a=None, b=None):
     pass
-```
 
-##### **Loh**
-```python
-foo(a=, b=):
-    ...
-```
-
-#### **None Comparisons**
-
-##### **Python**
-```python
 if x is None:
     pass
 if y is not None:
     pass
 if z == None:
     pass
+
+my_dict = {'a': None, 'b': None}
 ```
 
-##### **Loh**
+#### **Loh**
 ```python
+x =
+y: float =
+
+foo(a=, b=):
+    ...
+
 ? x is:
     pass
 ? y !==:
     pass
 ? z ==:
     pass
-```
 
-#### **Dictionary Shorthand**
-
-##### **Python**
-```python
-my_dict = {'a': None, 'b': None}
-```
-
-##### **Loh**
-```python
 my_dict = {'a':, 'b':}
 ```
 
 ---
 
-### **9. Implicit Parameter & Argument Assignments**
+### **14. Implicit Parameter & Argument Mapping**
 
-> **Motivation:** Assigning variables to parameters of the same name (e.g., `name=name` or `x=x`) is a massive source of boilerplate in standard Python. The `=name` shorthand resolves this repetition. Similarly, attribute statements (`=obj.x`) and boolean states (`x++`/`y--`) automate variable declaration and boolean flag setting in a single token.
+> **Motivation:** Mapping variables directly to matching parameter names (`name=name` or `x=x`) is a massive source of boilerplate in standard Python. The `=name` shorthand resolves this repetition.
 
-Loh contains syntaxes to quickly map variables into method calls and default assignments:
-
-#### **Argument & Parameter Shorthand**
-
-##### **Python**
+#### **Python**
 ```python
 # Function Definition Default
 def foo(a=a, b=b):
@@ -494,7 +480,7 @@ foo(name=name, config=config)
 foo(value=obj.value)
 ```
 
-##### **Loh**
+#### **Loh**
 ```python
 # Function Definition Default
 foo(=a, =b):
@@ -505,21 +491,29 @@ foo(=name, =config)
 foo(=obj.value)
 ```
 
-#### **Attribute Statements**
+---
 
-##### **Python**
+### **15. Implicit Attribute Binding**
+
+> **Motivation:** Assigning object attributes to local variables of the same name is a highly repetitive pattern. The attribute assignment statement automates variable declaration from attributes.
+
+#### **Python**
 ```python
 verbose = config.verbose
 ```
 
-##### **Loh**
+#### **Loh**
 ```python
 =config.verbose
 ```
 
-#### **Bool Defaults & Statements**
+---
 
-##### **Python**
+### **16. Implicit Boolean Flags**
+
+> **Motivation:** Setting boolean variables or parameters is frequent; increment/decrement-style operators (`++`/`--`) provide a clean assignment shortcut.
+
+#### **Python**
 ```python
 def foo(a=True, b=False):
     pass
@@ -528,7 +522,7 @@ x = True
 y = False
 ```
 
-##### **Loh**
+#### **Loh**
 ```python
 foo(a++, b--):
     ...
@@ -539,7 +533,7 @@ y--
 
 ---
 
-### **10. Dict Literals Keyword-Style Syntax**
+### **17. Dict Literals Keyword-Style Syntax**
 
 > **Motivation:** Dictionary keys in Python are frequently string literals. Requiring quotes (`{'x': 10}`) adds noise, whereas keyword-style dict assignments (`{x=10}`) align dict construction with keyword function arguments, removing clutter.
 
@@ -557,7 +551,7 @@ my_dict = {x=10, y=20, z=}
 
 ---
 
-### **11. The Pipe Operator (`|>`)**
+### **18. The Pipe Operator (`|>`)**
 
 > **Motivation:** Nested function execution (like `h(g(f(x)))`) reads right-to-left and is hard to scan. The pipe operator (`|>`) establishes sequential, left-to-right pipelines (resembling Elixir, F#, or Unix terminal piping), improving readability for data transformation flows.
 
@@ -588,7 +582,7 @@ processed = (
 
 ---
 
-### **12. The `empty_none_str` Future Import**
+### **19. The `empty_none_str` Future Import**
 
 > **Motivation:** During string interpolation or file output generation, representing missing values as literal `"None"` strings often ruins formatting or requires explicit `val or ""` wrappers. Importing `empty_none_str` configures the runtime to output `""` instead, simplifying formatting templates.
 
