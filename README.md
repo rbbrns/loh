@@ -80,7 +80,7 @@ Loh maps Python's verbose keywords and structures to elegant, symbol-based alter
 
 ### **1. Logic & Comparisons**
 
-> **Motivation:** Symbols like `&&`, `||`, and strict identity `===` align Python with standard mathematical logic and modern programming conventions. Sigils like `<~` (pointing into a collection) and `<>` (removal/deletion) use visual cues that match the developer's mental model of collection scanning and variable cleanup.
+> **Motivation:** Symbols like `&&`, `||`, and strict identity `===` align Python with standard mathematical logic and modern programming conventions. Operators like `<~` (pointing into a collection) and `<>` (removal/deletion) use visual cues that match the developer's mental model of collection scanning and variable cleanup.
 
 Loh provides sleek, compact symbols for logic, identity, and membership testing.
 
@@ -142,7 +142,7 @@ z = a ? cond
 
 ### **3. Loops & Control Flow**
 
-> **Motivation:** The iteration sigil `$` represents traversing a collection. Using `$>>` (pointing forward/out) and `$<<` (pointing backward/loop-start) matches the physical flow of breaking out of or looping back in control structures. The loop-else replacement `?!$>>:` (literally "if not break") explicitly documents the execution path, resolving a common point of confusion in Python's standard `else:` loop syntax.
+> **Motivation:** The iteration symbol `$` represents traversing a collection. Using `$>>` (pointing forward/out) and `$<<` (pointing backward/loop-start) matches the physical flow of breaking out of or looping back in control structures. The loop-else replacement `?!$>>:` (literally "if not break") explicitly documents the execution path, resolving a common point of confusion in Python's standard `else:` loop syntax.
 
 Loh loop grammar uses `$` for `for` loops, `$?` for `while` loops, `$>>` for `break`, and `$<<` for `continue`.
 
@@ -177,7 +177,7 @@ $ i in range(10):
 
 ### **4. Comprehensions**
 
-> **Motivation:** Comprehensions are pipelines that transform and filter collections. By utilizing the iteration sigil `$` and the filter query `?` within list/set brackets, comprehensions read like a structured query, separating the collection source from the filter condition.
+> **Motivation:** Comprehensions are pipelines that transform and filter collections. By utilizing the iteration symbol `$` and the filter query `?` within list/set brackets, comprehensions read like a structured query, separating the collection source from the filter condition.
 
 #### **Python**
 ```python
@@ -361,7 +361,7 @@ raise Exception("Failed") from error
 
 ### **11. Assertions & Assert Not**
 
-> **Motivation:** Assertions act as guard rails at the entry or exit of code paths. The caret sigil `^?!` (assert) and its negated counterpart `^?` (assert not) act as visual pointers that guard the execution flow, making validation checks concise and easily distinguishable from standard logic.
+> **Motivation:** Assertions act as guard rails at the entry or exit of code paths. The caret symbol `^?!` (assert) and its negated counterpart `^?` (assert not) act as visual pointers that guard the execution flow, making validation checks concise and easily distinguishable from standard logic.
 
 #### **Python**
 ```python
