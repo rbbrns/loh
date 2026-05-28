@@ -217,7 +217,7 @@ add = (x, y) -> x + y
 #### **Duplicate Keyword Arguments & Kwarg Collection (`**`)**
 Loh allows overriding duplicate kwargs inside function calls. Additionally, the `**` token functions as a special local variable mapping to the kwargs dict:
 
-- **Duplicate Kwargs**: In a call `foo(a=1, a=2)`, the latter overrides the former, producing `a=2` without raising a syntax or type error.
+- **Duplicate Kwargs**: Passing duplicate keyword keys at runtime (e.g. `foo(1, a=2)` or `foo(a=1, **{"a": 2})`) will override the earlier values instead of raising a `TypeError`. Note that literal duplicate keywords like `foo(a=1, a=2)` are caught by the parser at compile-time and will raise a `SyntaxError: keyword argument repeated`.
 - **Kwarg Variable (`**`)**: Declaring `**` at the end of a parameter list binds it as a local variable. You can manipulate, pass, or return it directly.
 
 ```python
