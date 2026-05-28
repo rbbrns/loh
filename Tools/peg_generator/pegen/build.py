@@ -247,7 +247,10 @@ def build_parser(
         grammar = parser.start()
 
         if not grammar:
-            raise parser.make_syntax_error(grammar_file)
+            err = parser.make_syntax_error(grammar_file)
+            print(f"Parser error: {err.msg} at line {err.lineno}, column {err.offset} in {grammar_file}")
+            print(f"Line content: {err.text}")
+            raise err
 
     return grammar, parser, tokenizer
 
