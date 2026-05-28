@@ -1,0 +1,36 @@
+{
+  "name": "loh-syntax",
+  "displayName": "Loh Syntax",
+  "description": "Syntax highlighting for the Loh language.",
+  "version": "0.1.0",
+  "publisher": "loh",
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Programming Languages"
+  ],
+  "contributes": {
+    "languages": [
+      {
+        "id": "loh",
+        "aliases": [
+          "Loh",
+          "loh"
+        ],
+        "extensions": [
+          ".loh"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "loh",
+        "scopeName": "source.loh",
+        "path": "./syntaxes/loh.tmLanguage.json"
+      }
+    ]
+  }
+}

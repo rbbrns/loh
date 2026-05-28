@@ -1,0 +1,153 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "Loh",
+  "scopeName": "source.loh",
+  "patterns": [
+    {
+      "include": "#loh-import-line"
+    },
+    {
+      "include": "#loh-line-keywords"
+    },
+    {
+      "include": "#loh-control"
+    },
+    {
+      "include": "#loh-operators"
+    },
+    {
+      "include": "#loh-booleans"
+    },
+    {
+      "include": "#loh-implicit-default"
+    },
+    {
+      "include": "#loh-dot-self"
+    },
+    {
+      "include": "source.python"
+    }
+  ],
+  "repository": {
+    "loh-import-line": {
+      "patterns": [
+        {
+          "name": "meta.import.loh",
+          "begin": "(?m)^\\s*/\\s*(?=\\.|[A-Za-z_])",
+          "beginCaptures": {
+            "0": {
+              "name": "keyword.control.import.loh"
+            }
+          },
+          "end": "(?=\\s*(?:#|$))",
+          "patterns": [
+            {
+              "name": "keyword.control.import.loh",
+              "match": "/"
+            },
+            {
+              "name": "keyword.operator.assignment.loh",
+              "match": "=>"
+            },
+            {
+              "name": "punctuation.separator.comma.loh",
+              "match": ","
+            },
+            {
+              "name": "punctuation.accessor.dot.loh",
+              "match": "\\."
+            },
+            {
+              "name": "constant.language.wildcard.loh",
+              "match": "\\*"
+            },
+            {
+              "name": "entity.name.namespace.loh",
+              "match": "\\b[A-Za-z_][\\w]*\\b"
+            }
+          ]
+        }
+      ]
+    },
+    "loh-line-keywords": {
+      "patterns": [
+        {
+          "name": "keyword.control.async.loh",
+          "match": "(?m)^\\s*%(?=\\s*(?:def|for|with|&|[A-Za-z_(]))"
+        },
+        {
+          "name": "keyword.control.with.loh",
+          "match": "(?m)^\\s*(?:%\\s*)?&(?=\\s*(?:[A-Za-z_(]|with\\b))"
+        },
+        {
+          "name": "keyword.declaration.type.loh",
+          "match": "(?m)^\\s*:(?=\\s*[A-Za-z_][\\w]*\\s*=)"
+        }
+      ]
+    },
+    "loh-control": {
+      "patterns": [
+        {
+          "name": "keyword.control.loh",
+          "match": "(?:\\?==|\\?\\?!|\\?!\\^|\\?\\^\\*|\\?\\^|\\?\\*|\\?\\?|\\?!|\\?|\\?=|\\$>>|\\$<<|\\$\\?|\\$>|\\$<|\\$|~\\^|~>|\\^\\?!|\\^\\?|\\^\\^\\^|\\^\\^|->|<-|<>|::|<\\.|\\.>)"
+        }
+      ]
+    },
+    "loh-operators": {
+      "patterns": [
+        {
+          "name": "keyword.operator.loh",
+          "match": "(?:!==|===|!<~|<~|=>|\\|>|&&|\\|\\|)"
+        },
+        {
+          "name": "keyword.operator.logical.loh",
+          "match": "!(?![=<>])"
+        }
+      ]
+    },
+    "loh-booleans": {
+      "patterns": [
+        {
+          "name": "constant.language.boolean.loh",
+          "match": "(?<!\\w)(?:\\+\\+|--|!!!|!!)(?!\\w)"
+        },
+        {
+          "name": "keyword.operator.assignment.loh",
+          "match": "(?<=[A-Za-z0-9_\\]\\)\\.])(?:\\+\\+|--)(?=\\s*(?:$|,|\\)|\\]|\\}|:|=|;))"
+        },
+        {
+          "name": "constant.language.none.loh",
+          "match": "(?<!\\w)~(?=\\s*(?:$|,|\\)|\\]|\\}|:|;|==|===|!=|!==|is\\b|<~|&&|\\|\\||\\?))"
+        }
+      ]
+    },
+    "loh-implicit-default": {
+      "patterns": [
+        {
+          "name": "keyword.operator.assignment.loh",
+          "match": "(?m)^\\s*=(?=\\s*[A-Za-z_][\\w]*(?:\\.[A-Za-z_][\\w]*)?)"
+        },
+        {
+          "name": "keyword.operator.assignment.loh",
+          "match": "(?<=\\()\\s*=(?=\\s*[A-Za-z_][\\w]*(?:\\.[A-Za-z_][\\w]*)?)"
+        },
+        {
+          "name": "keyword.operator.assignment.loh",
+          "match": "(?<=,)\\s*=(?=\\s*[A-Za-z_][\\w]*(?:\\.[A-Za-z_][\\w]*)?)"
+        }
+      ]
+    },
+    "loh-dot-self": {
+      "patterns": [
+        {
+          "name": "variable.language.self.loh",
+          "match": "(?<![A-Za-z0-9_])\\.(?=[A-Za-z_])"
+        },
+        {
+          "name": "variable.language.self.loh",
+          "match": "(?<![A-Za-z0-9_])\\.(?=\\s*(?:=|,|\\)|:|$))"
+        }
+      ]
+    }
+  }
+}

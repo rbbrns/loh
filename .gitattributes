@@ -54,6 +54,7 @@ PCbuild/readme.txt  dos
 *.css   diff=css
 *.html  diff=html
 *.py    diff=python
+*.loh   diff=python linguist-language=Python
 *.md    diff=markdown
 
 # Generated files
