@@ -840,6 +840,7 @@ expression[expr_ty] (memo):
     | invalid_expression
     | invalid_legacy_expression
     | pipe_expression
+    | coalesce_expression
     | a=disjunction if b=disjunction else c=expression { _PyAST_IfExp(b, a, c, EXTRA) }
     | a=disjunction if b=disjunction { _PyAST_IfExp(b, a, _PyAST_Constant(Py_None, NULL, EXTRA), EXTRA) }
     | lambdef
@@ -847,6 +848,9 @@ expression[expr_ty] (memo):
 
 pipe_expression[expr_ty]:
     | a=expression '|>' b=expression { _PyAST_Pipe(a, b, EXTRA) }
+
+coalesce_expression[expr_ty]:
+    | a=disjunction '~~' b=expression { _PyPegen_none_coalesce(p, a, b) }
 
 yield_expr[expr_ty]:
     | yield from a=expression { _PyAST_YieldFrom(a, EXTRA) }
@@ -989,6 +993,7 @@ await_primary[expr_ty] (memo):
     | primary
 
 primary[expr_ty]:
+    | a=primary '~.' b=NAME { _PyPegen_safe_navigation(p, a, b) }
     | a=primary '.' b=NAME { _PyAST_Attribute(a, b->v.Name.id, Load, EXTRA) }
     | a=primary b=genexp { _PyAST_Call(a, CHECK(asdl_expr_seq*, (asdl_expr_seq*)_PyPegen_singleton_seq(p, b)), NULL, EXTRA) }
     | a=primary '(' b=[arguments] ')' {

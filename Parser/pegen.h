@@ -385,5 +385,8 @@ asdl_stmt_seq *_PyPegen_interactive_exit(Parser *);
 
 // Generated function in parse.c - function definition in python.gram
 void *_PyPegen_parse(Parser *);
+ 
+expr_ty _PyPegen_safe_navigation(Parser *p, expr_ty primary, expr_ty attr_name);
+expr_ty _PyPegen_none_coalesce(Parser *p, expr_ty left, expr_ty right);
 
 #endif

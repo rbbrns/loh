@@ -118,6 +118,10 @@ VBARGREATER             '|>'
 NOTEQUALEQUAL           '!=='
 # del
 LESSGREATER             '<>'
+# tilde dot (safe navigation)
+TILDEDOT                '~.'
+# double tilde (none coalescing)
+DOUBLETILDE             '~~'
 
 OP
 TYPE_IGNORE
