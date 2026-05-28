@@ -63,3 +63,15 @@ class Tests(unittest.TestCase):
         .x.x = 100
         assert .x.x == 100
 
+    def test_dot_augmented_assignment(self):
+        C::
+            .__init__(x):
+                .x = x
+
+            .add(y):
+                .x += y
+
+        c = C(10)
+        c.add(5)
+        self.assertEqual(c.x, 15)
+

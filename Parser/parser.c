@@ -24125,6 +24125,7 @@ single_target_rule(Parser *p)
 
 // single_subscript_attribute_target:
 //     | t_primary '.' NAME !t_lookahead
+//     | dot NAME !t_lookahead
 //     | t_primary '[' slices ']' !t_lookahead
 static expr_ty
 single_subscript_attribute_target_rule(Parser *p)
@@ -24187,6 +24188,44 @@ single_subscript_attribute_target_rule(Parser *p)
         p->mark = _mark;
         D(fprintf(stderr, "%*c%s single_subscript_attribute_target[%d-%d]: %s failed!\n", p->level, ' ',
                   p->error_indicator ? "ERROR!" : "-", _mark, p->mark, "t_primary '.' NAME !t_lookahead"));
+    }
+    { // dot NAME !t_lookahead
+        if (p->error_indicator) {
+            p->level--;
+            return NULL;
+        }
+        D(fprintf(stderr, "%*c> single_subscript_attribute_target[%d-%d]: %s\n", p->level, ' ', _mark, p->mark, "dot NAME !t_lookahead"));
+        expr_ty a;
+        expr_ty b;
+        if (
+            (a = dot_rule(p))  // dot
+            &&
+            (b = _PyPegen_name_token(p))  // NAME
+            &&
+            _PyPegen_lookahead(0, t_lookahead_rule, p)
+        )
+        {
+            D(fprintf(stderr, "%*c+ single_subscript_attribute_target[%d-%d]: %s succeeded!\n", p->level, ' ', _mark, p->mark, "dot NAME !t_lookahead"));
+            Token *_token = _PyPegen_get_last_nonnwhitespace_token(p);
+            if (_token == NULL) {
+                p->level--;
+                return NULL;
+            }
+            int _end_lineno = _token->end_lineno;
+            UNUSED(_end_lineno); // Only used by EXTRA macro
+            int _end_col_offset = _token->end_col_offset;
+            UNUSED(_end_col_offset); // Only used by EXTRA macro
+            _res = _PyAST_Attribute ( a , b -> v . Name . id , Store , EXTRA );
+            if (_res == NULL && PyErr_Occurred()) {
+                p->error_indicator = 1;
+                p->level--;
+                return NULL;
+            }
+            goto done;
+        }
+        p->mark = _mark;
+        D(fprintf(stderr, "%*c%s single_subscript_attribute_target[%d-%d]: %s failed!\n", p->level, ' ',
+                  p->error_indicator ? "ERROR!" : "-", _mark, p->mark, "dot NAME !t_lookahead"));
     }
     { // t_primary '[' slices ']' !t_lookahead
         if (p->error_indicator) {
