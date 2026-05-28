@@ -80,7 +80,7 @@ Loh maps Python's verbose keywords and structures to elegant, symbol-based alter
 
 ### **1. Logic & Comparisons**
 
-> **Motivation:** English-based logical keywords (`and`, `or`, `not`, `is`, `in`, `del`) disrupt visual uniformity and limit code compactness. Replacing them with mathematical/logical operators (similar to C, C++, and JavaScript) makes code more concise and aligns Python with globally understood developer syntax.
+> **Motivation:** Symbols like `&&`, `||`, and strict identity `===` align Python with standard mathematical logic and modern programming conventions. Sigils like `<~` (pointing into a collection) and `<>` (removal/deletion) use visual cues that match the developer's mental model of collection scanning and variable cleanup.
 
 Loh provides sleek, compact symbols for logic, identity, and membership testing.
 
@@ -104,7 +104,7 @@ if x not in my_list:
 
 ### **2. Conditionals & If-Expressions**
 
-> **Motivation:** Standard conditional keywords create substantial vertical and horizontal indentation clutter. The ternary sigils `?` and `??` unify simple conditions under a single theme. Introducing single-line `if` expressions without an `else` branch allows clean conditional assignments that default to `None` without requiring boilerplate fallback declarations.
+> **Motivation:** The question mark `?` is the universal symbol for querying a state. Using `?` and `??` maps conditionals directly to decision-making flow. Ternary `x ? cond ?? y` aligns with the industry-standard conditional expression structure, while `x ? cond` provides a natural way to assign values that dynamically default to `None` if the condition isn't met.
 
 Loh simplifies conditional logic by utilizing `?` for `if` and `??` for both `elif` and `else`.
 
@@ -142,7 +142,7 @@ z = a ? cond
 
 ### **3. Loops & Control Flow**
 
-> **Motivation:** Loops and jump statements (`for`, `while`, `break`, `continue`) are extremely frequent, and standardizing them with single-character sigils increases syntax density. Additionally, standard Python loop-else blocks (`else:`) are notoriously counterintuitive because they execute only when a loop does *not* break; naming the block `?!$>>:` (literally "if not break") explicitly documents the execution path.
+> **Motivation:** The iteration sigil `$` represents traversing a collection. Using `$>>` (pointing forward/out) and `$<<` (pointing backward/loop-start) matches the physical flow of breaking out of or looping back in control structures. The loop-else replacement `?!$>>:` (literally "if not break") explicitly documents the execution path, resolving a common point of confusion in Python's standard `else:` loop syntax.
 
 Loh loop grammar uses `$` for `for` loops, `$?` for `while` loops, `$>>` for `break`, and `$<<` for `continue`.
 
@@ -178,7 +178,7 @@ $ i in range(10):
 
 ### **4. Comprehensions**
 
-> **Motivation:** Standard list, set, and dictionary comprehensions are wordy. Combining the loop sigil `$` and condition sigil `?` creates highly compact collections.
+> **Motivation:** Comprehensions are pipelines that transform and filter collections. By utilizing the iteration sigil `$` and the filter query `?` within list/set brackets, comprehensions read like a structured query, separating the collection source from the filter condition.
 
 #### **Python**
 ```python
@@ -202,7 +202,7 @@ firsts = [first $ first, *rest <~ data]
 
 ### **5. Function Definitions**
 
-> **Motivation:** Function definitions often contain redundant keywords like `def` and `return`. Since parameter lists and colons already denote function declarations, the `def` keyword can be safely omitted. Using arrows for return and yield aligns with modern programming syntax.
+> **Motivation:** A function is defined by its signature and parameters, making the keyword `def` redundant. Using arrows for output flow—`->` for returning a final value and `~>` for yielding a stream of values—directly matches the mental model of data flowing out of a function block.
 
 #### **Python**
 ```python
@@ -230,7 +230,7 @@ countdown(n) -> Generator:
 
 ### **6. Arrow Lambdas**
 
-> **Motivation:** The standard anonymous function keyword `lambda` is verbose. Arrow lambdas `(args) -> expr` align with modern anonymous functions.
+> **Motivation:** Lambda functions represent a direct mapping of inputs to an output. The arrow notation `(args) -> expr` aligns Python's anonymous functions with standard mathematical functions and modern arrow conventions, making inline callbacks much more intuitive to read.
 
 #### **Python**
 ```python
@@ -248,7 +248,7 @@ add = (x, y) -> x + y
 
 ### **7. Keyword Arguments & Kwarg Collection (`**`)**
 
-> **Motivation:** Overriding duplicate keyword arguments at runtime enables cleaner configuration patterns. Naming the keyword collector variable `**` removes the boilerplate of naming and unpacking `**kwargs` manually.
+> **Motivation:** A double asterisk `**` is Python's native symbol for dictionary unpacking. Binding the kwarg collector directly to `**` inside a function body allows you to work with the kwargs dictionary using the symbol that defined it, removing the need to invent and write arbitrary variable names like `kwargs`.
 
 #### **Python**
 ```python
@@ -275,7 +275,7 @@ setup_config("test", a=1, **{"a": 2})  # overrides 'a' to 2
 
 ### **8. Classes & Object Properties**
 
-> **Motivation:** Standard Python classes suffer from a heavy "self-clutter" tax. By auto-injecting the instance parameter (normally `self`) when methods start with a dot (`.`) and mapping `.attribute` directly to `self.attribute`, Loh retains Python's explicit instance model while removing the repetitive manual typing of `self`.
+> **Motivation:** Method and attribute declarations inside a class are inherently bound to the instance namespace. Using a prefix dot (`.method` or `.attribute`) matches the intuition of accessing member properties of the current object, automating the injection of the instance reference and eliminating the repetitive typing of `self`.
 
 #### **Python**
 ```python
@@ -306,7 +306,7 @@ Account:BaseAccount:
 
 ### **9. Type Aliases**
 
-> **Motivation:** Type statements are common in modern type-annotated codebases. Mapping them to a simple colon (`:`) keeps type definitions neat and visual.
+> **Motivation:** The colon `:` is the universal symbol for type annotations in Python. Using `:` to declare a type alias (e.g. `: MyType = int`) maintains semantic consistency with standard type annotation patterns, making type alias statements immediately recognizable.
 
 #### **Python**
 ```python
@@ -322,7 +322,7 @@ type IntOrFloat = int | float
 
 ### **10. Exceptions & Try-Except-Finally**
 
-> **Motivation:** Error-handling flow is highly visual and fits symbolic mapping perfectly (`~^` represents the boundary entry, `?^` catches issues). Providing string raising (`^^^ "message"`) eliminates constructor boilerplate for basic exceptions.
+> **Motivation:** Exception handling is a control flow structure designed to catch errors. The symbol `~^` represents entering a guarded block, while `?^` queries for matching exceptions. Raising string literals directly (`^^^ "error"`) simplifies throwing standard exceptions, removing the boilerplate of instantiating exception classes for simple error messages.
 
 #### **Python**
 ```python
@@ -362,7 +362,7 @@ raise Exception("Failed") from error
 
 ### **11. Assertions & Assert Not**
 
-> **Motivation:** Defensive programming requires clean, readable validation checks. Caret assertions (`^?!` and `^?`) compress validation checks down to a single line.
+> **Motivation:** Assertions act as guard rails at the entry or exit of code paths. The caret sigil `^?!` (assert) and its negated counterpart `^?` (assert not) act as visual pointers that guard the execution flow, making validation checks concise and easily distinguishable from standard logic.
 
 #### **Python**
 ```python
@@ -380,7 +380,7 @@ assert not x, "x must be False or None"
 
 ### **12. Module Imports & Aliasing**
 
-> **Motivation:** Imports in Python represent modules stored in a hierarchical directory layout. Using `/` matches filesystem paths, making import structures and relative imports (`/ . / helper`) immediately intuitive and visually distinct from standard logical code.
+> **Motivation:** Python modules are physically stored in a nested directory layout. The forward slash `/` syntax maps imports directly to file paths (e.g., `/math/sqrt`), making module discovery and relative imports (`/ . / helper`) align with standard directory navigation conventions.
 
 Loh converts all import syntax to use forward slashes (`/`), mimicking filesystem paths. Aliasing uses `=>`.
 
@@ -423,7 +423,7 @@ from .. import helper
 
 ### **13. Implicit None ("The Empty Space")**
 
-> **Motivation:** In Python, the absence of a value is traditionally represented by the keyword `None`. Loh codifies the "empty space" as an implicit representation of `None` in assignments, comparison operands, dictionary pairs, and parameter defaults, eliminating the repetition of typing `None`.
+> **Motivation:** In computer science and logic, the absence of a value is most intuitively represented by empty space. Loh translates this concept directly by interpreting empty syntax positions (in assignments, default arguments, and comparisons) as implicit `None` values, removing placeholder keywords.
 
 Loh treats empty syntax spaces as implicit `None` values, simplifying default assignments and None-checks.
 
@@ -467,7 +467,7 @@ my_dict = {'a':, 'b':}
 
 ### **14. Implicit Parameter & Argument Mapping**
 
-> **Motivation:** Mapping variables directly to matching parameter names (`name=name` or `x=x`) is a massive source of boilerplate in standard Python. The `=name` shorthand resolves this repetition.
+> **Motivation:** When passing variables to functions, the parameter name and the variable name are frequently identical (e.g. `foo(config=config)`). The `=name` syntax explicitly captures this intent by binding the parameter to the local variable of the same name, removing redundant declarations.
 
 #### **Python**
 ```python
@@ -495,7 +495,7 @@ foo(=obj.value)
 
 ### **15. Implicit Attribute Binding**
 
-> **Motivation:** Assigning object attributes to local variables of the same name is a highly repetitive pattern. The attribute assignment statement automates variable declaration from attributes.
+> **Motivation:** Extracting an object's attribute into a local variable of the same name (e.g. `verbose = config.verbose`) is a repetitive task. The prefix assignment `=config.verbose` automates this mapping, declaring a local variable named after the attribute.
 
 #### **Python**
 ```python
@@ -511,7 +511,7 @@ verbose = config.verbose
 
 ### **16. Implicit Boolean Flags**
 
-> **Motivation:** Setting boolean variables or parameters is frequent; increment/decrement-style operators (`++`/`--`) provide a clean assignment shortcut.
+> **Motivation:** The symbols `++` and `--` represent binary toggles of state. In Loh, applying them to variables (`x++` / `y--`) serves as a shorthand to toggle their boolean truth values (`True` or `False`), making flag assignments and parameter defaults highly readable.
 
 #### **Python**
 ```python
@@ -535,7 +535,7 @@ y--
 
 ### **17. Dict Literals Keyword-Style Syntax**
 
-> **Motivation:** Dictionary keys in Python are frequently string literals. Requiring quotes (`{'x': 10}`) adds noise, whereas keyword-style dict assignments (`{x=10}`) align dict construction with keyword function arguments, removing clutter.
+> **Motivation:** Dictionary literals function as collections of named attributes. Using keyword-style assignments (`{x=10}`) maps key-value definition to standard function call conventions, treating dictionary keys as named parameters and eliminating quote clutter.
 
 Instead of standard string mapping, dictionary literals can accept keyword-style assignments:
 
@@ -553,7 +553,7 @@ my_dict = {x=10, y=20, z=}
 
 ### **18. The Pipe Operator (`|>`)**
 
-> **Motivation:** Nested function execution (like `h(g(f(x)))`) reads right-to-left and is hard to scan. The pipe operator (`|>`) establishes sequential, left-to-right pipelines (resembling Elixir, F#, or Unix terminal piping), improving readability for data transformation flows.
+> **Motivation:** Data processing is a sequential flow of transformations. The pipe operator `|>` allows you to chain function calls in the order they occur (from left to right), matching the developer's mental model of passing data through a pipeline rather than reading nested functions inside-out.
 
 Loh features a pipe operator to feed expressions into callable objects. `x |> f` evaluates to `f(x)`. It has lower precedence than standard arithmetic and chains from left to right.
 
@@ -584,7 +584,7 @@ processed = (
 
 ### **19. The `empty_none_str` Future Import**
 
-> **Motivation:** During string interpolation or file output generation, representing missing values as literal `"None"` strings often ruins formatting or requires explicit `val or ""` wrappers. Importing `empty_none_str` configures the runtime to output `""` instead, simplifying formatting templates.
+> **Motivation:** When formatting user-facing text, empty values should naturally display as blank spaces rather than the word `"None"`. The `empty_none_str` future import ensures that string representation of missing values behaves intuitively, defaulting to an empty string `""` without requiring manual fallback checks.
 
 Importing the future flag `empty_none_str` modifies standard Python behavior so that `str(None)` returns an empty string `""` instead of `"None"`:
 
