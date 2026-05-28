@@ -140,6 +140,7 @@ void _PyAST_Fini(PyInterpreterState *interp)
     Py_CLEAR(state->Or_type);
     Py_CLEAR(state->ParamSpec_type);
     Py_CLEAR(state->Pass_type);
+    Py_CLEAR(state->Pipe_type);
     Py_CLEAR(state->Pow_singleton);
     Py_CLEAR(state->Pow_type);
     Py_CLEAR(state->RShift_singleton);
@@ -638,6 +639,10 @@ static const char * const TemplateStr_fields[]={
 static const char * const Constant_fields[]={
     "value",
     "kind",
+};
+static const char * const Pipe_fields[]={
+    "left",
+    "right",
 };
 static const char * const Attribute_fields[]={
     "value",
@@ -3352,6 +3357,41 @@ add_ast_annotations(struct ast_state *state)
         return 0;
     }
     Py_DECREF(Constant_annotations);
+    PyObject *Pipe_annotations = PyDict_New();
+    if (!Pipe_annotations) return 0;
+    {
+        PyObject *type = state->expr_type;
+        Py_INCREF(type);
+        cond = PyDict_SetItemString(Pipe_annotations, "left", type) == 0;
+        Py_DECREF(type);
+        if (!cond) {
+            Py_DECREF(Pipe_annotations);
+            return 0;
+        }
+    }
+    {
+        PyObject *type = state->expr_type;
+        Py_INCREF(type);
+        cond = PyDict_SetItemString(Pipe_annotations, "right", type) == 0;
+        Py_DECREF(type);
+        if (!cond) {
+            Py_DECREF(Pipe_annotations);
+            return 0;
+        }
+    }
+    cond = PyObject_SetAttrString(state->Pipe_type, "_field_types",
+                                  Pipe_annotations) == 0;
+    if (!cond) {
+        Py_DECREF(Pipe_annotations);
+        return 0;
+    }
+    cond = PyObject_SetAttrString(state->Pipe_type, "__annotations__",
+                                  Pipe_annotations) == 0;
+    if (!cond) {
+        Py_DECREF(Pipe_annotations);
+        return 0;
+    }
+    Py_DECREF(Pipe_annotations);
     PyObject *Attribute_annotations = PyDict_New();
     if (!Attribute_annotations) return 0;
     {
@@ -6404,6 +6444,7 @@ init_types(void *arg)
         "     | JoinedStr(expr* values)\n"
         "     | TemplateStr(expr* values)\n"
         "     | Constant(constant value, string? kind)\n"
+        "     | Pipe(expr left, expr right)\n"
         "     | Attribute(expr value, identifier attr, expr_context ctx)\n"
         "     | Subscript(expr value, expr slice, expr_context ctx)\n"
         "     | Starred(expr value, expr_context ctx)\n"
@@ -6519,6 +6560,10 @@ init_types(void *arg)
     if (!state->Constant_type) return -1;
     if (PyObject_SetAttr(state->Constant_type, state->kind, Py_None) == -1)
         return -1;
+    state->Pipe_type = make_type(state, "Pipe", state->expr_type, Pipe_fields,
+                                 2,
+        "Pipe(expr left, expr right)");
+    if (!state->Pipe_type) return -1;
     state->Attribute_type = make_type(state, "Attribute", state->expr_type,
                                       Attribute_fields, 3,
         "Attribute(expr value, identifier attr, expr_context ctx)");
@@ -8275,6 +8320,34 @@ _PyAST_Constant(constant value, string kind, int lineno, int col_offset, int
 }
 
 expr_ty
+_PyAST_Pipe(expr_ty left, expr_ty right, int lineno, int col_offset, int
+            end_lineno, int end_col_offset, PyArena *arena)
+{
+    expr_ty p;
+    if (!left) {
+        PyErr_SetString(PyExc_ValueError,
+                        "field 'left' is required for Pipe");
+        return NULL;
+    }
+    if (!right) {
+        PyErr_SetString(PyExc_ValueError,
+                        "field 'right' is required for Pipe");
+        return NULL;
+    }
+    p = (expr_ty)_PyArena_Malloc(arena, sizeof(*p));
+    if (!p)
+        return NULL;
+    p->kind = Pipe_kind;
+    p->v.Pipe.left = left;
+    p->v.Pipe.right = right;
+    p->lineno = lineno;
+    p->col_offset = col_offset;
+    p->end_lineno = end_lineno;
+    p->end_col_offset = end_col_offset;
+    return p;
+}
+
+expr_ty
 _PyAST_Attribute(expr_ty value, identifier attr, expr_context_ty ctx, int
                  lineno, int col_offset, int end_lineno, int end_col_offset,
                  PyArena *arena)
@@ -9929,6 +10002,21 @@ ast2obj_expr(struct ast_state *state, void* _o)
         value = ast2obj_string(state, o->v.Constant.kind);
         if (!value) goto failed;
         if (PyObject_SetAttr(result, state->kind, value) == -1)
+            goto failed;
+        Py_DECREF(value);
+        break;
+    case Pipe_kind:
+        tp = (PyTypeObject *)state->Pipe_type;
+        result = PyType_GenericNew(tp, NULL, NULL);
+        if (!result) goto failed;
+        value = ast2obj_expr(state, o->v.Pipe.left);
+        if (!value) goto failed;
+        if (PyObject_SetAttr(result, state->left, value) == -1)
+            goto failed;
+        Py_DECREF(value);
+        value = ast2obj_expr(state, o->v.Pipe.right);
+        if (!value) goto failed;
+        if (PyObject_SetAttr(result, state->right, value) == -1)
             goto failed;
         Py_DECREF(value);
         break;
@@ -15260,6 +15348,54 @@ obj2ast_expr(struct ast_state *state, PyObject* obj, expr_ty* out, PyArena*
         if (*out == NULL) goto failed;
         return 0;
     }
+    tp = state->Pipe_type;
+    isinstance = PyObject_IsInstance(obj, tp);
+    if (isinstance == -1) {
+        return -1;
+    }
+    if (isinstance) {
+        expr_ty left;
+        expr_ty right;
+
+        if (PyObject_GetOptionalAttr(obj, state->left, &tmp) < 0) {
+            return -1;
+        }
+        if (tmp == NULL) {
+            PyErr_SetString(PyExc_TypeError, "required field \"left\" missing from Pipe");
+            return -1;
+        }
+        else {
+            int res;
+            if (_Py_EnterRecursiveCall(" while traversing 'Pipe' node")) {
+                goto failed;
+            }
+            res = obj2ast_expr(state, tmp, &left, arena);
+            _Py_LeaveRecursiveCall();
+            if (res != 0) goto failed;
+            Py_CLEAR(tmp);
+        }
+        if (PyObject_GetOptionalAttr(obj, state->right, &tmp) < 0) {
+            return -1;
+        }
+        if (tmp == NULL) {
+            PyErr_SetString(PyExc_TypeError, "required field \"right\" missing from Pipe");
+            return -1;
+        }
+        else {
+            int res;
+            if (_Py_EnterRecursiveCall(" while traversing 'Pipe' node")) {
+                goto failed;
+            }
+            res = obj2ast_expr(state, tmp, &right, arena);
+            _Py_LeaveRecursiveCall();
+            if (res != 0) goto failed;
+            Py_CLEAR(tmp);
+        }
+        *out = _PyAST_Pipe(left, right, lineno, col_offset, end_lineno,
+                           end_col_offset, arena);
+        if (*out == NULL) goto failed;
+        return 0;
+    }
     tp = state->Attribute_type;
     isinstance = PyObject_IsInstance(obj, tp);
     if (isinstance == -1) {
@@ -18173,6 +18309,9 @@ astmodule_exec(PyObject *m)
         return -1;
     }
     if (PyModule_AddObjectRef(m, "Constant", state->Constant_type) < 0) {
+        return -1;
+    }
+    if (PyModule_AddObjectRef(m, "Pipe", state->Pipe_type) < 0) {
         return -1;
     }
     if (PyModule_AddObjectRef(m, "Attribute", state->Attribute_type) < 0) {

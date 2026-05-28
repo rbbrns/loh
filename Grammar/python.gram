@@ -176,7 +176,7 @@ simple_stmt[stmt_ty] (memo):
     | &'pass' pass_stmt
     | &del del_stmt
     | &yield yield_stmt
-    | &assert assert_stmt
+    | &(assert | '^?') assert_stmt
     | &break break_stmt
     | &continue continue_stmt
     | &'global' global_stmt
