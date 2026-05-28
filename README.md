@@ -228,7 +228,7 @@ def setup_config(name, **):
 
 ---
 
-### **5. Classes & Object Properties**
+### **5. Classes, Object Properties, & Type Aliases**
 
 Loh class syntax uses a double colon (`::`) to denote class definition. Method declarations omit `def`. If a method name starts with a dot (`.`), standard `self` is automatically injected as the first parameter, and attributes can be referenced directly using `.attribute` (which resolves to `self.attribute`).
 
@@ -256,6 +256,13 @@ Account:BaseAccount:
         -> .balance
 ```
 *Note: A class with no base classes can be declared using `MyClass::`.*
+
+#### **Type Aliases (`:`)**
+Loh replaces standard Python `type` statements with a simple colon (`:`):
+```python
+# Python: type IntOrFloat = int | float
+: IntOrFloat = int | float
+```
 
 ---
 
@@ -418,15 +425,11 @@ processed = (
 
 ---
 
-### **12. Advanced Compiler Features**
+### **12. The `empty_none_str` Future Import**
 
-- **Type Aliasing (`:`)**:
-  ```python
-  : IntOrFloat = int | float  # Resolves to: type IntOrFloat = int | float
-  ```
-- **Empty None String future import**:
-  Importing the future flag `empty_none_str` forces `str(None)` to output an empty string `""` instead of `"None"`:
-  ```python
-  from __future__ import empty_none_str
-  print(str(None))  # Outputs: ""
-  ```
+Importing the future flag `empty_none_str` modifies standard Python behavior so that `str(None)` returns an empty string `""` instead of `"None"`:
+
+```python
+from __future__ import empty_none_str
+print(str(None))  # Outputs: ""
+```
