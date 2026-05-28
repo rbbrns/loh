@@ -33,46 +33,46 @@ ln -s ./python.exe ./loh
 
 Loh maps Python's verbose keywords and structures to elegant, symbol-based alternatives:
 
-| **Python**        | **Loh**                        | **Description**                             |     |            |
-| :------------------| :-------------------------------| :--------------------------------------------| -----| ------------|
-| `True`            | `++`                           | Boolean True constant                       |     |            |
-| `False`           | `--`                           | Boolean False constant                      |     |            |
-| `None`            | `~` *(or omit)*                | None constant (empty space represents None) |     |            |
-| `and`             | `&&`                           | Logical AND                                 |     |            |
-| `or`              | `\                             | \                                           | `   | Logical OR |
-| `not`             | `!`                            | Logical NOT                                 |     |            |
-| `is`              | `===`                          | Identity comparison                         |     |            |
-| `is not`          | `!==`                          | Negated identity comparison                 |     |            |
-| `in`              | `<~`                           | Membership check                            |     |            |
-| `not in`          | `!<~` *(or `not <~`)*          | Negated membership check                    |     |            |
-| `del`             | `<>`                           | Delete statement                            |     |            |
-| `if`              | `?`                            | Conditional branch                          |     |            |
-| `elif`            | `??`                           | Else-if branch                              |     |            |
-| `else`            | `??`                           | Else branch                                 |     |            |
-| `for`             | `$`                            | For loop                                    |     |            |
-| `while`           | `$?`                           | While loop                                  |     |            |
-| `break`           | `$>>`                          | Break statement                             |     |            |
-| `continue`        | `$<<`                          | Continue statement                          |     |            |
-| `try`             | `~^`                           | Try block                                   |     |            |
-| `except`          | `?^`                           | Except handler                              |     |            |
-| `except*`         | `?^*`                          | Except-star handler                         |     |            |
-| `else` *(try)*    | `?!^`                          | Try-else block                              |     |            |
-| `finally`         | `?*`                           | Finally block                               |     |            |
-| `as`              | `=>` *(or `as`)*               | Alias binding operator                      |     |            |
-| `raise`           | `^^^`                          | Raise exception                             |     |            |
-| `assert`          | `^?!`                          | Assert statement                            |     |            |
-| `assert not`      | `^?`                           | Negated assert statement                    |     |            |
-| `with`            | `&`                            | Context manager                             |     |            |
-| `import` / `from` | `/`                            | Import symbol                               |     |            |
-| `return`          | `->`                           | Return statement                            |     |            |
-| `yield`           | `~>`                           | Yield statement                             |     |            |
-| `async` / `await` | `%`                            | Asynchronous operations                     |     |            |
-| `lambda`          | `(args) -> expr`               | Lambda function (arrow syntax)              |     |            |
-| `class`           | `Name::` *(or `Name:Parent:`)* | Class declaration                           |     |            |
-| `def`             | *(omit)*                       | Function definition                         |     |            |
-| `type`            | `:`                            | Type alias declaration                      |     |            |
-| `match`           | `?==`                          | Structural pattern matching subject         |     |            |
-| `case`            | *(omit)*                       | Pattern case declaration                    |     |            |
+| **Python** | **Loh** | **Description** |
+| :--- | :--- | :--- |
+| `True` | `++` | Boolean True constant |
+| `False` | `--` | Boolean False constant |
+| `None` | `~` *(or omit)* | None constant (empty space represents None) |
+| `and` | `&&` | Logical AND |
+| `or` | `\|\|` | Logical OR |
+| `not` | `!` | Logical NOT |
+| `is` | `===` | Identity comparison |
+| `is not` | `!==` | Negated identity comparison |
+| `in` | `<~` | Membership check |
+| `not in` | `!<~` *(or `not <~`)*| Negated membership check |
+| `del` | `<>` | Delete statement |
+| `if` | `?` | Conditional branch |
+| `elif` | `??` | Else-if branch |
+| `else` | `??` | Else branch |
+| `for` | `$` | For loop |
+| `while` | `$?` | While loop |
+| `break` | `$>>` | Break statement |
+| `continue` | `$<<` | Continue statement |
+| `try` | `~^` | Try block |
+| `except` | `?^` | Except handler |
+| `except*` | `?^*` | Except-star handler |
+| `else` *(try)* | `?!^` | Try-else block |
+| `finally` | `?*` | Finally block |
+| `as` | `=>` *(or `as`)* | Alias binding operator |
+| `raise` | `^^^` | Raise exception |
+| `assert` | `^?!` | Assert statement |
+| `assert not` | `^?` | Negated assert statement |
+| `with` | `&` | Context manager |
+| `import` / `from` | `/` | Import symbol |
+| `return` | `->` | Return statement |
+| `yield` | `~>` | Yield statement |
+| `async` / `await` | `%` | Asynchronous operations |
+| `lambda` | `(args) -> expr` | Lambda function (arrow syntax) |
+| `class` | `Name::` *(or `Name:Parent:`)*| Class declaration |
+| `def` | *(omit)* | Function definition |
+| `type` | `:` | Type alias declaration |
+| `match` | `?==` | Structural pattern matching subject |
+| `case` | *(omit)* | Pattern case declaration |
 
 ---
 
@@ -108,36 +108,35 @@ if x not in my_list:
 
 Loh simplifies conditional logic by utilizing `?` for `if` and `??` for both `elif` and `else`.
 
-#### **Side-by-Side Comparison**
-
+#### **Python**
 ```python
-# Python
 if score > 90:
     grade = 'A'
 elif score > 80:
     grade = 'B'
 else:
     grade = 'C'
+
+# Ternary expressions
+x = a if cond else b
+y = a if not cond else b
+z = a if cond else None
 ```
+
+#### **Loh**
 ```python
-# Loh
 ? score > 90:
     grade = 'A'
 ?? score > 80:
     grade = 'B'
 ??:
     grade = 'C'
+
+# Ternary expressions
+x = a ? cond ?? b
+y = a ?! cond ?? b
+z = a ? cond
 ```
-
-#### **Single Line If-Expressions (Ternary)**
-Loh supports Python's ternary expressions without requiring an `else` branch (evaluating to `None` if the condition is false), as well as standard three-operand expressions:
-
-| **Python Equivalent** | **Loh Syntax** |
-| :--- | :--- |
-| `x if cond else y` | `x ? cond ?? y` |
-| `x if not cond else y` | `x ?! cond ?? y` *(using `!` for not)* |
-| `x if cond else None` | `x ? cond` |
-| `x if not cond else None` | `x ?! cond` |
 
 ---
 
@@ -145,7 +144,7 @@ Loh supports Python's ternary expressions without requiring an `else` branch (ev
 
 > **Motivation:** Loops and jump statements (`for`, `while`, `break`, `continue`) are extremely frequent, and standardizing them with single-character sigils increases syntax density. Additionally, standard Python loop-else blocks (`else:`) are notoriously counterintuitive because they execute only when a loop does *not* break; naming the block `?!$>>:` (literally "if not break") explicitly documents the execution path.
 
-Loh loop grammar uses `$` for `for` loops, `$?` for `while` loops, `$>>` for `break`, and `$<<` for `continue`. 
+Loh loop grammar uses `$` for `for` loops, `$?` for `while` loops, `$>>` for `break`, and `$<<` for `continue`.
 
 #### **Python**
 ```python
@@ -158,6 +157,12 @@ for i in range(10):
     total += i
 else:
     print("Loop finished")
+
+# Alternative loop syntax and comprehensions
+for i in range(10):
+    pass
+evens = [i for i in range(10) if i % 2 == 0]
+firsts = [first for first, *rest in data]
 ```
 
 #### **Loh**
@@ -171,23 +176,15 @@ $ i in range(10):
     total += i
 ?!$>>:
     print("Loop finished")
+
+# Alternative loop syntax and comprehensions
+$ i := range(10):
+    pass
+evens = [i $ i <~ range(10) ? i % 2 == 0]
+firsts = [first $ first, *rest <~ data]
 ```
 
 > **Note:** The loop `else:` block can be written as `?!$>>:` or `?! break:` (literally translating to "if not break"), which clarifies when the block will execute. Standard `else:` is also supported.
-
-#### **Alternative Loop Syntax & Comprehensions**
-- You can substitute `in` with `:=` or `<~` in loop headers:
-  ```python
-  $ i := range(10):  # Equivalent to: for i in range(10):
-  ```
-- **Comprehensions** feel natural with Loh syntax:
-  ```python
-  # Python: evens = [i for i in range(10) if i % 2 == 0]
-  evens = [i $ i <~ range(10) ? i % 2 == 0]
-  
-  # Python: firsts = [first for first, *rest in data]
-  firsts = [first $ first, *rest <~ data]
-  ```
 
 ---
 
@@ -196,14 +193,23 @@ $ i in range(10):
 > **Motivation:** Function definitions often contain redundant keywords. Since parameter lists and colons already denote function declarations, the `def` keyword can be safely omitted. Arrow lambdas `(args) -> expr` align with modern anonymous functions, runtime duplicate keywords allow robust configurations to override positional defaults smoothly, and naming the keyword collector variable `**` removes the boilerplate of naming/unpacking `**kwargs` manually.
 
 #### **Function Definitions**
-The `def` keyword is omitted in Loh. Standard signatures start directly with the function name and parameters. Return statements use `->` and yield statements use `~>`.
 
+##### **Python**
 ```python
-# Function with type annotations and return
+def calculate_total(price: float, tax: float) -> float:
+    return price * (1 + tax)
+
+def countdown(n):
+    while n > 0:
+        yield n
+        n -= 1
+```
+
+##### **Loh**
+```python
 calculate_total(price: float, tax: float) -> float:
     -> price * (1 + tax)
 
-# Generator yielding values
 countdown(n) -> Generator:
     $? n > 0:
         ~> n
@@ -211,26 +217,40 @@ countdown(n) -> Generator:
 ```
 
 #### **Lambda Functions**
-Loh introduces clean arrow function lambdas. Parentheses around arguments are required.
 
+##### **Python**
 ```python
-# Python: map(lambda x: x * 2, [1, 2, 3])
-map((x) -> x * 2, [1, 2, 3])
+map(lambda x: x * 2, [1, 2, 3])
+add = lambda x, y: x + y
+```
 
-# Multi-argument lambda
+##### **Loh**
+```python
+map((x) -> x * 2, [1, 2, 3])
 add = (x, y) -> x + y
 ```
 
 #### **Duplicate Keyword Arguments & Kwarg Collection (`**`)**
-Loh allows overriding duplicate kwargs inside function calls. Additionally, the `**` token functions as a special local variable mapping to the kwargs dict:
 
-- **Duplicate Kwargs**: Passing duplicate keyword keys at runtime (e.g. `foo(1, a=2)` or `foo(a=1, **{"a": 2})`) will override the earlier values instead of raising a `TypeError`. Note that literal duplicate keywords like `foo(a=1, a=2)` are caught by the parser at compile-time and will raise a `SyntaxError: keyword argument repeated`.
-- **Kwarg Variable (`**`)**: Declaring `**` at the end of a parameter list binds it as a local variable. You can manipulate, pass, or return it directly.
-
+##### **Python**
 ```python
-def setup_config(name, **):
+# Standard Python raises TypeError for duplicate keys
+# and requires naming the kwargs collector (e.g. **kwargs)
+def setup_config(name, **kwargs):
+    kwargs['name'] = name
+    return kwargs
+
+setup_config("test", **{"a": 1, "b": 2})
+```
+
+##### **Loh**
+```python
+# Loh allows runtime overriding and binds local collector to `**`
+setup_config(name, **):
     **['name'] = name
-    -> **  # returns the collected kwargs dict
+    -> **
+
+setup_config("test", a=1, **{"a": 2})  # overrides 'a' to 2
 ```
 
 ---
@@ -239,9 +259,9 @@ def setup_config(name, **):
 
 > **Motivation:** Standard Python classes suffer from a heavy "self-clutter" tax. By auto-injecting the instance parameter (normally `self`) when methods start with a dot (`.`) and mapping `.attribute` directly to `self.attribute`, Loh retains Python's explicit instance model while removing the repetitive manual typing of `self`.
 
-Loh class syntax uses a double colon (`::`) to denote class definition. Method declarations omit `def`. If a method name starts with a dot (`.`), standard `self` is automatically injected as the first parameter, and attributes can be referenced directly using `.attribute` (which resolves to `self.attribute`).
+#### **Classes & Object Properties**
 
-#### **Python**
+##### **Python**
 ```python
 class Account(BaseAccount):
     def __init__(self, owner, balance):
@@ -253,7 +273,7 @@ class Account(BaseAccount):
         return self.balance
 ```
 
-#### **Loh**
+##### **Loh**
 ```python
 Account:BaseAccount:
     .__init__(owner, balance):
@@ -266,10 +286,15 @@ Account:BaseAccount:
 ```
 *Note: A class with no base classes can be declared using `MyClass::`.*
 
-#### **Type Aliases (`:`)**
-Loh replaces standard Python `type` statements with a simple colon (`:`):
+#### **Type Aliases**
+
+##### **Python**
 ```python
-# Python: type IntOrFloat = int | float
+type IntOrFloat = int | float
+```
+
+##### **Loh**
+```python
 : IntOrFloat = int | float
 ```
 
@@ -279,12 +304,10 @@ Loh replaces standard Python `type` statements with a simple colon (`:`):
 
 > **Motivation:** Error-handling flow is highly visual and fits symbolic mapping perfectly (`~^` represents the boundary entry, `?^` catches issues). Providing string raising (`^^^ "message"`) eliminates constructor boilerplate for basic exceptions, and caret assertion rules (`^?!` and `^?`) compress testing and defensive checks down to a single line.
 
-Exception handling blocks are mapped to symbols, and assertion keywords are significantly shortened.
+#### **Try-Except-Finally Blocks**
 
-#### **Try-Except-Finally Block**
-
+##### **Python**
 ```python
-# Python
 try:
     result = 10 / 0
 except ZeroDivisionError as e:
@@ -294,8 +317,9 @@ else:
 finally:
     print("Cleanup")
 ```
+
+##### **Loh**
 ```python
-# Loh
 ~^:
     result = 10 / 0
 ?^ ZeroDivisionError => e:
@@ -307,25 +331,34 @@ finally:
 ```
 
 #### **Raising Exceptions & Raising Strings**
-- To raise exceptions, use the `^^^` operator:
-  ```python
-  ^^^ ValueError("Invalid code")
-  ```
-- **Raising Strings**: Loh compiles direct string raising into standard Exception instances:
-  ```python
-  ^^^ "Something went wrong"             # Raises Exception("Something went wrong")
-  ^^^ "Failed" from error                # Raises Exception("Failed") from error
-  ```
+
+##### **Python**
+```python
+raise ValueError("Invalid code")
+raise Exception("Something went wrong")
+raise Exception("Failed") from error
+```
+
+##### **Loh**
+```python
+^^^ ValueError("Invalid code")
+^^^ "Something went wrong"
+^^^ "Failed" from error
+```
 
 #### **Assert & Assert Not**
-- **Assert**: `^?!` is mapped to `assert`:
-  ```python
-  ^?! x > 10, "x is too small"
-  ```
-- **Assert Not**: `^?` is mapped to `assert not`:
-  ```python
-  ^? x, "x must be False or None"        # Compiles to: assert not x, "x must be False or None"
-  ```
+
+##### **Python**
+```python
+assert x > 10, "x is too small"
+assert not x, "x must be False or None"
+```
+
+##### **Loh**
+```python
+^?! x > 10, "x is too small"
+^? x, "x must be False or None"
+```
 
 ---
 
@@ -334,6 +367,30 @@ finally:
 > **Motivation:** Imports in Python represent modules stored in a hierarchical directory layout. Using `/` matches filesystem paths, making import structures and relative imports (`/ . / helper`) immediately intuitive and visually distinct from standard logical code.
 
 Loh converts all import syntax to use forward slashes (`/`), mimicking filesystem paths. Aliasing uses `=>`.
+
+#### **Python**
+```python
+import math
+import math as m
+from math import sqrt
+from math import sqrt as s
+from math import sqrt, floor
+from . import helper
+from .. import helper
+```
+
+#### **Loh**
+```python
+/math
+/math => m
+/math/sqrt
+/math/sqrt => s
+/math/sqrt, floor
+/ . / helper
+/ .. / helper
+```
+
+#### **Import Reference Mapping**
 
 | **Python** | **Loh** |
 | :--- | :--- |
@@ -354,29 +411,67 @@ Loh converts all import syntax to use forward slashes (`/`), mimicking filesyste
 
 Loh treats empty syntax spaces as implicit `None` values, simplifying default assignments and None-checks.
 
-- **Empty Assignment**:
-  ```python
-  x =        # Resolves to: x = None
-  y:float =  # Resolves to: y:float = None
-  ```
-- **Default Arguments**:
-  ```python
-  foo(a=, b=):  # Resolves to: def foo(a=None, b=None):
-      ...
-  ```
-- **None Comparisons**: Omitting the right-hand operand of comparison symbols evaluates the comparison against `None`:
-  ```python
-  ? x is:      # Resolves to: if x is None:
-      ...
-  ? y !==:     # Resolves to: if y is not None:
-      ...
-  ? z ==:      # Resolves to: if z == None:
-      ...
-  ```
-- **Dictionary Shorthand**:
-  ```python
-  my_dict = {'a':, 'b':}  # Resolves to: {'a': None, 'b': None}
-  ```
+#### **Empty Assignment**
+
+##### **Python**
+```python
+x = None
+y: float = None
+```
+
+##### **Loh**
+```python
+x =
+y: float =
+```
+
+#### **Default Arguments**
+
+##### **Python**
+```python
+def foo(a=None, b=None):
+    pass
+```
+
+##### **Loh**
+```python
+foo(a=, b=):
+    ...
+```
+
+#### **None Comparisons**
+
+##### **Python**
+```python
+if x is None:
+    pass
+if y is not None:
+    pass
+if z == None:
+    pass
+```
+
+##### **Loh**
+```python
+? x is:
+    pass
+? y !==:
+    pass
+? z ==:
+    pass
+```
+
+#### **Dictionary Shorthand**
+
+##### **Python**
+```python
+my_dict = {'a': None, 'b': None}
+```
+
+##### **Loh**
+```python
+my_dict = {'a':, 'b':}
+```
 
 ---
 
@@ -386,28 +481,61 @@ Loh treats empty syntax spaces as implicit `None` values, simplifying default as
 
 Loh contains syntaxes to quickly map variables into method calls and default assignments:
 
-- **Argument Shorthand (`=name`)**: Pass variables as keyword arguments of the same name:
-  ```python
-  foo(=name, =config)   # Resolves to: foo(name=name, config=config)
-  foo(=obj.value)       # Resolves to: foo(value=obj.value)
-  ```
-- **Definition Defaults (`=name`)**: Bind parameter defaults directly from outer scopes:
-  ```python
-  a = 1
-  foo(=a):              # Resolves to: def foo(a=a): (where default is 1)
-      ...
-  ```
-- **Attribute Statements (`=obj.attr`)**: Easily assign attributes to local variables:
-  ```python
-  =config.verbose       # Resolves to: verbose = config.verbose
-  ```
-- **Bool Defaults & Statements (`++` / `--`)**: Assign or default boolean variables implicitly:
-  ```python
-  foo(a++, b--):        # Resolves to: def foo(a=True, b=False):
-      ...
-  x++                   # Resolves to: x = True
-  y--                   # Resolves to: y = False
-  ```
+#### **Argument & Parameter Shorthand**
+
+##### **Python**
+```python
+# Function Definition Default
+def foo(a=a, b=b):
+    pass
+
+# Function Call Shorthand
+foo(name=name, config=config)
+foo(value=obj.value)
+```
+
+##### **Loh**
+```python
+# Function Definition Default
+foo(=a, =b):
+    ...
+
+# Function Call Shorthand
+foo(=name, =config)
+foo(=obj.value)
+```
+
+#### **Attribute Statements**
+
+##### **Python**
+```python
+verbose = config.verbose
+```
+
+##### **Loh**
+```python
+=config.verbose
+```
+
+#### **Bool Defaults & Statements**
+
+##### **Python**
+```python
+def foo(a=True, b=False):
+    pass
+
+x = True
+y = False
+```
+
+##### **Loh**
+```python
+foo(a++, b--):
+    ...
+
+x++
+y--
+```
 
 ---
 
@@ -417,8 +545,13 @@ Loh contains syntaxes to quickly map variables into method calls and default ass
 
 Instead of standard string mapping, dictionary literals can accept keyword-style assignments:
 
+#### **Python**
 ```python
-# Python: my_dict = {'x': 10, 'y': 20, 'z': None}
+my_dict = {'x': 10, 'y': 20, 'z': None}
+```
+
+#### **Loh**
+```python
 my_dict = {x=10, y=20, z=}
 ```
 
@@ -430,18 +563,27 @@ my_dict = {x=10, y=20, z=}
 
 Loh features a pipe operator to feed expressions into callable objects. `x |> f` evaluates to `f(x)`. It has lower precedence than standard arithmetic and chains from left to right.
 
+#### **Python**
 ```python
-# Pipe chains evaluate left-to-right
-result = 5 |> (x) -> x + 1 |> (x) -> x * 2  # Evaluates to: ((5 + 1) * 2) = 12
+# Nested execution
+result = double(add_one(5))
 
-# Processing a clean data pipeline
+# Sequential execution
+processed = str.upper(str.strip("   my data string   ")).replace(" ", "_")
+```
+
+#### **Loh**
+```python
+# Nested execution
+result = 5 |> (x) -> x + 1 |> (x) -> x * 2
+
+# Sequential execution
 processed = (
     "   my data string   "
     |> str.strip
     |> str.upper
     |> (s) -> s.replace(" ", "_")
 )
-# processed == "MY_DATA_STRING"
 ```
 
 ---
@@ -452,6 +594,12 @@ processed = (
 
 Importing the future flag `empty_none_str` modifies standard Python behavior so that `str(None)` returns an empty string `""` instead of `"None"`:
 
+#### **Python**
+```python
+print(str(None))  # Outputs: "None"
+```
+
+#### **Loh**
 ```python
 from __future__ import empty_none_str
 print(str(None))  # Outputs: ""
