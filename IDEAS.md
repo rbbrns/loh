@@ -157,17 +157,44 @@ If the parser detects a `_` identifier within the call argument list of the pipe
 
 ---
 
-## 5. Null-Coalescing Binary Operator (`~?`)
+## 5. None-Conditional Expressions & Statements (`~?` and `?~`)
 
 ### Motivation
-A clean operator to assign fallback values only when the left-hand value is strictly `None` (represented by `~` in Loh), avoiding unexpected behavior with falsy values like `0` or `""`.
+Loh uses `~` to represent `None` and `?` to query truthiness. By combining these symbols, we can create dedicated, self-consistent operators and statement keywords for None-safety. This avoids the verbosity of `is not None` and `is None` checks, which are among the most common operations in Python.
 
-### Proposed Syntax
+---
+
+### Candidate A: None-Conditional Statements (`~?` and `?~`)
+We can introduce two new conditional statement prefixes to check strictly against `None` (rather than general truthiness):
+
+1. **`~?` (If not None)**:
+   ```python
+   ~? user:
+       print(user.name)
+   ```
+   * *Desugars to*: `if user is not None:`
+
+2. **`?~` (If is None)**:
+   ```python
+   ?~ cache_val:
+       cache_val = fetch_data()
+   ```
+   * *Desugars to*: `if cache_val is None:`
+
+---
+
+### Candidate B: None-Coalescing Binary Operator (`~?`)
+In expression contexts, `~?` acts as a null-coalescing binary operator, yielding the right-hand side only if the left-hand side is strictly `None`.
 ```python
 host = config.host ~? "localhost"
 ```
+* *Desugars to*: `config.host if config.host is not None else "localhost"`
 
-### Compile-Time Desugaring
-```python
-host = config.host if config.host is not None else "localhost"
-```
+---
+
+### Symmetry & Design Harmony
+This design provides absolute syntactic harmony between expressions and statements in Loh:
+* `? x:` $\rightarrow$ Check truthiness of `x` (standard if statement)
+* `~? x:` $\rightarrow$ Check if `x` is not `None` (statement)
+* `?~ x:` $\rightarrow$ Check if `x` is `None` (statement)
+* `x ~? y` $\rightarrow$ Return `x` if not `None`, else `y` (expression)
