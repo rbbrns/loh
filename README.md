@@ -172,7 +172,6 @@ $ i in range(10):
     print("Loop finished")
 ```
 
-> **Note:** The loop `else:` block can be written as `?!$>>:` or `?! break:` (literally translating to "if not break"), which clarifies when the block will execute. Standard `else:` is also supported.
 
 ---
 
