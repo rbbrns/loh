@@ -4,7 +4,7 @@
 #include "object.h"
 
 #define MAXINDENT 100       /* Max indentation level */
-#define MAXLEVEL 200        /* Max parentheses level */
+#define MAXLEVEL 150        /* Max parentheses level */
 #define MAXFSTRINGLEVEL 150 /* Max f-string nesting level */
 
 #define INSIDE_FSTRING(tok) (tok->tok_mode_stack_index > 0)

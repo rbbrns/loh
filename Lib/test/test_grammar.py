@@ -252,7 +252,7 @@ the \'lazy\' dog.\n\
     @skip_wasi_stack_overflow()
     def test_max_level(self):
         # Macro defined in Parser/lexer/state.h
-        MAXLEVEL = 200
+        MAXLEVEL = 150
 
         result = eval("(" * MAXLEVEL + ")" * MAXLEVEL)
         self.assertEqual(result, ())
