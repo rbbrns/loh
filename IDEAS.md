@@ -64,52 +64,37 @@ This is implemented entirely in the parser, with zero changes required to the by
 
 ---
 
-## 2. Null-Safe Navigation / Safe Attribute Access
+## 2. None-Safe Navigation / Safe Attribute Access (`~.`)
 
 ### The Lexical & Parser Conflict with `?.` (Question-Dot)
 In Loh, `?` is used for conditional `if` and ternary expressions, and `.` is used for accessing properties on `self`. This creates a severe grammatical conflict when parsing `?.`:
 ```python
 print(x ? .y ?? z)  # Valid ternary expression checking x, returning self.y or z
 ```
-If `?.` is treated as a safe navigation operator, the parser cannot distinguish it from a standard ternary followed by a self-attribute access (`x ? .y`), leading to parsing ambiguities and syntax errors. To resolve this, Loh must adopt a conflict-free safe-navigation operator.
+If `?.` is treated as a safe navigation operator, the parser cannot distinguish it from a standard ternary followed by a self-attribute access (`x ? .y`), leading to parsing ambiguities. 
+
+To resolve this conflict and align with Loh's established symbols, we adopt the **`~.` (Tilde-Dot)** operator.
 
 ---
 
-### Candidate A: The "Dot-with-a-line" Operator (`!`)
-We use the exclamation mark `!` as an infix binary member-access operator.
-```python
-city = user!profile!address!city
-```
-* **Visual Rationale**: `!` is visually a dot with a line above it, indicating a modified/conditional property access.
-* **Grammar Conflict Check**: No conflict. In Loh, `!` is a unary prefix operator (logical NOT). Having `expression ! attribute` (infix) is not valid standard Python/Loh syntax, allowing the parser to disambiguate it with 100% certainty.
-* **Pros**: Extremely concise (1 character) and highly readable.
-
----
-
-### Candidate B: The "Dot-Pipe" Operator (`.|`)
-We use `.|` (Dot followed by vertical bar) as the operator.
-```python
-city = user.|profile.|address.|city
-```
-* **Visual Rationale**: It uses the standard dot `.` for member access, combined with the pipe `|` to represent a diversion or alternative route if the value is `None` (analogous to logical OR `||` but for member access).
-* **Grammar Conflict Check**: No conflict. Standard grammar never allows `expression . | attribute`, making `.|` completely unique.
-* **Pros**: Explicitly preserves the dot `.` for property access while cleanly signaling fallback semantics.
-
----
-
-### Candidate C: The "None-Safe" Operator (`~.`)
-We use the tilde-dot `~.` as the operator.
+### Proposed Syntax
+Using the tilde-dot `~.` operator signifies a "maybe `.property`" access:
 ```python
 city = user~.profile~.address~.city
 ```
-* **Visual Rationale**: Links directly to Loh's symbol for `None` (`~`).
-* **Grammar Conflict Check**: No conflict. Tilde `~` is a unary operator in Python, meaning `expression ~ .attribute` is syntactically invalid.
-* **Pros**: Semantically aligns with Loh's representation of nullability (`~`).
+* **Mental Model**: *"Access `profile` if `user` is not `None` (`~`)."*
+* **Grammar Conflict Check**: No conflict. Tilde `~` is a unary operator in Python/Loh, meaning `expression ~ .attribute` is syntactically invalid, allowing the parser to disambiguate `~.` with 100% certainty.
+
+---
+
+### Alternative Candidates Evaluated
+1. **The "Dot-with-a-line" Operator (`!`)**: `config!host`. Uses exclamation as a modified dot. Dropped because `!` represents logical NOT, and Swift/Kotlin developers expect `!` to mean force-unwrap (unsafe) rather than safe-navigation.
+2. **The "Dot-Pipe" Operator (`.|`)**: `config.|host`. Combines dot and pipe to represent a diversion path if the value is `None`.
 
 ---
 
 ### Compile-Time Desugaring
-Regardless of the chosen operator, the syntax desugars at parse-time into nested ternary checks:
+The `~.` operator desugars at parse-time into nested ternary checks:
 ```python
 # Desugared Python AST
 _val1 = user
@@ -157,44 +142,25 @@ If the parser detects a `_` identifier within the call argument list of the pipe
 
 ---
 
-## 5. None-Conditional Expressions & Statements (`~?` and `?~`)
+## 5. None-Coalescing Binary Operator (`~~`)
 
 ### Motivation
-Loh uses `~` to represent `None` and `?` to query truthiness. By combining these symbols, we can create dedicated, self-consistent operators and statement keywords for None-safety. This avoids the verbosity of `is not None` and `is None` checks, which are among the most common operations in Python.
+Similar to how JavaScript/TypeScript doubled the conditional symbol `?` to create the null-coalescing operator `??`, Loh doubles its native `None` symbol `~` to create the None-coalescing operator `~~`. This operator behaves like logical OR (`||`), but checks strictly for `None` instead of general truthiness.
 
 ---
 
-### Candidate A: None-Conditional Statements (`~?` and `?~`)
-We can introduce two new conditional statement prefixes to check strictly against `None` (rather than general truthiness):
-
-1. **`~?` (If not None)**:
-   ```python
-   ~? user:
-       print(user.name)
-   ```
-   * *Desugars to*: `if user is not None:`
-
-2. **`?~` (If is None)**:
-   ```python
-   ?~ cache_val:
-       cache_val = fetch_data()
-   ```
-   * *Desugars to*: `if cache_val is None:`
-
----
-
-### Candidate B: None-Coalescing Binary Operator (`~?`)
-In expression contexts, `~?` acts as a null-coalescing binary operator, yielding the right-hand side only if the left-hand side is strictly `None`.
+### Proposed Syntax
 ```python
-host = config.host ~? "localhost"
+host = config.host ~~ "localhost"
+port = config.port ~~ 8080
 ```
-* *Desugars to*: `config.host if config.host is not None else "localhost"`
 
----
+### Compile-Time Desugaring
+At parse-time, the binary `~~` operator desugars into a standard conditional expression:
+```python
+# Desugared Python AST
+host = config.host if config.host is not None else "localhost"
+```
 
-### Symmetry & Design Harmony
-This design provides absolute syntactic harmony between expressions and statements in Loh:
-* `? x:` $\rightarrow$ Check truthiness of `x` (standard if statement)
-* `~? x:` $\rightarrow$ Check if `x` is not `None` (statement)
-* `?~ x:` $\rightarrow$ Check if `x` is `None` (statement)
-* `x ~? y` $\rightarrow$ Return `x` if not `None`, else `y` (expression)
+### Grammar Conflict Check
+No conflict. In Python/Loh, `~` is a unary operator (bitwise NOT). The grammar never allows `expression ~ ~ expression` without an infix binary operator in between, enabling `~~` to be cleanly parsed as a single binary operator.
