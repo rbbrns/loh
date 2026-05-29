@@ -2304,7 +2304,7 @@ raise_rule(Parser *p)
     return _res;
 }
 
-// try: ('try' | '~^')
+// try: ('try' | '~^' | '^')
 static void *
 try_rule(Parser *p)
 {
@@ -2355,13 +2355,32 @@ try_rule(Parser *p)
         D(fprintf(stderr, "%*c%s try[%d-%d]: %s failed!\n", p->level, ' ',
                   p->error_indicator ? "ERROR!" : "-", _mark, p->mark, "'~^'"));
     }
+    { // '^'
+        if (p->error_indicator) {
+            p->level--;
+            return NULL;
+        }
+        D(fprintf(stderr, "%*c> try[%d-%d]: %s\n", p->level, ' ', _mark, p->mark, "'^'"));
+        Token * _literal;
+        if (
+            (_literal = _PyPegen_expect_token(p, 32))  // token='^'
+        )
+        {
+            D(fprintf(stderr, "%*c+ try[%d-%d]: %s succeeded!\n", p->level, ' ', _mark, p->mark, "'^'"));
+            _res = _literal;
+            goto done;
+        }
+        p->mark = _mark;
+        D(fprintf(stderr, "%*c%s try[%d-%d]: %s failed!\n", p->level, ' ',
+                  p->error_indicator ? "ERROR!" : "-", _mark, p->mark, "'^'"));
+    }
     _res = NULL;
   done:
     p->level--;
     return _res;
 }
 
-// except: ('except' | (if '^'))
+// except: ('except' | (if '^') | '^?')
 static void *
 except_rule(Parser *p)
 {
@@ -2412,13 +2431,32 @@ except_rule(Parser *p)
         D(fprintf(stderr, "%*c%s except[%d-%d]: %s failed!\n", p->level, ' ',
                   p->error_indicator ? "ERROR!" : "-", _mark, p->mark, "(if '^')"));
     }
+    { // '^?'
+        if (p->error_indicator) {
+            p->level--;
+            return NULL;
+        }
+        D(fprintf(stderr, "%*c> except[%d-%d]: %s\n", p->level, ' ', _mark, p->mark, "'^?'"));
+        Token * _literal;
+        if (
+            (_literal = _PyPegen_expect_token(p, 59))  // token='^?'
+        )
+        {
+            D(fprintf(stderr, "%*c+ except[%d-%d]: %s succeeded!\n", p->level, ' ', _mark, p->mark, "'^?'"));
+            _res = _literal;
+            goto done;
+        }
+        p->mark = _mark;
+        D(fprintf(stderr, "%*c%s except[%d-%d]: %s failed!\n", p->level, ' ',
+                  p->error_indicator ? "ERROR!" : "-", _mark, p->mark, "'^?'"));
+    }
     _res = NULL;
   done:
     p->level--;
     return _res;
 }
 
-// try_else: ('else' | (if not '^'))
+// try_else: ('else' | (if not '^') | '^?' '?')
 static void *
 try_else_rule(Parser *p)
 {
@@ -2469,13 +2507,35 @@ try_else_rule(Parser *p)
         D(fprintf(stderr, "%*c%s try_else[%d-%d]: %s failed!\n", p->level, ' ',
                   p->error_indicator ? "ERROR!" : "-", _mark, p->mark, "(if not '^')"));
     }
+    { // '^?' '?'
+        if (p->error_indicator) {
+            p->level--;
+            return NULL;
+        }
+        D(fprintf(stderr, "%*c> try_else[%d-%d]: %s\n", p->level, ' ', _mark, p->mark, "'^?' '?'"));
+        Token * _literal;
+        Token * _literal_1;
+        if (
+            (_literal = _PyPegen_expect_token(p, 59))  // token='^?'
+            &&
+            (_literal_1 = _PyPegen_expect_token(p, 57))  // token='?'
+        )
+        {
+            D(fprintf(stderr, "%*c+ try_else[%d-%d]: %s succeeded!\n", p->level, ' ', _mark, p->mark, "'^?' '?'"));
+            _res = _PyPegen_dummy_name(p, _literal, _literal_1);
+            goto done;
+        }
+        p->mark = _mark;
+        D(fprintf(stderr, "%*c%s try_else[%d-%d]: %s failed!\n", p->level, ' ',
+                  p->error_indicator ? "ERROR!" : "-", _mark, p->mark, "'^?' '?'"));
+    }
     _res = NULL;
   done:
     p->level--;
     return _res;
 }
 
-// finally: ('finally' | (if '*'))
+// finally: ('finally' | (if '*') | '^' '*')
 static void *
 finally_rule(Parser *p)
 {
@@ -2525,6 +2585,28 @@ finally_rule(Parser *p)
         p->mark = _mark;
         D(fprintf(stderr, "%*c%s finally[%d-%d]: %s failed!\n", p->level, ' ',
                   p->error_indicator ? "ERROR!" : "-", _mark, p->mark, "(if '*')"));
+    }
+    { // '^' '*'
+        if (p->error_indicator) {
+            p->level--;
+            return NULL;
+        }
+        D(fprintf(stderr, "%*c> finally[%d-%d]: %s\n", p->level, ' ', _mark, p->mark, "'^' '*'"));
+        Token * _literal;
+        Token * _literal_1;
+        if (
+            (_literal = _PyPegen_expect_token(p, 32))  // token='^'
+            &&
+            (_literal_1 = _PyPegen_expect_token(p, 16))  // token='*'
+        )
+        {
+            D(fprintf(stderr, "%*c+ finally[%d-%d]: %s succeeded!\n", p->level, ' ', _mark, p->mark, "'^' '*'"));
+            _res = _PyPegen_dummy_name(p, _literal, _literal_1);
+            goto done;
+        }
+        p->mark = _mark;
+        D(fprintf(stderr, "%*c%s finally[%d-%d]: %s failed!\n", p->level, ' ',
+                  p->error_indicator ? "ERROR!" : "-", _mark, p->mark, "'^' '*'"));
     }
     _res = NULL;
   done:

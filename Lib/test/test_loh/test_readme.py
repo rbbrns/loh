@@ -102,6 +102,18 @@ class TestReadmeExamples(unittest.TestCase):
 
     def test_exceptions_and_assertions(self):
         ran = False
+        ^:
+            result = 10 / 0
+        ^? ZeroDivisionError => e:
+            ran = True
+        ^??:
+            self.fail("Should have raised ZeroDivisionError")
+        ^*:
+            pass
+        self.assertTrue(ran)
+
+        # Legacy operator syntax (Option 2)
+        ran = False
         ~^:
             result = 10 / 0
         ?^ ZeroDivisionError => e:

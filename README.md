@@ -57,11 +57,11 @@ Loh maps Python's verbose keywords and structures to elegant, symbol-based alter
 | `while` | `$?` | While loop |
 | `break` | `$>>` | Break statement |
 | `continue` | `$<<` | Continue statement |
-| `try` | `~^` | Try block |
-| `except` | `?^` | Except handler |
-| `except*` | `?^*` | Except-star handler |
-| `else` *(try)* | `?!^` | Try-else block |
-| `finally` | `?*` | Finally block |
+| `try` | `~^` *(or `^:`)* | Try block |
+| `except` | `?^` *(or `^?`)* | Except handler |
+| `except*` | `?^*` *(or `^?*`)* | Except-star handler |
+| `else` *(try)* | `?!^` *(or `^??:`)* | Try-else block |
+| `finally` | `?*` *(or `^*:`)* | Finally block |
 | `as` | `=>` *(or `as`)* | Alias binding operator |
 | `raise` | `^^^` | Raise exception |
 | `assert` | `^?!` | Assert statement |
@@ -327,7 +327,7 @@ type IntOrFloat = int | float
 
 ### **10. Exceptions & Try-Except-Finally**
 
-> **Motivation:** Exception handling is a control flow structure designed to catch errors. The symbol `~^` represents entering a guarded block, while `?^` queries for matching exceptions. Raising string literals directly (`^^^ "error"`) simplifies throwing standard exceptions, removing the boilerplate of instantiating exception classes for simple error messages.
+> **Motivation:** Exception handling is a control flow structure designed to catch errors. The symbol `~^` represents entering a guarded try block, while `?^` queries for matching exceptions. Alternatively, grouping all clauses under a unified `^` prefix (e.g. `^:`, `^?`, `^??:`, `^*:`) creates a highly consistent and cohesive block structure. Raising string literals directly (`^^^ "error"`) simplifies throwing standard exceptions, removing the boilerplate of instantiating exception classes for simple error messages.
 
 #### **Python**
 ```python
@@ -348,6 +348,17 @@ raise Exception("Failed") from error
 
 #### **Loh**
 ```python
+# Option 1: Unified caret syntax (Recommended)
+^:
+    result = 10 / 0
+^? ZeroDivisionError => e:
+    print(f"Error: {e}")
+^??:
+    print("Success")
+^*:
+    print("Cleanup")
+
+# Option 2: Legacy operator syntax
 ~^:
     result = 10 / 0
 ?^ ZeroDivisionError => e:
