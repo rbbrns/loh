@@ -320,6 +320,44 @@ on_error~(code, message)
 on_complete() if on_complete is not None else None
 ```
 
+---
+
+## 13. Range Slice Notation (`lst[start..stop]`)
+
+### Motivation
+Standard Python uses `lst[start:stop]`. Since we already planned range literals `start..stop`, we should allow them to be used inside subscripts as a clean alternative to standard slicing.
+
+### Proposed Syntax
+```python
+# Get elements from index 1 to 4 (exclusive stop)
+subset = lst[1..5]
+
+# Open bounds
+first_three = lst[..3]
+from_index_five = lst[5..]
+```
+
+### Compile-Time Desugaring
+Translates `a..b` inside subscript brackets to standard Python slice AST nodes: `slice(a, b, None)`.
+
+---
+
+## 14. Automatic f-Strings (Implicit Interpolation)
+
+### Motivation
+Python requires prefixing string literals with `f` (e.g., `f"Hello {name}"`) for interpolation. Forgetting the `f` prefix is a very common bug.
+
+### Proposed Syntax
+Any double-quoted or single-quoted string containing unescaped `{expression}` brackets is automatically compiled as an f-string without requiring the prefix:
+```python
+name = "Alice"
+msg = "Hello {name}!"  # Auto f-string
+```
+
+### Compile-Time Desugaring
+The parser checks string token content; if it contains braces `{}` and is not a raw string (`r""`), it tokenizes and parses it as a `JoinedStr` (f-string) AST node.
+
+
 
 
 
