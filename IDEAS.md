@@ -432,8 +432,9 @@ def _block():
 
 total_cost = _block()
 ```
-Since semicolons inside parentheses are invalid in standard Python syntax, this rule has zero grammatical conflicts.
 
+### Semicolon Requirement Note
+Because Python's tokenizer ignores newlines inside parentheses to support implicit line continuation, semicolons `;` are strictly required even when statements are written on separate lines. Without semicolons, the tokenizer would treat the statements as if they were written on a single line, causing syntax errors. Semicolons also serve as the explicit marker distinguishing an expression block from standard parenthesized expressions.
 ```
 
 
