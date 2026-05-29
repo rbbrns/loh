@@ -89,9 +89,8 @@ class TestReadmeExamples(unittest.TestCase):
             pass
 
         Account:BaseAccount:
-            .__init__(owner, balance):
-                .owner = owner
-                .balance = balance
+            .(.owner, .balance):
+                pass
 
             .deposit(amount):
                 .balance += amount

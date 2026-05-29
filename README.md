@@ -74,6 +74,8 @@ Loh maps Python's verbose keywords and structures to elegant, symbol-based alter
 | `lambda` | `(args) -> expr` | Lambda function (arrow syntax) |
 | `class` | `Name::` *(or `Name:Parent:`)*| Class declaration |
 | `def` | *(omit)* | Function definition |
+| `def __init__(self, ...)` | `.(...)` | Constructor shorthand |
+| `self.param = param` | `.param` in signature | Parameter property binding |
 | `type` | `:` | Type alias declaration |
 | `match` | `?==` | Structural pattern matching subject |
 | `case` | *(omit)* | Pattern case declaration |
@@ -276,9 +278,9 @@ setup_config("test", a=1, **{"a": 2})  # overrides 'a' to 2
 
 ---
 
-### **8. Classes & Object Properties**
+### **8. Classes, Constructors, & Parameter Properties**
 
-> **Motivation:** Method and attribute declarations inside a class are inherently bound to the instance namespace. Using a prefix dot (`.method` or `.attribute`) matches the intuition of accessing member properties of the current object, automating the injection of the instance reference and eliminating the repetitive typing of `self`.
+> **Motivation:** Method and attribute declarations inside a class are inherently bound to the instance namespace. Using a prefix dot (`.method` or `.attribute`) matches the intuition of accessing member properties of the current object. Furthermore, defining class constructors using `.(...)` and prefixing parameter properties with a dot (`.param`) automates attribute assignment and eliminates the repetitive typing of `self` and constructor boilerplates.
 
 #### **Python**
 ```python
@@ -295,9 +297,9 @@ class Account(BaseAccount):
 #### **Loh**
 ```python
 Account:BaseAccount:
-    .__init__(owner, balance):
-        .owner = owner
-        .balance = balance
+    # Constructor shorthand with parameter properties
+    .(.owner, .balance):
+        pass
 
     .deposit(amount):
         .balance += amount

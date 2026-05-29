@@ -380,6 +380,60 @@ if _val1 is not None:
     _val2 = _val1.profile
     if _val2 is not None:
         _val2.address = new_address
+
+---
+
+## 16. Infinite Loops Shorthand (`$:`)
+
+### Motivation
+Python lacks a dedicated infinite loop construct, requiring `while True:`. Loh can use the loop sigil alone to represent an infinite loop.
+
+### Proposed Syntax
+```python
+$:
+    # Loop runs forever until broken
+    print("Processing...")
+    ? should_stop:
+        $>>
+```
+
+### Compile-Time Desugaring
+Translates directly to `while True:`.
+
+---
+
+## 17. Parenthesized Expression Blocks (`(expr; expr; expr)`)
+
+### Motivation
+Standard Python lacks support for multi-line or chained expression blocks, forcing developers to write helper functions or Immediately Invoked Function Expressions (IIFEs) for inline calculations. 
+
+Using parentheses with semicolon-separated expressions `(statement; statement; expression)` provides a lightweight, visually clean syntax for inline blocks that avoids dict/set braces conflicts. The entire block evaluates to the value of the final expression.
+
+### Proposed Syntax
+```python
+# Inline calculation of total cost
+total_cost = (
+    base = get_base_price();
+    tax = get_tax_rate();
+    base + tax
+)
+
+# Inline checks in function parameters
+process( (x = get_value(); x ? x.status == 200 ?? --) )
+```
+
+### Compile-Time Desugaring
+At parse time, the parser wraps the semicolon-terminated sequence of statements inside an immediately invoked function expression (IIFE):
+```python
+def _block():
+    base = get_base_price()
+    tax = get_tax_rate()
+    return base + tax
+
+total_cost = _block()
+```
+Since semicolons inside parentheses are invalid in standard Python syntax, this rule has zero grammatical conflicts.
+
 ```
 
 

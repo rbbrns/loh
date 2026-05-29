@@ -2074,3 +2074,61 @@ _PyPegen_range_literal(Parser *p, expr_ty left, expr_ty right) {
 
     return _PyAST_Call(func, args, NULL, left->lineno, left->col_offset, right->end_lineno, right->end_col_offset, p->arena);
 }
+
+PyObject *
+_PyPegen_make_dot_identifier(Parser *p, PyObject *name)
+{
+    const char *str = PyUnicode_AsUTF8(name);
+    if (!str) {
+        return NULL;
+    }
+    char buf[512];
+    snprintf(buf, sizeof(buf), ".%s", str);
+    return _PyPegen_new_identifier(p, buf);
+}
+
+static asdl_stmt_seq *
+desugar_arg_sequence(Parser *p, asdl_arg_seq *arg_list, asdl_stmt_seq *body) {
+    if (!arg_list) return body;
+    int len = asdl_seq_LEN(arg_list);
+    for (int i = len - 1; i >= 0; i--) {
+        arg_ty arg = asdl_seq_GET(arg_list, i);
+        PyObject *name = arg->arg;
+        const char *name_str = PyUnicode_AsUTF8(name);
+        if (name_str && name_str[0] == '.' && strlen(name_str) > 1) {
+            // Extract real name: name_str + 1
+            PyObject *real_name = _PyPegen_new_identifier(p, name_str + 1);
+            if (!real_name) return NULL;
+            
+            // Construct assignment: .name = name
+            expr_ty self_name = _PyAST_Name(_PyPegen_new_identifier(p, "."), Load, arg->lineno, arg->col_offset, arg->end_lineno, arg->end_col_offset, p->arena);
+            expr_ty target = _PyAST_Attribute(self_name, real_name, Store, arg->lineno, arg->col_offset, arg->end_lineno, arg->end_col_offset, p->arena);
+            expr_ty val = _PyAST_Name(real_name, Load, arg->lineno, arg->col_offset, arg->end_lineno, arg->end_col_offset, p->arena);
+            asdl_expr_seq *targets = (asdl_expr_seq *)_PyPegen_singleton_seq(p, target);
+            stmt_ty assign = _PyAST_Assign(targets, val, NULL, arg->lineno, arg->col_offset, arg->end_lineno, arg->end_col_offset, p->arena);
+            
+            // Prepend to body
+            body = (asdl_stmt_seq *)_PyPegen_seq_insert_in_front(p, assign, (asdl_seq *)body);
+            if (!body) return NULL;
+            
+            // Update the argument name to the clean name
+            arg->arg = real_name;
+        }
+    }
+    return body;
+}
+
+asdl_stmt_seq *
+_PyPegen_desugar_parameter_properties(Parser *p, arguments_ty args, asdl_stmt_seq *body)
+{
+    if (args) {
+        body = desugar_arg_sequence(p, args->kwonlyargs, body);
+        if (!body) return NULL;
+        body = desugar_arg_sequence(p, args->args, body);
+        if (!body) return NULL;
+        body = desugar_arg_sequence(p, args->posonlyargs, body);
+        if (!body) return NULL;
+    }
+    return body;
+}
+

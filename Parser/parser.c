@@ -25,7 +25,7 @@ static KeywordToken *reserved_keywords[] = {
         {"if", 506},
         {"as", 515},
         {"is", 520},
-        {"in", 548},
+        {"in", 549},
         {NULL, -1},
     },
     (KeywordToken[]) {
@@ -33,15 +33,15 @@ static KeywordToken *reserved_keywords[] = {
         {"not", 505},
         {"try", 511},
         {"for", 516},
-        {"del", 546},
-        {"def", 550},
+        {"del", 547},
+        {"def", 551},
         {NULL, -1},
     },
     (KeywordToken[]) {
         {"True", 501},
         {"None", 502},
         {"elif", 507},
-        {"else", 543},
+        {"else", 544},
         {"with", 526},
         {"from", 527},
         {"pass", 533},
@@ -55,7 +55,7 @@ static KeywordToken *reserved_keywords[] = {
         {"async", 521},
         {"await", 522},
         {"yield", 524},
-        {"class", 552},
+        {"class", 553},
         {NULL, -1},
     },
     (KeywordToken[]) {
@@ -64,7 +64,7 @@ static KeywordToken *reserved_keywords[] = {
         {"return", 523},
         {"import", 528},
         {"global", 534},
-        {"lambda", 545},
+        {"lambda", 546},
         {NULL, -1},
     },
     (KeywordToken[]) {
@@ -2154,7 +2154,7 @@ else_rule(Parser *p)
         D(fprintf(stderr, "%*c> else[%d-%d]: %s\n", p->level, ' ', _mark, p->mark, "'else'"));
         Token * _keyword;
         if (
-            (_keyword = _PyPegen_expect_token(p, 543))  // token='else'
+            (_keyword = _PyPegen_expect_token(p, 544))  // token='else'
         )
         {
             D(fprintf(stderr, "%*c+ else[%d-%d]: %s succeeded!\n", p->level, ' ', _mark, p->mark, "'else'"));
@@ -2439,7 +2439,7 @@ try_else_rule(Parser *p)
         D(fprintf(stderr, "%*c> try_else[%d-%d]: %s\n", p->level, ' ', _mark, p->mark, "'else'"));
         Token * _keyword;
         if (
-            (_keyword = _PyPegen_expect_token(p, 543))  // token='else'
+            (_keyword = _PyPegen_expect_token(p, 544))  // token='else'
         )
         {
             D(fprintf(stderr, "%*c+ try_else[%d-%d]: %s succeeded!\n", p->level, ' ', _mark, p->mark, "'else'"));
@@ -3161,7 +3161,7 @@ del_rule(Parser *p)
         D(fprintf(stderr, "%*c> del[%d-%d]: %s\n", p->level, ' ', _mark, p->mark, "'del'"));
         Token * _keyword;
         if (
-            (_keyword = _PyPegen_expect_token(p, 546))  // token='del'
+            (_keyword = _PyPegen_expect_token(p, 547))  // token='del'
         )
         {
             D(fprintf(stderr, "%*c+ del[%d-%d]: %s succeeded!\n", p->level, ' ', _mark, p->mark, "'del'"));
@@ -3484,7 +3484,7 @@ in_rule(Parser *p)
         D(fprintf(stderr, "%*c> in[%d-%d]: %s\n", p->level, ' ', _mark, p->mark, "'in'"));
         Token * _keyword;
         if (
-            (_keyword = _PyPegen_expect_token(p, 548))  // token='in'
+            (_keyword = _PyPegen_expect_token(p, 549))  // token='in'
         )
         {
             D(fprintf(stderr, "%*c+ in[%d-%d]: %s succeeded!\n", p->level, ' ', _mark, p->mark, "'in'"));
@@ -3699,7 +3699,7 @@ double_star_rule(Parser *p)
     return _res;
 }
 
-// name_or_dot: NAME | dot !NUMBER
+// name_or_dot: NAME | dot !NUMBER !NAME
 static expr_ty
 name_or_dot_rule(Parser *p)
 {
@@ -3731,26 +3731,28 @@ name_or_dot_rule(Parser *p)
         D(fprintf(stderr, "%*c%s name_or_dot[%d-%d]: %s failed!\n", p->level, ' ',
                   p->error_indicator ? "ERROR!" : "-", _mark, p->mark, "NAME"));
     }
-    { // dot !NUMBER
+    { // dot !NUMBER !NAME
         if (p->error_indicator) {
             p->level--;
             return NULL;
         }
-        D(fprintf(stderr, "%*c> name_or_dot[%d-%d]: %s\n", p->level, ' ', _mark, p->mark, "dot !NUMBER"));
+        D(fprintf(stderr, "%*c> name_or_dot[%d-%d]: %s\n", p->level, ' ', _mark, p->mark, "dot !NUMBER !NAME"));
         expr_ty dot_var;
         if (
             (dot_var = dot_rule(p))  // dot
             &&
             _PyPegen_lookahead_for_expr(0, _PyPegen_number_token, p)
+            &&
+            _PyPegen_lookahead_for_expr(0, _PyPegen_name_token, p)
         )
         {
-            D(fprintf(stderr, "%*c+ name_or_dot[%d-%d]: %s succeeded!\n", p->level, ' ', _mark, p->mark, "dot !NUMBER"));
+            D(fprintf(stderr, "%*c+ name_or_dot[%d-%d]: %s succeeded!\n", p->level, ' ', _mark, p->mark, "dot !NUMBER !NAME"));
             _res = dot_var;
             goto done;
         }
         p->mark = _mark;
         D(fprintf(stderr, "%*c%s name_or_dot[%d-%d]: %s failed!\n", p->level, ' ',
-                  p->error_indicator ? "ERROR!" : "-", _mark, p->mark, "dot !NUMBER"));
+                  p->error_indicator ? "ERROR!" : "-", _mark, p->mark, "dot !NUMBER !NAME"));
     }
     _res = NULL;
   done:
@@ -7310,7 +7312,7 @@ class_def_raw_rule(Parser *p)
         asdl_stmt_seq* c;
         void *t;
         if (
-            (_keyword = _PyPegen_expect_token(p, 552))  // token='class'
+            (_keyword = _PyPegen_expect_token(p, 553))  // token='class'
             &&
             (a = _PyPegen_name_token(p))  // NAME
             &&
@@ -7517,6 +7519,7 @@ function_def_rule(Parser *p)
 //     | !"match" NAME type_params? '(' params? ')' ['->' expression] ':' func_type_comment? block
 //     | 'def' NAME type_params? '(' params? ')' ['->' expression] ':' func_type_comment? block
 //     | 'def'? dot NAME type_params? '(' params? ')' ['->' expression] ':' func_type_comment? block
+//     | 'def'? dot '(' params? ')' ['->' expression] ':' func_type_comment? block
 //     | async 'def'? NAME type_params? '(' params? ')' ['->' expression] ':' func_type_comment? block
 //     | async 'def'? dot NAME type_params? '(' params? ')' ['->' expression] ':' func_type_comment? block
 static stmt_ty
@@ -7606,7 +7609,7 @@ function_def_raw_rule(Parser *p)
             UNUSED(_end_lineno); // Only used by EXTRA macro
             int _end_col_offset = _token->end_col_offset;
             UNUSED(_end_col_offset); // Only used by EXTRA macro
-            _res = _PyAST_FunctionDef ( n -> v . Name . id , ( params ) ? params : CHECK ( arguments_ty , _PyPegen_empty_arguments ( p ) ) , b , NULL , a , NEW_TYPE_COMMENT ( p , tc ) , t , EXTRA );
+            _res = _PyAST_FunctionDef ( n -> v . Name . id , ( params ) ? params : CHECK ( arguments_ty , _PyPegen_empty_arguments ( p ) ) , _PyPegen_desugar_parameter_properties ( p , params , b ) , NULL , a , NEW_TYPE_COMMENT ( p , tc ) , t , EXTRA );
             if (_res == NULL && PyErr_Occurred()) {
                 p->error_indicator = 1;
                 p->level--;
@@ -7635,7 +7638,7 @@ function_def_raw_rule(Parser *p)
         void *t;
         void *tc;
         if (
-            (_keyword = _PyPegen_expect_token(p, 550))  // token='def'
+            (_keyword = _PyPegen_expect_token(p, 551))  // token='def'
             &&
             (n = _PyPegen_name_token(p))  // NAME
             &&
@@ -7666,7 +7669,7 @@ function_def_raw_rule(Parser *p)
             UNUSED(_end_lineno); // Only used by EXTRA macro
             int _end_col_offset = _token->end_col_offset;
             UNUSED(_end_col_offset); // Only used by EXTRA macro
-            _res = _PyAST_FunctionDef ( n -> v . Name . id , ( params ) ? params : CHECK ( arguments_ty , _PyPegen_empty_arguments ( p ) ) , b , NULL , a , NEW_TYPE_COMMENT ( p , tc ) , t , EXTRA );
+            _res = _PyAST_FunctionDef ( n -> v . Name . id , ( params ) ? params : CHECK ( arguments_ty , _PyPegen_empty_arguments ( p ) ) , _PyPegen_desugar_parameter_properties ( p , params , b ) , NULL , a , NEW_TYPE_COMMENT ( p , tc ) , t , EXTRA );
             if (_res == NULL && PyErr_Occurred()) {
                 p->error_indicator = 1;
                 p->level--;
@@ -7697,7 +7700,7 @@ function_def_raw_rule(Parser *p)
         void *t;
         void *tc;
         if (
-            (_opt_var = _PyPegen_expect_token(p, 550), !p->error_indicator)  // 'def'?
+            (_opt_var = _PyPegen_expect_token(p, 551), !p->error_indicator)  // 'def'?
             &&
             (d = dot_rule(p))  // dot
             &&
@@ -7730,7 +7733,7 @@ function_def_raw_rule(Parser *p)
             UNUSED(_end_lineno); // Only used by EXTRA macro
             int _end_col_offset = _token->end_col_offset;
             UNUSED(_end_col_offset); // Only used by EXTRA macro
-            _res = _PyAST_FunctionDef ( n -> v . Name . id , _PyPegen_insert_arg_in_front ( p , _PyAST_arg ( d -> v . Name . id , NULL , NULL , EXTRA ) , params ) , b , NULL , a , NEW_TYPE_COMMENT ( p , tc ) , t , EXTRA );
+            _res = _PyAST_FunctionDef ( n -> v . Name . id , _PyPegen_insert_arg_in_front ( p , _PyAST_arg ( d -> v . Name . id , NULL , NULL , EXTRA ) , params ) , _PyPegen_desugar_parameter_properties ( p , params , b ) , NULL , a , NEW_TYPE_COMMENT ( p , tc ) , t , EXTRA );
             if (_res == NULL && PyErr_Occurred()) {
                 p->error_indicator = 1;
                 p->level--;
@@ -7741,6 +7744,64 @@ function_def_raw_rule(Parser *p)
         p->mark = _mark;
         D(fprintf(stderr, "%*c%s function_def_raw[%d-%d]: %s failed!\n", p->level, ' ',
                   p->error_indicator ? "ERROR!" : "-", _mark, p->mark, "'def'? dot NAME type_params? '(' params? ')' ['->' expression] ':' func_type_comment? block"));
+    }
+    { // 'def'? dot '(' params? ')' ['->' expression] ':' func_type_comment? block
+        if (p->error_indicator) {
+            p->level--;
+            return NULL;
+        }
+        D(fprintf(stderr, "%*c> function_def_raw[%d-%d]: %s\n", p->level, ' ', _mark, p->mark, "'def'? dot '(' params? ')' ['->' expression] ':' func_type_comment? block"));
+        Token * _literal;
+        Token * _literal_1;
+        Token * _literal_2;
+        void *_opt_var;
+        UNUSED(_opt_var); // Silence compiler warnings
+        void *a;
+        asdl_stmt_seq* b;
+        expr_ty d;
+        void *params;
+        void *tc;
+        if (
+            (_opt_var = _PyPegen_expect_token(p, 551), !p->error_indicator)  // 'def'?
+            &&
+            (d = dot_rule(p))  // dot
+            &&
+            (_literal = _PyPegen_expect_token(p, 7))  // token='('
+            &&
+            (params = params_rule(p), !p->error_indicator)  // params?
+            &&
+            (_literal_1 = _PyPegen_expect_token(p, 8))  // token=')'
+            &&
+            (a = _tmp_30_rule(p), !p->error_indicator)  // ['->' expression]
+            &&
+            (_literal_2 = _PyPegen_expect_token(p, 11))  // token=':'
+            &&
+            (tc = func_type_comment_rule(p), !p->error_indicator)  // func_type_comment?
+            &&
+            (b = block_rule(p))  // block
+        )
+        {
+            D(fprintf(stderr, "%*c+ function_def_raw[%d-%d]: %s succeeded!\n", p->level, ' ', _mark, p->mark, "'def'? dot '(' params? ')' ['->' expression] ':' func_type_comment? block"));
+            Token *_token = _PyPegen_get_last_nonnwhitespace_token(p);
+            if (_token == NULL) {
+                p->level--;
+                return NULL;
+            }
+            int _end_lineno = _token->end_lineno;
+            UNUSED(_end_lineno); // Only used by EXTRA macro
+            int _end_col_offset = _token->end_col_offset;
+            UNUSED(_end_col_offset); // Only used by EXTRA macro
+            _res = _PyAST_FunctionDef ( _PyPegen_new_identifier ( p , "__init__" ) , _PyPegen_insert_arg_in_front ( p , _PyAST_arg ( d -> v . Name . id , NULL , NULL , EXTRA ) , params ) , _PyPegen_desugar_parameter_properties ( p , params , b ) , NULL , a , NEW_TYPE_COMMENT ( p , tc ) , NULL , EXTRA );
+            if (_res == NULL && PyErr_Occurred()) {
+                p->error_indicator = 1;
+                p->level--;
+                return NULL;
+            }
+            goto done;
+        }
+        p->mark = _mark;
+        D(fprintf(stderr, "%*c%s function_def_raw[%d-%d]: %s failed!\n", p->level, ' ',
+                  p->error_indicator ? "ERROR!" : "-", _mark, p->mark, "'def'? dot '(' params? ')' ['->' expression] ':' func_type_comment? block"));
     }
     { // async 'def'? NAME type_params? '(' params? ')' ['->' expression] ':' func_type_comment? block
         if (p->error_indicator) {
@@ -7763,7 +7824,7 @@ function_def_raw_rule(Parser *p)
         if (
             (async_var = async_rule(p))  // async
             &&
-            (_opt_var = _PyPegen_expect_token(p, 550), !p->error_indicator)  // 'def'?
+            (_opt_var = _PyPegen_expect_token(p, 551), !p->error_indicator)  // 'def'?
             &&
             (n = _PyPegen_name_token(p))  // NAME
             &&
@@ -7794,7 +7855,7 @@ function_def_raw_rule(Parser *p)
             UNUSED(_end_lineno); // Only used by EXTRA macro
             int _end_col_offset = _token->end_col_offset;
             UNUSED(_end_col_offset); // Only used by EXTRA macro
-            _res = CHECK_VERSION ( stmt_ty , 5 , "Async functions are" , _PyAST_AsyncFunctionDef ( n -> v . Name . id , ( params ) ? params : CHECK ( arguments_ty , _PyPegen_empty_arguments ( p ) ) , b , NULL , a , NEW_TYPE_COMMENT ( p , tc ) , t , EXTRA ) );
+            _res = CHECK_VERSION ( stmt_ty , 5 , "Async functions are" , _PyAST_AsyncFunctionDef ( n -> v . Name . id , ( params ) ? params : CHECK ( arguments_ty , _PyPegen_empty_arguments ( p ) ) , _PyPegen_desugar_parameter_properties ( p , params , b ) , NULL , a , NEW_TYPE_COMMENT ( p , tc ) , t , EXTRA ) );
             if (_res == NULL && PyErr_Occurred()) {
                 p->error_indicator = 1;
                 p->level--;
@@ -7828,7 +7889,7 @@ function_def_raw_rule(Parser *p)
         if (
             (async_var = async_rule(p))  // async
             &&
-            (_opt_var = _PyPegen_expect_token(p, 550), !p->error_indicator)  // 'def'?
+            (_opt_var = _PyPegen_expect_token(p, 551), !p->error_indicator)  // 'def'?
             &&
             (d = dot_rule(p))  // dot
             &&
@@ -7861,7 +7922,7 @@ function_def_raw_rule(Parser *p)
             UNUSED(_end_lineno); // Only used by EXTRA macro
             int _end_col_offset = _token->end_col_offset;
             UNUSED(_end_col_offset); // Only used by EXTRA macro
-            _res = _PyAST_AsyncFunctionDef ( n -> v . Name . id , _PyPegen_insert_arg_in_front ( p , _PyAST_arg ( d -> v . Name . id , NULL , NULL , EXTRA ) , params ) , b , NULL , a , NEW_TYPE_COMMENT ( p , tc ) , t , EXTRA );
+            _res = _PyAST_AsyncFunctionDef ( n -> v . Name . id , _PyPegen_insert_arg_in_front ( p , _PyAST_arg ( d -> v . Name . id , NULL , NULL , EXTRA ) , params ) , _PyPegen_desugar_parameter_properties ( p , params , b ) , NULL , a , NEW_TYPE_COMMENT ( p , tc ) , t , EXTRA );
             if (_res == NULL && PyErr_Occurred()) {
                 p->error_indicator = 1;
                 p->level--;
@@ -9170,7 +9231,7 @@ param_maybe_default_rule(Parser *p)
     return _res;
 }
 
-// param: name_or_dot annotation?
+// param: name_or_dot annotation? | '.' NAME annotation?
 static arg_ty
 param_rule(Parser *p)
 {
@@ -9227,6 +9288,45 @@ param_rule(Parser *p)
         p->mark = _mark;
         D(fprintf(stderr, "%*c%s param[%d-%d]: %s failed!\n", p->level, ' ',
                   p->error_indicator ? "ERROR!" : "-", _mark, p->mark, "name_or_dot annotation?"));
+    }
+    { // '.' NAME annotation?
+        if (p->error_indicator) {
+            p->level--;
+            return NULL;
+        }
+        D(fprintf(stderr, "%*c> param[%d-%d]: %s\n", p->level, ' ', _mark, p->mark, "'.' NAME annotation?"));
+        Token * _literal;
+        expr_ty a;
+        void *b;
+        if (
+            (_literal = _PyPegen_expect_token(p, 23))  // token='.'
+            &&
+            (a = _PyPegen_name_token(p))  // NAME
+            &&
+            (b = annotation_rule(p), !p->error_indicator)  // annotation?
+        )
+        {
+            D(fprintf(stderr, "%*c+ param[%d-%d]: %s succeeded!\n", p->level, ' ', _mark, p->mark, "'.' NAME annotation?"));
+            Token *_token = _PyPegen_get_last_nonnwhitespace_token(p);
+            if (_token == NULL) {
+                p->level--;
+                return NULL;
+            }
+            int _end_lineno = _token->end_lineno;
+            UNUSED(_end_lineno); // Only used by EXTRA macro
+            int _end_col_offset = _token->end_col_offset;
+            UNUSED(_end_col_offset); // Only used by EXTRA macro
+            _res = _PyAST_arg ( _PyPegen_make_dot_identifier ( p , a -> v . Name . id ) , b , NULL , EXTRA );
+            if (_res == NULL && PyErr_Occurred()) {
+                p->error_indicator = 1;
+                p->level--;
+                return NULL;
+            }
+            goto done;
+        }
+        p->mark = _mark;
+        D(fprintf(stderr, "%*c%s param[%d-%d]: %s failed!\n", p->level, ' ',
+                  p->error_indicator ? "ERROR!" : "-", _mark, p->mark, "'.' NAME annotation?"));
     }
     _res = NULL;
   done:
@@ -9925,7 +10025,7 @@ loop_else_block_rule(Parser *p)
         Token * _literal;
         asdl_stmt_seq* b;
         if (
-            (_keyword = _PyPegen_expect_token(p, 543))  // token='else'
+            (_keyword = _PyPegen_expect_token(p, 544))  // token='else'
             &&
             (_literal = _PyPegen_expect_forced_token(p, 11, ":"))  // forced_token=':'
             &&
@@ -19641,7 +19741,7 @@ lambdef_rule(Parser *p)
         void *a;
         expr_ty b;
         if (
-            (_keyword = _PyPegen_expect_token(p, 545))  // token='lambda'
+            (_keyword = _PyPegen_expect_token(p, 546))  // token='lambda'
             &&
             (a = lambda_params_rule(p), !p->error_indicator)  // lambda_params?
             &&
@@ -26348,7 +26448,7 @@ invalid_expression_rule(Parser *p)
             &&
             (b = disjunction_rule(p))  // disjunction
             &&
-            (_keyword = _PyPegen_expect_token(p, 543))  // token='else'
+            (_keyword = _PyPegen_expect_token(p, 544))  // token='else'
             &&
             (c = simple_stmt_rule(p))  // simple_stmt
         )
@@ -26377,7 +26477,7 @@ invalid_expression_rule(Parser *p)
         Token * a;
         Token * b;
         if (
-            (a = _PyPegen_expect_token(p, 545))  // token='lambda'
+            (a = _PyPegen_expect_token(p, 546))  // token='lambda'
             &&
             (_opt_var = lambda_params_rule(p), !p->error_indicator)  // lambda_params?
             &&
@@ -26410,7 +26510,7 @@ invalid_expression_rule(Parser *p)
         Token * a;
         Token * b;
         if (
-            (a = _PyPegen_expect_token(p, 545))  // token='lambda'
+            (a = _PyPegen_expect_token(p, 546))  // token='lambda'
             &&
             (_opt_var = lambda_params_rule(p), !p->error_indicator)  // lambda_params?
             &&
@@ -26881,7 +26981,7 @@ invalid_del_stmt_rule(Parser *p)
         Token * _keyword;
         expr_ty a;
         if (
-            (_keyword = _PyPegen_expect_token(p, 546))  // token='del'
+            (_keyword = _PyPegen_expect_token(p, 547))  // token='del'
             &&
             (a = star_expressions_rule(p))  // star_expressions
         )
@@ -30500,7 +30600,7 @@ invalid_for_stmt_rule(Parser *p)
             &&
             (star_targets_var = star_targets_rule(p))  // star_targets
             &&
-            (_keyword = _PyPegen_expect_token(p, 548))  // token='in'
+            (_keyword = _PyPegen_expect_token(p, 549))  // token='in'
             &&
             (star_expressions_var = star_expressions_rule(p))  // star_expressions
             &&
@@ -30541,7 +30641,7 @@ invalid_for_stmt_rule(Parser *p)
             &&
             (star_targets_var = star_targets_rule(p))  // star_targets
             &&
-            (_keyword = _PyPegen_expect_token(p, 548))  // token='in'
+            (_keyword = _PyPegen_expect_token(p, 549))  // token='in'
             &&
             (star_expressions_var = star_expressions_rule(p))  // star_expressions
             &&
@@ -30609,7 +30709,7 @@ invalid_def_raw_rule(Parser *p)
         if (
             (_opt_var = async_rule(p), !p->error_indicator)  // async?
             &&
-            (a = _PyPegen_expect_token(p, 550))  // token='def'
+            (a = _PyPegen_expect_token(p, 551))  // token='def'
             &&
             (name_var = _PyPegen_name_token(p))  // NAME
             &&
@@ -30668,7 +30768,7 @@ invalid_def_raw_rule(Parser *p)
         if (
             (_opt_var = async_rule(p), !p->error_indicator)  // async?
             &&
-            (_keyword = _PyPegen_expect_token(p, 550))  // token='def'
+            (_keyword = _PyPegen_expect_token(p, 551))  // token='def'
             &&
             (name_var = _PyPegen_name_token(p))  // NAME
             &&
@@ -30732,7 +30832,7 @@ invalid_class_def_raw_rule(Parser *p)
         expr_ty name_var;
         Token * newline_var;
         if (
-            (_keyword = _PyPegen_expect_token(p, 552))  // token='class'
+            (_keyword = _PyPegen_expect_token(p, 553))  // token='class'
             &&
             (name_var = _PyPegen_name_token(p))  // NAME
             &&
@@ -30771,7 +30871,7 @@ invalid_class_def_raw_rule(Parser *p)
         expr_ty name_var;
         Token * newline_var;
         if (
-            (a = _PyPegen_expect_token(p, 552))  // token='class'
+            (a = _PyPegen_expect_token(p, 553))  // token='class'
             &&
             (name_var = _PyPegen_name_token(p))  // NAME
             &&

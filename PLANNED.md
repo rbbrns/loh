@@ -32,21 +32,26 @@ x in range(1, 100)
 ## 2. Constructor Shorthand (`.()`) and Parameter Properties (`.param`)
 
 ### Motivation
-Writing custom class constructors in standard Python requires declaring `def __init__(self, owner, balance):` and manually assigning each parameter to its corresponding instance attribute: `self.owner = owner`, etc. This generates significant boilerplate. We want a clean, unified shorthand that omits the constructor name and automatically binds parameters prefixing with a dot `.` as attributes.
+Writing custom class constructors in standard Python requires declaring `def __init__(self, owner, balance):` and manually assigning each parameter to its corresponding instance attribute: `self.owner = owner`, etc. This generates significant boilerplate. We want a clean, unified shorthand that omits the constructor name, and a parameter properties feature that automatically binds parameters prefixed with a dot `.` as attributes.
 
 ### Proposed Syntax
-Using `.(...)` defines the class constructor. Parameters starting with a dot `.` (such as `.owner` or `.balance`) automatically become instance attributes:
+Using `.(...)` defines the class constructor. Parameters starting with a dot `.` (such as `.owner` or `.balance`) automatically become instance attributes.
+
+In addition, dot-prefixed parameter properties (`.param`) are supported on **both** the constructor and **any other class method**.
 
 ```python
 Account::
+    # Constructor shorthand with parameter properties
     .(.owner, .balance, email):
-        # owner and balance are automatically assigned to .owner and .balance
-        # email is a normal constructor parameter
         .email_domain = email.split('@')[1]
+
+    # Standard class method with parameter properties
+    .update_status(.status, details):
+        .log(details)
 ```
 
 ### Compile-Time Desugaring
-At parse/compile-time, this maps directly to a standard Python `__init__` constructor with parameter assignments prepended to the body:
+At parse/compile-time, the constructor maps directly to `__init__`, and dot-prefixed parameter properties map to corresponding attribute assignments prepended to the start of the method body:
 
 ```python
 class Account:
@@ -54,6 +59,10 @@ class Account:
         self.owner = owner
         self.balance = balance
         self.email_domain = email.split('@')[1]
+
+    def update_status(self, status, details):
+        self.status = status
+        self.log(details)
 ```
 
 ---
@@ -93,5 +102,4 @@ else:
     print("Success")
 finally:
     print("Cleanup")
-```
 ```
