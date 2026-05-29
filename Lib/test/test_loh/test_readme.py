@@ -254,6 +254,23 @@ class TestReadmeExamples(unittest.TestCase):
         )
         self.assertEqual(processed, "MY_DATA_STRING")
 
+    def test_none_operators(self):
+        class User:
+            def __init__(self, name):
+                self.name = name
+        user = User("Alice")
+        none_user = None
+        self.assertEqual(user~.name, "Alice")
+        self.assertIsNone(none_user~.name)
+
+        self.assertEqual(None ~~ "default", "default")
+        self.assertEqual("value" ~~ "default", "value")
+
+        data = {"items": [10, 20]}
+        none_data = None
+        self.assertEqual(data~["items"]~[1], 20)
+        self.assertIsNone(none_data~["items"])
+
     def test_advanced_compiler_features(self):
         : IntOrFloat = int | float
         from typing import TypeAliasType

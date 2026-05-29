@@ -38,6 +38,9 @@ Loh maps Python's verbose keywords and structures to elegant, symbol-based alter
 | `True` | `++` | Boolean True constant |
 | `False` | `--` | Boolean False constant |
 | `None` | `~` *(or omit)* | None constant (empty space represents None) |
+| None-safe member | `~.` | None-safe attribute access / navigation |
+| None-coalesce | `~~` | None-coalescing operator (fallback value) |
+| None-safe index | `~[]` | None-safe subscripting / indexing |
 | `and` | `&&` | Logical AND |
 | `or` | `\|\|` | Logical OR |
 | `not` | `!` | Logical NOT |
@@ -596,4 +599,41 @@ print(str(None))  # Outputs: "None"
 ```python
 from __future__ import empty_none_str
 print(str(None))  # Outputs: ""
+```
+
+---
+
+### **20. None-Safe Operators (`~.`, `~~`, `~[]`)**
+
+> **Motivation:** Accessing attributes or indexing nested data structures that might contain `None` often requires verbose inline checks or deep conditional branching. Loh introduces three None-safe operators to streamline safe navigation, indexing, and default-value fallback handling without repeated evaluations or boilerplate.
+
+Loh supports:
+1. **Safe Navigation (`~.`)**: `obj~.attr` accesses `attr` if `obj` is not `None`, evaluating to `None` otherwise.
+2. **None-Coalescing (`~~`)**: `left ~~ right` evaluates to `left` if it is not `None`, evaluating to `right` otherwise.
+3. **Safe Subscripting (`~[]`)**: `obj~[index]` accesses the element or key at `index` if `obj` is not `None`, evaluating to `None` otherwise.
+
+All three operators evaluate their left-hand side expression exactly once.
+
+#### **Python**
+```python
+# Safe navigation
+user_name = user.name if user is not None else None
+
+# None-coalescing
+display_name = user_name if user_name is not None else "Guest"
+
+# Safe subscripting
+first_item = data['items'][0] if data is not None else None
+```
+
+#### **Loh**
+```python
+# Safe navigation
+user_name = user~.name
+
+# None-coalescing
+display_name = user_name ~~ "Guest"
+
+# Safe subscripting
+first_item = data~['items']~[0]
 ```

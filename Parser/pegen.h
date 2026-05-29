@@ -388,5 +388,6 @@ void *_PyPegen_parse(Parser *);
  
 expr_ty _PyPegen_safe_navigation(Parser *p, expr_ty primary, expr_ty attr_name);
 expr_ty _PyPegen_none_coalesce(Parser *p, expr_ty left, expr_ty right);
+expr_ty _PyPegen_safe_subscript(Parser *p, expr_ty primary, expr_ty slice);
 
 #endif

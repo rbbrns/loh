@@ -101,3 +101,53 @@ class Tests(unittest.TestCase):
         
         # None ~~ 5 + 5 => None ~~ 10 => 10
         self.assertEqual(None ~~ 5 + 5, 10)
+
+    def test_safe_subscript_basic(self):
+        d = {'a': 42, 'b': [1, 2, 3]}
+        n = None
+        
+        self.assertEqual(d~['a'], 42)
+        self.assertEqual(d~['b']~[1], 2)
+        self.assertIsNone(n~['a'])
+        self.assertIsNone(n~['b']~[1])
+        
+        # Test slices
+        lst = [10, 20, 30, 40]
+        self.assertEqual(lst~[1:3], [20, 30])
+        self.assertIsNone(n~[1:3])
+
+    def test_safe_subscript_single_evaluation(self):
+        count = 0
+        def get_dict():
+            nonlocal count
+            count += 1
+            return {'a': 42}
+            
+        self.assertEqual(get_dict()~['a'], 42)
+        self.assertEqual(count, 1)
+        
+        count = 0
+        def get_none():
+            nonlocal count
+            count += 1
+            return None
+            
+        self.assertIsNone(get_none()~['a'])
+        self.assertEqual(count, 1)
+
+    def test_mixed_chaining(self):
+        class Node:
+            def __init__(self, data=None):
+                self.data = data
+                
+        n = Node({'a': Node([100, 200])})
+        
+        self.assertEqual(n~.data~['a']~.data~[1], 200)
+        
+        # Guarding against None propagation
+        n_none = Node(None)
+        self.assertIsNone(n_none~.data~['a'])
+        
+        # Non-None target still raises KeyError on missing keys
+        with self.assertRaises(KeyError):
+            _ = n~.data~['b']

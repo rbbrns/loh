@@ -18603,6 +18603,7 @@ await_primary_rule(Parser *p)
 //     | primary '.' NAME
 //     | primary genexp
 //     | primary '(' arguments? ')'
+//     | primary '~' '[' slices ']'
 //     | primary '[' slices ']'
 //     | atom
 static expr_ty primary_raw(Parser *);
@@ -18807,6 +18808,42 @@ primary_raw(Parser *p)
         p->mark = _mark;
         D(fprintf(stderr, "%*c%s primary[%d-%d]: %s failed!\n", p->level, ' ',
                   p->error_indicator ? "ERROR!" : "-", _mark, p->mark, "primary '(' arguments? ')'"));
+    }
+    { // primary '~' '[' slices ']'
+        if (p->error_indicator) {
+            p->level--;
+            return NULL;
+        }
+        D(fprintf(stderr, "%*c> primary[%d-%d]: %s\n", p->level, ' ', _mark, p->mark, "primary '~' '[' slices ']'"));
+        Token * _literal;
+        Token * _literal_1;
+        Token * _literal_2;
+        expr_ty a;
+        expr_ty b;
+        if (
+            (a = primary_rule(p))  // primary
+            &&
+            (_literal = _PyPegen_expect_token(p, 31))  // token='~'
+            &&
+            (_literal_1 = _PyPegen_expect_token(p, 9))  // token='['
+            &&
+            (b = slices_rule(p))  // slices
+            &&
+            (_literal_2 = _PyPegen_expect_token(p, 10))  // token=']'
+        )
+        {
+            D(fprintf(stderr, "%*c+ primary[%d-%d]: %s succeeded!\n", p->level, ' ', _mark, p->mark, "primary '~' '[' slices ']'"));
+            _res = _PyPegen_safe_subscript ( p , a , b );
+            if (_res == NULL && PyErr_Occurred()) {
+                p->error_indicator = 1;
+                p->level--;
+                return NULL;
+            }
+            goto done;
+        }
+        p->mark = _mark;
+        D(fprintf(stderr, "%*c%s primary[%d-%d]: %s failed!\n", p->level, ' ',
+                  p->error_indicator ? "ERROR!" : "-", _mark, p->mark, "primary '~' '[' slices ']'"));
     }
     { // primary '[' slices ']'
         if (p->error_indicator) {

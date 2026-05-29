@@ -2018,3 +2018,40 @@ _PyPegen_none_coalesce(Parser *p, expr_ty left, expr_ty right) {
     
     return _PyAST_IfExp(test, body, right, left->lineno, left->col_offset, right->end_lineno, right->end_col_offset, p->arena);
 }
+
+expr_ty
+_PyPegen_safe_subscript(Parser *p, expr_ty primary, expr_ty slice) {
+    PyObject *var_id = _PyPegen_new_identifier(p, "_loh_safe_val");
+    if (!var_id) return NULL;
+    
+    expr_ty target = _PyAST_Name(var_id, Store, primary->lineno, primary->col_offset, primary->end_lineno, primary->end_col_offset, p->arena);
+    if (!target) return NULL;
+    
+    expr_ty named_expr = _PyAST_NamedExpr(target, primary, primary->lineno, primary->col_offset, primary->end_lineno, primary->end_col_offset, p->arena);
+    if (!named_expr) return NULL;
+    
+    expr_ty none_const = _PyAST_Constant(Py_None, NULL, primary->lineno, primary->col_offset, primary->end_lineno, primary->end_col_offset, p->arena);
+    if (!none_const) return NULL;
+    
+    asdl_int_seq *ops = _Py_asdl_int_seq_new(1, p->arena);
+    if (!ops) return NULL;
+    asdl_seq_SET(ops, 0, IsNot);
+    
+    asdl_expr_seq *comparators = _Py_asdl_expr_seq_new(1, p->arena);
+    if (!comparators) return NULL;
+    asdl_seq_SET(comparators, 0, none_const);
+    
+    expr_ty test = _PyAST_Compare(named_expr, ops, comparators, primary->lineno, primary->col_offset, primary->end_lineno, primary->end_col_offset, p->arena);
+    if (!test) return NULL;
+    
+    expr_ty load_var = _PyAST_Name(var_id, Load, primary->lineno, primary->col_offset, primary->end_lineno, primary->end_col_offset, p->arena);
+    if (!load_var) return NULL;
+    
+    expr_ty body = _PyAST_Subscript(load_var, slice, Load, primary->lineno, primary->col_offset, slice->end_lineno, slice->end_col_offset, p->arena);
+    if (!body) return NULL;
+    
+    expr_ty orelse = _PyAST_Constant(Py_None, NULL, primary->lineno, primary->col_offset, slice->end_lineno, slice->end_col_offset, p->arena);
+    if (!orelse) return NULL;
+    
+    return _PyAST_IfExp(test, body, orelse, primary->lineno, primary->col_offset, slice->end_lineno, slice->end_col_offset, p->arena);
+}

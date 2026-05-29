@@ -1001,6 +1001,7 @@ primary[expr_ty]:
                  (b) ? ((expr_ty) b)->v.Call.args : NULL,
                  (b) ? ((expr_ty) b)->v.Call.keywords : NULL,
                  EXTRA) }
+    | a=primary '~' '[' b=slices ']' { _PyPegen_safe_subscript(p, a, b) }
     | a=primary '[' b=slices ']' { _PyAST_Subscript(a, b, Load, EXTRA) }
     | atom
 
