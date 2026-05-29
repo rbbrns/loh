@@ -336,6 +336,8 @@ arguments_ty _PyPegen_empty_arguments(Parser *);
 arguments_ty _PyPegen_insert_arg_in_front(Parser *p, arg_ty arg, arguments_ty args);
 PyObject *_PyPegen_make_dot_identifier(Parser *p, PyObject *name);
 asdl_stmt_seq *_PyPegen_desugar_parameter_properties(Parser *p, arguments_ty args, asdl_stmt_seq *body);
+expr_ty _PyPegen_replace_dot_in_expr(Parser *p, expr_ty expr, PyObject *inst_id);
+expr_ty _PyPegen_make_initializer_block(Parser *p, expr_ty primary, asdl_stmt_seq *block_stmts);
 expr_ty _PyPegen_template_str(Parser *p, Token *a, asdl_expr_seq *raw_expressions, Token *b);
 expr_ty _PyPegen_joined_str(Parser *p, Token *a, asdl_expr_seq *raw_expressions, Token *b);
 expr_ty _PyPegen_interpolation(Parser *, expr_ty, Token *, ResultTokenWithMetadata *, ResultTokenWithMetadata *, Token *,

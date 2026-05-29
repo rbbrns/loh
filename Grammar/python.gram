@@ -288,7 +288,7 @@ nonlocal_stmt[stmt_ty]: 'nonlocal' a[asdl_expr_seq*]=','.NAME+ {
     _PyAST_Nonlocal(CHECK(asdl_identifier_seq*, _PyPegen_map_names_to_ids(p, a)), EXTRA) }
 
 del_stmt[stmt_ty]:
-    | del a=del_targets &(';' | NEWLINE) { _PyAST_Delete(a, EXTRA) }
+    | del a=del_targets &(';' | NEWLINE | '}') { _PyAST_Delete(a, EXTRA) }
     | invalid_del_stmt
 
 yield_stmt[stmt_ty]: y=yield_expr { _PyAST_Expr(y, EXTRA) }
@@ -1005,6 +1005,7 @@ await_primary[expr_ty] (memo):
 primary[expr_ty]:
     | a=primary '~.' b=NAME { _PyPegen_safe_navigation(p, a, b) }
     | a=primary '.' b=NAME { _PyAST_Attribute(a, b->v.Name.id, Load, EXTRA) }
+    | a=primary b=initializer_block { _PyPegen_make_initializer_block(p, a, b) }
     | a=primary b=genexp { _PyAST_Call(a, CHECK(asdl_expr_seq*, (asdl_expr_seq*)_PyPegen_singleton_seq(p, b)), NULL, EXTRA) }
     | a=primary '(' b=[arguments] ')' {
         _PyAST_Call(a,
@@ -1014,6 +1015,15 @@ primary[expr_ty]:
     | a=primary '~' '[' b=slices ']' { _PyPegen_safe_subscript(p, a, b) }
     | a=primary '[' b=slices ']' { _PyAST_Subscript(a, b, Load, EXTRA) }
     | atom
+
+initializer_stmt[stmt_ty]:
+    | a=simple_stmt { a }
+
+initializer_stmt_entry[stmt_ty]:
+    | a=initializer_stmt ';'? { a }
+
+initializer_block[asdl_stmt_seq*]:
+    | '{' a=initializer_stmt_entry* '}' { a }
 
 slices[expr_ty]:
     | a=slice !',' { a }
@@ -1336,6 +1346,7 @@ del_target[expr_ty] (memo):
 
 del_t_atom[expr_ty]:
     | a=NAME { _PyPegen_set_expr_context(p, a, Del) }
+    | a=dot b=NAME { _PyAST_Attribute(a, b->v.Name.id, Del, EXTRA) }
     | '(' a=del_target ')' { _PyPegen_set_expr_context(p, a, Del) }
     | '(' a=[del_targets] ')' { _PyAST_Tuple(a, Del, EXTRA) }
     | '[' a=[del_targets] ']' { _PyAST_List(a, Del, EXTRA) }

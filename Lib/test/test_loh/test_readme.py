@@ -307,5 +307,41 @@ class TestReadmeExamples(unittest.TestCase):
             in_bounds = ++
         self.assertTrue(in_bounds)
 
+    def test_initializer_block(self):
+        class RestaurantManager:
+            .(.name):
+                .items = []
+                .active = --
+            .add_menu_item(item_id, name, price, category):
+                .items.append((item_id, name, price, category))
+        
+        manager = RestaurantManager("The Loh Bistro") {
+            .add_menu_item(101, "Truffle Fries", 12.50, "appetizer");
+            .active = ++
+        }
+        self.assertEqual(manager.name, "The Loh Bistro")
+        self.assertEqual(manager.active, True)
+        self.assertEqual(manager.items, [(101, "Truffle Fries", 12.50, "appetizer")])
+
+        class User:
+            .(.name):
+                .status = "inactive"
+            .update_status(status):
+                .status = status
+
+        user_sent = None
+        def send_email(u):
+            nonlocal user_sent
+            user_sent = u
+
+        user = User("Bob")
+        send_email(user {
+            .name = "Alice";
+            .update_status("active")
+        })
+        self.assertTrue(user_sent is user)
+        self.assertEqual(user.name, "Alice")
+        self.assertEqual(user.status, "active")
+
 if __name__ == "__main__":
     unittest.main()

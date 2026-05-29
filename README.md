@@ -79,6 +79,7 @@ Loh maps Python's verbose keywords and structures to elegant, symbol-based alter
 | `type` | `:` | Type alias declaration |
 | `match` | `?==` | Structural pattern matching subject |
 | `case` | *(omit)* | Pattern case declaration |
+| Inline initializer | `obj { .prop = val }` | Scope initializer block |
 
 ---
 
@@ -681,3 +682,40 @@ $ i <~ 0..10:
 ? x <~ 1..100:
     print("In bounds")
 ```
+
+---
+
+### **22. Inline Scope Initializer Block (`obj { ... }`)**
+
+> **Motivation:** Configuring or modifying objects upon construction or inline inside pipelines typically requires separate statement-level assignments. An inline scope initializer block allows properties to be assigned and methods to be invoked using Loh's leading-dot receiver context, returning the configured receiver object.
+
+Loh supports appending `{ ... }` blocks to primary expressions (constructor calls, variables, function returns), which desugar to evaluate the receiver exactly once, execute the nested statements in-place, and return the modified object.
+
+#### **Python**
+```python
+# Initialization on construction
+manager = RestaurantManager("The Loh Bistro")
+manager.add_menu_item(101, "Truffle Fries", 12.50, "appetizer")
+manager.active = True
+
+# In-place configuration passed directly to a function
+user.name = "Alice"
+user.update_status("active")
+send_email(user)
+```
+
+#### **Loh**
+```python
+# Initialization on construction
+manager = RestaurantManager("The Loh Bistro") {
+    .add_menu_item(101, "Truffle Fries", 12.50, "appetizer");
+    .active = ++
+}
+
+# In-place configuration passed directly to a function
+send_email(user {
+    .name = "Alice";
+    .update_status("active")
+})
+```
+

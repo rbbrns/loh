@@ -2132,3 +2132,327 @@ _PyPegen_desugar_parameter_properties(Parser *p, arguments_ty args, asdl_stmt_se
     return body;
 }
 
+expr_ty
+_PyPegen_replace_dot_in_expr(Parser *p, expr_ty expr, PyObject *inst_id) {
+    if (!expr) {
+        return NULL;
+    }
+    switch (expr->kind) {
+        case Name_kind: {
+            const char *name_str = PyUnicode_AsUTF8(expr->v.Name.id);
+            if (name_str && strcmp(name_str, ".") == 0) {
+                return _PyAST_Name(inst_id, expr->v.Name.ctx, expr->lineno, expr->col_offset, expr->end_lineno, expr->end_col_offset, p->arena);
+            }
+            return expr;
+        }
+        case Attribute_kind: {
+            expr_ty new_val = _PyPegen_replace_dot_in_expr(p, expr->v.Attribute.value, inst_id);
+            if (!new_val) return NULL;
+            return _PyAST_Attribute(new_val, expr->v.Attribute.attr, expr->v.Attribute.ctx, expr->lineno, expr->col_offset, expr->end_lineno, expr->end_col_offset, p->arena);
+        }
+        case Call_kind: {
+            expr_ty new_func = _PyPegen_replace_dot_in_expr(p, expr->v.Call.func, inst_id);
+            if (!new_func) return NULL;
+            asdl_expr_seq *new_args = NULL;
+            if (expr->v.Call.args) {
+                int len = asdl_seq_LEN(expr->v.Call.args);
+                new_args = _Py_asdl_expr_seq_new(len, p->arena);
+                if (!new_args) return NULL;
+                for (int i = 0; i < len; i++) {
+                    expr_ty arg = asdl_seq_GET(expr->v.Call.args, i);
+                    expr_ty new_arg = _PyPegen_replace_dot_in_expr(p, arg, inst_id);
+                    if (!new_arg) return NULL;
+                    asdl_seq_SET(new_args, i, new_arg);
+                }
+            }
+            asdl_keyword_seq *new_keywords = NULL;
+            if (expr->v.Call.keywords) {
+                int len = asdl_seq_LEN(expr->v.Call.keywords);
+                new_keywords = _Py_asdl_keyword_seq_new(len, p->arena);
+                if (!new_keywords) return NULL;
+                for (int i = 0; i < len; i++) {
+                    keyword_ty kw = asdl_seq_GET(expr->v.Call.keywords, i);
+                    expr_ty new_val = _PyPegen_replace_dot_in_expr(p, kw->value, inst_id);
+                    if (!new_val) return NULL;
+                    keyword_ty new_kw = _PyAST_keyword(kw->arg, new_val, kw->lineno, kw->col_offset, kw->end_lineno, kw->end_col_offset, p->arena);
+                    if (!new_kw) return NULL;
+                    asdl_seq_SET(new_keywords, i, new_kw);
+                }
+            }
+            return _PyAST_Call(new_func, new_args, new_keywords, expr->lineno, expr->col_offset, expr->end_lineno, expr->end_col_offset, p->arena);
+        }
+        case BinOp_kind: {
+            expr_ty left = _PyPegen_replace_dot_in_expr(p, expr->v.BinOp.left, inst_id);
+            expr_ty right = _PyPegen_replace_dot_in_expr(p, expr->v.BinOp.right, inst_id);
+            if (!left || !right) return NULL;
+            return _PyAST_BinOp(left, expr->v.BinOp.op, right, expr->lineno, expr->col_offset, expr->end_lineno, expr->end_col_offset, p->arena);
+        }
+        case UnaryOp_kind: {
+            expr_ty operand = _PyPegen_replace_dot_in_expr(p, expr->v.UnaryOp.operand, inst_id);
+            if (!operand) return NULL;
+            return _PyAST_UnaryOp(expr->v.UnaryOp.op, operand, expr->lineno, expr->col_offset, expr->end_lineno, expr->end_col_offset, p->arena);
+        }
+        case Compare_kind: {
+            expr_ty left = _PyPegen_replace_dot_in_expr(p, expr->v.Compare.left, inst_id);
+            if (!left) return NULL;
+            asdl_expr_seq *new_comparators = NULL;
+            if (expr->v.Compare.comparators) {
+                int len = asdl_seq_LEN(expr->v.Compare.comparators);
+                new_comparators = _Py_asdl_expr_seq_new(len, p->arena);
+                if (!new_comparators) return NULL;
+                for (int i = 0; i < len; i++) {
+                    expr_ty comp = asdl_seq_GET(expr->v.Compare.comparators, i);
+                    expr_ty new_comp = _PyPegen_replace_dot_in_expr(p, comp, inst_id);
+                    if (!new_comp) return NULL;
+                    asdl_seq_SET(new_comparators, i, new_comp);
+                }
+            }
+            return _PyAST_Compare(left, expr->v.Compare.ops, new_comparators, expr->lineno, expr->col_offset, expr->end_lineno, expr->end_col_offset, p->arena);
+        }
+        case Subscript_kind: {
+            expr_ty value = _PyPegen_replace_dot_in_expr(p, expr->v.Subscript.value, inst_id);
+            expr_ty slice = _PyPegen_replace_dot_in_expr(p, expr->v.Subscript.slice, inst_id);
+            if (!value || !slice) return NULL;
+            return _PyAST_Subscript(value, slice, expr->v.Subscript.ctx, expr->lineno, expr->col_offset, expr->end_lineno, expr->end_col_offset, p->arena);
+        }
+        case Slice_kind: {
+            expr_ty lower = _PyPegen_replace_dot_in_expr(p, expr->v.Slice.lower, inst_id);
+            expr_ty upper = _PyPegen_replace_dot_in_expr(p, expr->v.Slice.upper, inst_id);
+            expr_ty step = _PyPegen_replace_dot_in_expr(p, expr->v.Slice.step, inst_id);
+            return _PyAST_Slice(lower, upper, step, expr->lineno, expr->col_offset, expr->end_lineno, expr->end_col_offset, p->arena);
+        }
+        case IfExp_kind: {
+            expr_ty test = _PyPegen_replace_dot_in_expr(p, expr->v.IfExp.test, inst_id);
+            expr_ty body = _PyPegen_replace_dot_in_expr(p, expr->v.IfExp.body, inst_id);
+            expr_ty orelse = _PyPegen_replace_dot_in_expr(p, expr->v.IfExp.orelse, inst_id);
+            if (!test || !body || !orelse) return NULL;
+            return _PyAST_IfExp(test, body, orelse, expr->lineno, expr->col_offset, expr->end_lineno, expr->end_col_offset, p->arena);
+        }
+        case List_kind: {
+            asdl_expr_seq *new_elts = NULL;
+            if (expr->v.List.elts) {
+                int len = asdl_seq_LEN(expr->v.List.elts);
+                new_elts = _Py_asdl_expr_seq_new(len, p->arena);
+                if (!new_elts) return NULL;
+                for (int i = 0; i < len; i++) {
+                    expr_ty elt = asdl_seq_GET(expr->v.List.elts, i);
+                    expr_ty new_elt = _PyPegen_replace_dot_in_expr(p, elt, inst_id);
+                    if (!new_elt) return NULL;
+                    asdl_seq_SET(new_elts, i, new_elt);
+                }
+            }
+            return _PyAST_List(new_elts, expr->v.List.ctx, expr->lineno, expr->col_offset, expr->end_lineno, expr->end_col_offset, p->arena);
+        }
+        case Tuple_kind: {
+            asdl_expr_seq *new_elts = NULL;
+            if (expr->v.Tuple.elts) {
+                int len = asdl_seq_LEN(expr->v.Tuple.elts);
+                new_elts = _Py_asdl_expr_seq_new(len, p->arena);
+                if (!new_elts) return NULL;
+                for (int i = 0; i < len; i++) {
+                    expr_ty elt = asdl_seq_GET(expr->v.Tuple.elts, i);
+                    expr_ty new_elt = _PyPegen_replace_dot_in_expr(p, elt, inst_id);
+                    if (!new_elt) return NULL;
+                    asdl_seq_SET(new_elts, i, new_elt);
+                }
+            }
+            return _PyAST_Tuple(new_elts, expr->v.Tuple.ctx, expr->lineno, expr->col_offset, expr->end_lineno, expr->end_col_offset, p->arena);
+        }
+        case Dict_kind: {
+            asdl_expr_seq *new_keys = NULL;
+            if (expr->v.Dict.keys) {
+                int len = asdl_seq_LEN(expr->v.Dict.keys);
+                new_keys = _Py_asdl_expr_seq_new(len, p->arena);
+                if (!new_keys) return NULL;
+                for (int i = 0; i < len; i++) {
+                    expr_ty key = asdl_seq_GET(expr->v.Dict.keys, i);
+                    if (key) {
+                        expr_ty new_key = _PyPegen_replace_dot_in_expr(p, key, inst_id);
+                        if (!new_key) return NULL;
+                        asdl_seq_SET(new_keys, i, new_key);
+                    } else {
+                        asdl_seq_SET(new_keys, i, NULL);
+                    }
+                }
+            }
+            asdl_expr_seq *new_values = NULL;
+            if (expr->v.Dict.values) {
+                int len = asdl_seq_LEN(expr->v.Dict.values);
+                new_values = _Py_asdl_expr_seq_new(len, p->arena);
+                if (!new_values) return NULL;
+                for (int i = 0; i < len; i++) {
+                    expr_ty val = asdl_seq_GET(expr->v.Dict.values, i);
+                    expr_ty new_val = _PyPegen_replace_dot_in_expr(p, val, inst_id);
+                    if (!new_val) return NULL;
+                    asdl_seq_SET(new_values, i, new_val);
+                }
+            }
+            return _PyAST_Dict(new_keys, new_values, expr->lineno, expr->col_offset, expr->end_lineno, expr->end_col_offset, p->arena);
+        }
+        case Set_kind: {
+            asdl_expr_seq *new_elts = NULL;
+            if (expr->v.Set.elts) {
+                int len = asdl_seq_LEN(expr->v.Set.elts);
+                new_elts = _Py_asdl_expr_seq_new(len, p->arena);
+                if (!new_elts) return NULL;
+                for (int i = 0; i < len; i++) {
+                    expr_ty elt = asdl_seq_GET(expr->v.Set.elts, i);
+                    expr_ty new_elt = _PyPegen_replace_dot_in_expr(p, elt, inst_id);
+                    if (!new_elt) return NULL;
+                    asdl_seq_SET(new_elts, i, new_elt);
+                }
+            }
+            return _PyAST_Set(new_elts, expr->lineno, expr->col_offset, expr->end_lineno, expr->end_col_offset, p->arena);
+        }
+        case Starred_kind: {
+            expr_ty value = _PyPegen_replace_dot_in_expr(p, expr->v.Starred.value, inst_id);
+            if (!value) return NULL;
+            return _PyAST_Starred(value, expr->v.Starred.ctx, expr->lineno, expr->col_offset, expr->end_lineno, expr->end_col_offset, p->arena);
+        }
+        case NamedExpr_kind: {
+            expr_ty target = _PyPegen_replace_dot_in_expr(p, expr->v.NamedExpr.target, inst_id);
+            expr_ty value = _PyPegen_replace_dot_in_expr(p, expr->v.NamedExpr.value, inst_id);
+            if (!target || !value) return NULL;
+            return _PyAST_NamedExpr(target, value, expr->lineno, expr->col_offset, expr->end_lineno, expr->end_col_offset, p->arena);
+        }
+        case Constant_kind:
+            return expr;
+        default:
+            return expr;
+    }
+}
+
+expr_ty
+_PyPegen_make_initializer_block(Parser *p, expr_ty primary, asdl_stmt_seq *block_stmts) {
+    static unsigned int inst_counter = 0;
+    char name_buf[64];
+    snprintf(name_buf, sizeof(name_buf), "_loh_inst_%u", inst_counter++);
+    PyObject *inst_id = _PyPegen_new_identifier(p, name_buf);
+    if (!inst_id) return NULL;
+
+    int block_len = block_stmts ? asdl_seq_LEN(block_stmts) : 0;
+    int elts_len = block_len + 2;
+    asdl_expr_seq *elts = _Py_asdl_expr_seq_new(elts_len, p->arena);
+    if (!elts) return NULL;
+
+    // Element 0: (_loh_inst := primary)
+    expr_ty inst_target = _PyAST_Name(inst_id, Store, primary->lineno, primary->col_offset, primary->end_lineno, primary->end_col_offset, p->arena);
+    if (!inst_target) return NULL;
+    expr_ty named_expr = _PyAST_NamedExpr(inst_target, primary, primary->lineno, primary->col_offset, primary->end_lineno, primary->end_col_offset, p->arena);
+    if (!named_expr) return NULL;
+    asdl_seq_SET(elts, 0, named_expr);
+
+    // Elements 1..block_len: rewritten statements
+    for (int i = 0; i < block_len; i++) {
+        stmt_ty stmt = asdl_seq_GET(block_stmts, i);
+        expr_ty expr_val = NULL;
+        switch (stmt->kind) {
+            case Assign_kind: {
+                asdl_expr_seq *targets = stmt->v.Assign.targets;
+                if (asdl_seq_LEN(targets) > 0) {
+                    expr_ty target = asdl_seq_GET(targets, 0);
+                    if (target->kind == Attribute_kind) {
+                        expr_ty receiver = target->v.Attribute.value;
+                        if (receiver->kind == Name_kind && strcmp(PyUnicode_AsUTF8(receiver->v.Name.id), ".") == 0) {
+                            // Convert to setattr(_loh_inst, "attr", value)
+                            PyObject *setattr_id = _PyPegen_new_identifier(p, "setattr");
+                            expr_ty setattr_func = _PyAST_Name(setattr_id, Load, target->lineno, target->col_offset, target->end_lineno, target->end_col_offset, p->arena);
+                            
+                            expr_ty inst_arg = _PyAST_Name(inst_id, Load, target->lineno, target->col_offset, target->end_lineno, target->end_col_offset, p->arena);
+                            expr_ty attr_const = _PyAST_Constant(target->v.Attribute.attr, NULL, target->lineno, target->col_offset, target->end_lineno, target->end_col_offset, p->arena);
+                            
+                            expr_ty stmt_val = _PyPegen_replace_dot_in_expr(p, stmt->v.Assign.value, inst_id);
+                            
+                            asdl_expr_seq *args = _Py_asdl_expr_seq_new(3, p->arena);
+                            asdl_seq_SET(args, 0, inst_arg);
+                            asdl_seq_SET(args, 1, attr_const);
+                            asdl_seq_SET(args, 2, stmt_val);
+                            
+                            expr_val = _PyAST_Call(setattr_func, args, NULL, stmt->lineno, stmt->col_offset, stmt->end_lineno, stmt->end_col_offset, p->arena);
+                        }
+                    }
+                }
+                break;
+            }
+            case AugAssign_kind: {
+                expr_ty target = stmt->v.AugAssign.target;
+                if (target->kind == Attribute_kind) {
+                    expr_ty receiver = target->v.Attribute.value;
+                    if (receiver->kind == Name_kind && strcmp(PyUnicode_AsUTF8(receiver->v.Name.id), ".") == 0) {
+                        // Convert to setattr(_loh_inst, "attr", getattr(_loh_inst, "attr") op value)
+                        PyObject *setattr_id = _PyPegen_new_identifier(p, "setattr");
+                        expr_ty setattr_func = _PyAST_Name(setattr_id, Load, target->lineno, target->col_offset, target->end_lineno, target->end_col_offset, p->arena);
+                        
+                        expr_ty inst_arg = _PyAST_Name(inst_id, Load, target->lineno, target->col_offset, target->end_lineno, target->end_col_offset, p->arena);
+                        expr_ty attr_const = _PyAST_Constant(target->v.Attribute.attr, NULL, target->lineno, target->col_offset, target->end_lineno, target->end_col_offset, p->arena);
+                        
+                        expr_ty current_val = _PyAST_Attribute(inst_arg, target->v.Attribute.attr, Load, target->lineno, target->col_offset, target->end_lineno, target->end_col_offset, p->arena);
+                        expr_ty right_val = _PyPegen_replace_dot_in_expr(p, stmt->v.AugAssign.value, inst_id);
+                        expr_ty new_val = _PyAST_BinOp(current_val, stmt->v.AugAssign.op, right_val, stmt->lineno, stmt->col_offset, stmt->end_lineno, stmt->end_col_offset, p->arena);
+                        
+                        asdl_expr_seq *args = _Py_asdl_expr_seq_new(3, p->arena);
+                        asdl_seq_SET(args, 0, inst_arg);
+                        asdl_seq_SET(args, 1, attr_const);
+                        asdl_seq_SET(args, 2, new_val);
+                        
+                        expr_val = _PyAST_Call(setattr_func, args, NULL, stmt->lineno, stmt->col_offset, stmt->end_lineno, stmt->end_col_offset, p->arena);
+                    }
+                }
+                break;
+            }
+            case Delete_kind: {
+                asdl_expr_seq *targets = stmt->v.Delete.targets;
+                if (asdl_seq_LEN(targets) > 0) {
+                    expr_ty target = asdl_seq_GET(targets, 0);
+                    if (target->kind == Attribute_kind) {
+                        expr_ty receiver = target->v.Attribute.value;
+                        if (receiver->kind == Name_kind && strcmp(PyUnicode_AsUTF8(receiver->v.Name.id), ".") == 0) {
+                            // Convert to delattr(_loh_inst, "attr")
+                            PyObject *delattr_id = _PyPegen_new_identifier(p, "delattr");
+                            expr_ty delattr_func = _PyAST_Name(delattr_id, Load, target->lineno, target->col_offset, target->end_lineno, target->end_col_offset, p->arena);
+                            
+                            expr_ty inst_arg = _PyAST_Name(inst_id, Load, target->lineno, target->col_offset, target->end_lineno, target->end_col_offset, p->arena);
+                            expr_ty attr_const = _PyAST_Constant(target->v.Attribute.attr, NULL, target->lineno, target->col_offset, target->end_lineno, target->end_col_offset, p->arena);
+                            
+                            asdl_expr_seq *args = _Py_asdl_expr_seq_new(2, p->arena);
+                            asdl_seq_SET(args, 0, inst_arg);
+                            asdl_seq_SET(args, 1, attr_const);
+                            
+                            expr_val = _PyAST_Call(delattr_func, args, NULL, stmt->lineno, stmt->col_offset, stmt->end_lineno, stmt->end_col_offset, p->arena);
+                        }
+                    }
+                }
+                break;
+            }
+            case Expr_kind: {
+                expr_val = _PyPegen_replace_dot_in_expr(p, stmt->v.Expr.value, inst_id);
+                break;
+            }
+            case Pass_kind: {
+                expr_val = _PyAST_Constant(Py_None, NULL, stmt->lineno, stmt->col_offset, stmt->end_lineno, stmt->end_col_offset, p->arena);
+                break;
+            }
+            default:
+                break;
+        }
+        if (!expr_val) {
+            expr_val = _PyAST_Constant(Py_None, NULL, stmt->lineno, stmt->col_offset, stmt->end_lineno, stmt->end_col_offset, p->arena);
+        }
+        asdl_seq_SET(elts, i + 1, expr_val);
+    }
+
+    // Element elts_len - 1: _loh_inst
+    expr_ty final_inst = _PyAST_Name(inst_id, Load, primary->lineno, primary->col_offset, primary->end_lineno, primary->end_col_offset, p->arena);
+    if (!final_inst) return NULL;
+    asdl_seq_SET(elts, elts_len - 1, final_inst);
+
+    expr_ty list_expr = _PyAST_List(elts, Load, primary->lineno, primary->col_offset, primary->end_lineno, primary->end_col_offset, p->arena);
+    if (!list_expr) return NULL;
+
+    expr_ty index_const = _PyAST_Constant(PyLong_FromLong(0), NULL, primary->lineno, primary->col_offset, primary->end_lineno, primary->end_col_offset, p->arena);
+    _PyArena_AddPyObject(p->arena, index_const->v.Constant.value);
+    
+    return _PyAST_Subscript(list_expr, index_const, Load, primary->lineno, primary->col_offset, primary->end_lineno, primary->end_col_offset, p->arena);
+}
+
+

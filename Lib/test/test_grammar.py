@@ -752,11 +752,8 @@ class GrammarTests(unittest.TestCase):
         # Cases where we want the custom error
         cases = [
             "{} foo",
-            "{} {{1:foo}}",
             "if 1: {} foo",
-            "if 1: {} {{1:foo}}",
             "if 1:\n    {} foo",
-            "if 1:\n    {} {{1:foo}}",
         ]
         for keyword in keywords:
             custom_msg = "call to '{}'".format(keyword)
