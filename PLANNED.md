@@ -20,23 +20,25 @@ manager = RestaurantManager("The Loh Bistro") {
     .active = ++
 }
 
-# Configuration on an existing reference
-configured_user = user {
+# Modification on an existing reference (operates in-place)
+# Often passed directly to other functions or returned:
+send_email(user {
     .name = "Alice",
     .update_status("active")
-}
+})
 ```
 
 ### Compile-Time Desugaring
-The parser compiles this block by evaluating the receiver expression, executing the dot-prefixed assignments and calls, and returning the receiver instance:
+The parser compiles this block by evaluating the receiver expression, executing the dot-prefixed assignments and calls, and returning the same receiver instance (modifying it **in-place**):
 ```python
-# For: configured_user = user { .name = "Alice", .update_status("active") }
+# For: user { .name = "Alice", .update_status("active") }
 def _init_block(_inst):
     _inst.name = "Alice"
     _inst.update_status("active")
-    return _inst
+    return _inst  # Returns the exact same reference
 
-configured_user = _init_block(user)
+_init_block(user)
 ```
 Because standard Python syntax does not allow curly braces immediately following a primary expression (variables, constructor calls), this syntax has zero grammatical conflicts in the PEG parser.
+
 
