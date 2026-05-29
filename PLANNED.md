@@ -40,9 +40,9 @@ Using `.(...)` defines the class constructor. Parameters starting with a dot `.`
 ```python
 Account::
     .(.owner, .balance, email):
-        # owner and balance are automatically assigned to self.owner and self.balance
+        # owner and balance are automatically assigned to .owner and .balance
         # email is a normal constructor parameter
-        self.email_domain = email.split('@')[1]
+        .email_domain = email.split('@')[1]
 ```
 
 ### Compile-Time Desugaring
@@ -54,4 +54,44 @@ class Account:
         self.owner = owner
         self.balance = balance
         self.email_domain = email.split('@')[1]
+```
+
+---
+
+## 3. Unified Exception Handling Block Syntax (`^:`, `^?`, `^?*`, `^??:`, `^*:`)
+
+### Motivation
+Exceptions and error handling in Loh are centered around the caret `^` symbol (`^^^` raise, `^?!` assert). The current try-except syntax (`~^:` for try, `?^` for except, etc.) is slightly verbose and lacks visual consistency. Grouping all exception handling clauses under the unified `^` prefix creates a cohesive, highly readable block structure.
+
+### Proposed Syntax
+All clauses in an exception handling block are prefixed with `^`:
+* `^:` — try
+* `^? Error => e:` — except
+* `^?* Error => e:` — except*
+* `^??:` — else (try-else)
+* `^*:` — finally
+
+```python
+^:
+    result = 10 / 0
+^? ZeroDivisionError => e:
+    print(f"Error: {e}")
+^??:
+    print("Success")
+^*:
+    print("Cleanup")
+```
+
+### Compile-Time Desugaring
+Directly translates to standard Python `try-except-else-finally` blocks:
+```python
+try:
+    result = 10 / 0
+except ZeroDivisionError as e:
+    print(f"Error: {e}")
+else:
+    print("Success")
+finally:
+    print("Cleanup")
+```
 ```
