@@ -352,73 +352,41 @@ Because Python's tokenizer ignores newlines inside parentheses to support implic
 
 ---
 
-## 15. Lazy Parameter Evaluation & Memoized Thunks (`lazy`)
+## 15. Late-Bound / Call-Time Default Arguments
 
 ### Motivation
-Eager argument evaluation in Python can waste resources when passing expensive computations to functions that might ignore them (e.g., debug loggers or conditional paths). Standard Python requires passing lambdas (`lambda: expr`), which adds syntax boilerplate to both the call site (`lambda:`) and the function body (`param()`).
+In standard Python, default argument values are evaluated once at **definition time**. This leads to major language design pain points:
+1. **Mutable default arguments** (e.g. `x=[]`) share the same list instance across all calls.
+2. **Dynamic values** (e.g. `now=datetime.now()`) capture the import/definition time rather than call time.
+3. **Reference constraints**: Default expressions cannot reference other parameters (e.g. `width, height = width * 2`) or the instance receiver context (e.g. `self.default_value`).
 
-We want a unified syntax that allows:
-1. **Definition-Site Lazy Parameters**: Declaring a method parameter as `lazy` so that the function body can treat it as a normal variable, with the compiler automatically handling evaluation.
-2. **Call-Site Lazy Thunks**: Explicitly passing a deferred/memoized expression to matching parameters using the `lazy` keyword.
+Loh can resolve this by evaluating default expressions **lazily at call-time** (late binding) inside the function's scope, unlocking full reference capabilities and fixing mutable/dynamic default gotchas.
 
 ### Proposed Syntax
-
-#### **1. Definition Site**
-Prefixing a parameter with the `lazy` keyword inside a function/method signature:
+Default argument expressions are evaluated inside the method body when the method is invoked, allowing them to reference previous arguments and the `.` receiver context:
 ```python
-log_debug(lazy message: str):
-    ? debug_enabled:
-        # Accessed naturally like a string (no message() calling needed)
-        print(message)
-```
+Foo::
+    # Default 'x' evaluates at call-time, referencing self properties '.a' and '.b'
+    .method(x = .a + .b):
+        print(x)
 
-#### **2. Call Site**
-Passing a lazy thunk to the function:
-```python
-log_debug(lazy generate_heavy_report())
+# Function parameters referencing other arguments
+calculate(width, height = width * 2):
+    print(width, height)
 ```
 
 ### Compile-Time Desugaring
-
-#### **Call Site desugaring**
-The parser compiles `lazy expr` into a built-in lazy proxy constructor:
+The parser compiles default expressions by moving their evaluation inside the function body. If the caller does not pass an argument, it evaluates the expression at the start of the function scope:
 ```python
-log_debug(_LohLazy(lambda: generate_heavy_report()))
+# For: .method(x = self.a + self.b)
+_MISSING = object()
+
+def method(self, x=_MISSING):
+    if x is _MISSING:
+        x = self.a + self.b
+    # ... Rest of method body ...
 ```
+This requires zero caller-side changes and runs natively on the standard VM.
 
-#### **Definition Site desugaring**
-Inside the function body, the compiler registers the parameter as a lazy variable and automatically wraps all read references to force evaluation:
-```python
-def log_debug(message):
-    if debug_enabled:
-        # References to the lazy parameter are auto-desugared to force evaluation
-        print(message._force() if hasattr(message, "_force") else message)
-```
-
-### Runtime Memoization Proxy
-At runtime, `_LohLazy` wraps the deferred lambda, forcing evaluation exactly once upon the first access and caching the value:
-```python
-class _LohLazy:
-    def __init__(self, func):
-        self._func = func
-        self._evaluated = False
-        self._value = None
-
-    def _force(self):
-        if not self._evaluated:
-            self._value = self._func()
-            self._evaluated = True
-        return self._value
-
-    # Proxy magic methods to dynamically force evaluation when accessed transparently
-    def __getattr__(self, name):
-        return getattr(self._force(), name)
-
-    def __str__(self):
-        return str(self._force())
-
-    def __bool__(self):
-        return bool(self._force())
-```
 
 
