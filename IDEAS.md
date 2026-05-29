@@ -349,3 +349,52 @@ total_cost = _block()
 
 ### Semicolon Requirement Note
 Because Python's tokenizer ignores newlines inside parentheses to support implicit line continuation, semicolons `;` are strictly required even when statements are written on separate lines. Without semicolons, the tokenizer would treat the statements as if they were written on a single line, causing syntax errors. Semicolons also serve as the explicit marker distinguishing an expression block from standard parenthesized expressions.
+
+---
+
+## 15. Lazy Parameter Evaluation & Memoized Thunks (`lazy`)
+
+### Motivation
+Eager argument evaluation in Python can waste resources when passing expensive computations to functions that might ignore them (e.g., debug loggers or conditional paths). Standard Python requires passing lambdas (`lambda: expr`), which adds boilerplate to both the call site and the function body.
+
+Because Python compiles and resolves function signatures dynamically at runtime, the compiler cannot automatically insert lazy evaluation *only* on the definition site. Introducing a call-site **`lazy`** keyword wraps any expression in a memoized proxy object, delaying evaluation until the parameter is accessed or operated on.
+
+### Proposed Syntax
+```python
+# The expensive function call is wrapped in a lazy thunk
+log_debug(lazy generate_heavy_report())
+
+# We can also declare lazy variables directly
+data = lazy load_huge_dataset()
+```
+
+### Compile-Time Desugaring
+The parser compiles `lazy expr` into a built-in lazy proxy constructor:
+```python
+# log_debug(lazy generate_heavy_report())
+log_debug(_LohLazy(lambda: generate_heavy_report()))
+```
+At runtime, `_LohLazy` intercepts operations (like attribute access, boolean checks, or printing) using Python's magic methods, forcing evaluation exactly once and caching the result (memoization):
+```python
+class _LohLazy:
+    def __init__(self, func):
+        self._func = func
+        self._evaluated = False
+        self._value = None
+
+    def _force(self):
+        if not self._evaluated:
+            self._value = self._func()
+            self._evaluated = True
+        return self._value
+
+    def __getattr__(self, name):
+        return getattr(self._force(), name)
+
+    def __str__(self):
+        return str(self._force())
+
+    def __bool__(self):
+        return bool(self._force())
+```
+

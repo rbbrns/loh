@@ -69,9 +69,6 @@ manager = RestaurantManager("The Loh Bistro") {
     .add_menu_item(101, "Truffle Fries", 12.50, "appetizer");
     .add_menu_item(102, "Loh Burger", 18.99, "main");
     .add_menu_item(103, "Chocolate Souffle", 9.50, "dessert");
-    .temp_tag = "promo";
-    # Delete temporary property using delete statement syntax inside the block
-    <> .temp_tag
 }
 
 # Create orders for Tables 3 and 4
