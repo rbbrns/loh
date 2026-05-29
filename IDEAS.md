@@ -355,26 +355,48 @@ Because Python's tokenizer ignores newlines inside parentheses to support implic
 ## 15. Lazy Parameter Evaluation & Memoized Thunks (`lazy`)
 
 ### Motivation
-Eager argument evaluation in Python can waste resources when passing expensive computations to functions that might ignore them (e.g., debug loggers or conditional paths). Standard Python requires passing lambdas (`lambda: expr`), which adds boilerplate to both the call site and the function body.
+Eager argument evaluation in Python can waste resources when passing expensive computations to functions that might ignore them (e.g., debug loggers or conditional paths). Standard Python requires passing lambdas (`lambda: expr`), which adds syntax boilerplate to both the call site (`lambda:`) and the function body (`param()`).
 
-Because Python compiles and resolves function signatures dynamically at runtime, the compiler cannot automatically insert lazy evaluation *only* on the definition site. Introducing a call-site **`lazy`** keyword wraps any expression in a memoized proxy object, delaying evaluation until the parameter is accessed or operated on.
+We want a unified syntax that allows:
+1. **Definition-Site Lazy Parameters**: Declaring a method parameter as `lazy` so that the function body can treat it as a normal variable, with the compiler automatically handling evaluation.
+2. **Call-Site Lazy Thunks**: Explicitly passing a deferred/memoized expression to matching parameters using the `lazy` keyword.
 
 ### Proposed Syntax
-```python
-# The expensive function call is wrapped in a lazy thunk
-log_debug(lazy generate_heavy_report())
 
-# We can also declare lazy variables directly
-data = lazy load_huge_dataset()
+#### **1. Definition Site**
+Prefixing a parameter with the `lazy` keyword inside a function/method signature:
+```python
+log_debug(lazy message: str):
+    ? debug_enabled:
+        # Accessed naturally like a string (no message() calling needed)
+        print(message)
+```
+
+#### **2. Call Site**
+Passing a lazy thunk to the function:
+```python
+log_debug(lazy generate_heavy_report())
 ```
 
 ### Compile-Time Desugaring
+
+#### **Call Site desugaring**
 The parser compiles `lazy expr` into a built-in lazy proxy constructor:
 ```python
-# log_debug(lazy generate_heavy_report())
 log_debug(_LohLazy(lambda: generate_heavy_report()))
 ```
-At runtime, `_LohLazy` intercepts operations (like attribute access, boolean checks, or printing) using Python's magic methods, forcing evaluation exactly once and caching the result (memoization):
+
+#### **Definition Site desugaring**
+Inside the function body, the compiler registers the parameter as a lazy variable and automatically wraps all read references to force evaluation:
+```python
+def log_debug(message):
+    if debug_enabled:
+        # References to the lazy parameter are auto-desugared to force evaluation
+        print(message._force() if hasattr(message, "_force") else message)
+```
+
+### Runtime Memoization Proxy
+At runtime, `_LohLazy` wraps the deferred lambda, forcing evaluation exactly once upon the first access and caching the value:
 ```python
 class _LohLazy:
     def __init__(self, func):
@@ -388,6 +410,7 @@ class _LohLazy:
             self._evaluated = True
         return self._value
 
+    # Proxy magic methods to dynamically force evaluation when accessed transparently
     def __getattr__(self, name):
         return getattr(self._force(), name)
 
@@ -397,4 +420,5 @@ class _LohLazy:
     def __bool__(self):
         return bool(self._force())
 ```
+
 
