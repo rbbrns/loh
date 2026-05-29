@@ -64,12 +64,15 @@ RestaurantManager::
         -> receipt
 
 # 5. Testing the Loh Restaurant Management System
-manager = RestaurantManager("The Loh Bistro")
-
-# Add menu items
-manager.add_menu_item(101, "Truffle Fries", 12.50, "appetizer")
-manager.add_menu_item(102, "Loh Burger", 18.99, "main")
-manager.add_menu_item(103, "Chocolate Souffle", 9.50, "dessert")
+# Construct and configure the RestaurantManager using the Inline Scope Initializer Block
+manager = RestaurantManager("The Loh Bistro") {
+    .add_menu_item(101, "Truffle Fries", 12.50, "appetizer");
+    .add_menu_item(102, "Loh Burger", 18.99, "main");
+    .add_menu_item(103, "Chocolate Souffle", 9.50, "dessert");
+    .temp_tag = "promo";
+    # Delete temporary property using delete statement syntax inside the block
+    <> .temp_tag
+}
 
 # Create orders for Tables 3 and 4
 order1 = manager.create_order(1, 3)
@@ -115,5 +118,8 @@ print(manager.process_billing(2))
 
 # Verify that item3 was safely ignored
 ^? item3, "item3 should be None"
+
+# Verify that the temporary property was successfully deleted inside the initializer block
+^? hasattr(manager, "temp_tag"), "temp_tag was not deleted!"
 
 print("\nAll assertions passed! Loh Restaurant Management Sample completed successfully.")
