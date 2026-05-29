@@ -104,6 +104,8 @@ tok_backup(struct tok_state *tok, int c)
             Py_FatalError("tokenizer beginning of buffer");
         }
         if ((int)(unsigned char)*tok->cur != Py_CHARMASK(c)) {
+            fprintf(stderr, "tok_backup: expected '%c' (%d) but got '%c' (%d) at offset %ld in line %s\n",
+                    c, c, *tok->cur, *tok->cur, (long)(tok->cur - tok->buf), tok->buf);
             Py_FatalError("tok_backup: wrong character");
         }
         tok->col_offset--;
@@ -844,7 +846,9 @@ tok_get_normal_mode(struct tok_state *tok, tokenizer_mode* current_tok, struct t
             else {
                 tok_backup(tok, c);
             }
-            tok_backup(tok, '.');
+            p_start = tok->start;
+            p_end = tok->cur;
+            return MAKE_TOKEN(DOTDOT);
         }
         else {
             tok_backup(tok, c);
@@ -960,8 +964,15 @@ tok_get_normal_mode(struct tok_state *tok, tokenizer_mode* current_tok, struct t
                     }
                 }
                 if (c == '.') {
-                    c = tok_nextc(tok);
-                    goto fraction;
+                    int next_c = tok_nextc(tok);
+                    if (next_c == '.') {
+                        tok_backup(tok, next_c);
+                        tok_backup(tok, c);
+                        c = EOF;
+                    } else {
+                        c = next_c;
+                        goto fraction;
+                    }
                 }
                 else if (c == 'e' || c == 'E') {
                     goto exponent;
@@ -993,14 +1004,22 @@ tok_get_normal_mode(struct tok_state *tok, tokenizer_mode* current_tok, struct t
             {
                 /* Accept floating-point numbers. */
                 if (c == '.') {
-                    c = tok_nextc(tok);
+                    int next_c = tok_nextc(tok);
+                    if (next_c == '.') {
+                        tok_backup(tok, next_c);
+                        tok_backup(tok, c);
+                        c = EOF;
+                    } else {
+                        c = next_c;
+                        goto fraction;
+                    }
+                }
         fraction:
-                    /* Fraction */
-                    if (Py_ISDIGIT(c)) {
-                        c = tok_decimal_tail(tok);
-                        if (c == 0) {
-                            return MAKE_TOKEN(ERRORTOKEN);
-                        }
+                /* Fraction */
+                if (Py_ISDIGIT(c)) {
+                    c = tok_decimal_tail(tok);
+                    if (c == 0) {
+                        return MAKE_TOKEN(ERRORTOKEN);
                     }
                 }
                 if (c == 'e' || c == 'E') {

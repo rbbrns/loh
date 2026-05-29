@@ -122,6 +122,8 @@ LESSGREATER             '<>'
 TILDEDOT                '~.'
 # double tilde (none coalescing)
 DOUBLETILDE             '~~'
+# dot dot (range literal)
+DOTDOT                  '..'
 
 OP
 TYPE_IGNORE

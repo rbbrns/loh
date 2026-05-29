@@ -48,6 +48,7 @@ Loh maps Python's verbose keywords and structures to elegant, symbol-based alter
 | `is not` | `!==` | Negated identity comparison |
 | `in` | `<~` | Membership check |
 | `not in` | `!<~` *(or `not <~`)*| Negated membership check |
+| `range(start, stop)` | `start..stop` | Range / sequence literal |
 | `del` | `<>` | Delete statement |
 | `if` | `?` | Conditional branch |
 | `elif` | `??` | Else-if branch |
@@ -636,4 +637,34 @@ display_name = user_name ~~ "Guest"
 
 # Safe subscripting
 first_item = data~['items']~[0]
+```
+
+---
+
+### **21. Range / Slice Literals (`..`)**
+
+> **Motivation:** Standard Python relies on `range(start, stop)` for iteration and sequences. In mathematical notations and languages like Rust or Ruby, range/interval literals (`1..10`) are used to represent sequences cleanly. Adding this to Loh makes loop variables and slice checks extremely compact.
+
+Loh introduces range literals using the `..` operator, which translates directly to standard `range()` calls.
+
+#### **Python**
+```python
+# Loop 0 to 9
+for i in range(0, 10):
+    print(i)
+
+# Check if value in range
+if x in range(1, 100):
+    print("In bounds")
+```
+
+#### **Loh**
+```python
+# Loop 0 to 9
+$ i <~ 0..10:
+    print(i)
+
+# Check if value in range
+? x <~ 1..100:
+    print("In bounds")
 ```

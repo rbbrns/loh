@@ -282,5 +282,19 @@ class TestReadmeExamples(unittest.TestCase):
         exec(code, namespace)
         self.assertEqual(namespace["str_val"], "")
 
+    def test_range_literals(self):
+        # Loop 0 to 9
+        res = []
+        $ i <~ 0..10:
+            res.append(i)
+        self.assertEqual(res, list(range(10)))
+
+        # Check if value in range
+        x = 50
+        in_bounds = --
+        ? x <~ 1..100:
+            in_bounds = ++
+        self.assertTrue(in_bounds)
+
 if __name__ == "__main__":
     unittest.main()

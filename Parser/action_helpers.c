@@ -147,6 +147,9 @@ _PyPegen_seq_count_dots(asdl_seq *seq)
             case ELLIPSIS:
                 number_of_dots += 3;
                 break;
+            case DOTDOT:
+                number_of_dots += 2;
+                break;
             case DOT:
                 number_of_dots += 1;
                 break;
@@ -2054,4 +2057,20 @@ _PyPegen_safe_subscript(Parser *p, expr_ty primary, expr_ty slice) {
     if (!orelse) return NULL;
     
     return _PyAST_IfExp(test, body, orelse, primary->lineno, primary->col_offset, slice->end_lineno, slice->end_col_offset, p->arena);
+}
+
+expr_ty
+_PyPegen_range_literal(Parser *p, expr_ty left, expr_ty right) {
+    PyObject *range_id = _PyPegen_new_identifier(p, "range");
+    if (!range_id) return NULL;
+
+    expr_ty func = _PyAST_Name(range_id, Load, left->lineno, left->col_offset, right->end_lineno, right->end_col_offset, p->arena);
+    if (!func) return NULL;
+
+    asdl_expr_seq *args = _Py_asdl_expr_seq_new(2, p->arena);
+    if (!args) return NULL;
+    asdl_seq_SET(args, 0, left);
+    asdl_seq_SET(args, 1, right);
+
+    return _PyAST_Call(func, args, NULL, left->lineno, left->col_offset, right->end_lineno, right->end_col_offset, p->arena);
 }

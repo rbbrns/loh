@@ -25,7 +25,7 @@ static KeywordToken *reserved_keywords[] = {
         {"if", 506},
         {"as", 515},
         {"is", 520},
-        {"in", 550},
+        {"in", 548},
         {NULL, -1},
     },
     (KeywordToken[]) {
@@ -33,15 +33,15 @@ static KeywordToken *reserved_keywords[] = {
         {"not", 505},
         {"try", 511},
         {"for", 516},
-        {"del", 548},
-        {"def", 552},
+        {"del", 546},
+        {"def", 550},
         {NULL, -1},
     },
     (KeywordToken[]) {
         {"True", 501},
         {"None", 502},
         {"elif", 507},
-        {"else", 545},
+        {"else", 543},
         {"with", 526},
         {"from", 527},
         {"pass", 533},
@@ -55,7 +55,7 @@ static KeywordToken *reserved_keywords[] = {
         {"async", 521},
         {"await", 522},
         {"yield", 524},
-        {"class", 554},
+        {"class", 552},
         {NULL, -1},
     },
     (KeywordToken[]) {
@@ -64,7 +64,7 @@ static KeywordToken *reserved_keywords[] = {
         {"return", 523},
         {"import", 528},
         {"global", 534},
-        {"lambda", 547},
+        {"lambda", 545},
         {NULL, -1},
     },
     (KeywordToken[]) {
@@ -252,351 +252,352 @@ static char *soft_keywords[] = {
 #define conjunction_type 1165
 #define inversion_type 1166
 #define comparison_type 1167
-#define compare_op_bitwise_or_pair_type 1168
-#define eq_bitwise_or_type 1169
-#define noteq_bitwise_or_type 1170
-#define lte_bitwise_or_type 1171
-#define lt_bitwise_or_type 1172
-#define gte_bitwise_or_type 1173
-#define gt_bitwise_or_type 1174
-#define notin_bitwise_or_type 1175
-#define in_bitwise_or_type 1176
-#define isnot_bitwise_or_type 1177
-#define is_bitwise_or_type 1178
-#define bitwise_or_type 1179  // Left-recursive
-#define bitwise_xor_type 1180  // Left-recursive
-#define bitwise_and_type 1181  // Left-recursive
-#define shift_expr_type 1182  // Left-recursive
-#define sum_type 1183  // Left-recursive
-#define term_type 1184  // Left-recursive
-#define factor_type 1185
-#define power_type 1186
-#define await_primary_type 1187
-#define primary_type 1188  // Left-recursive
-#define slices_type 1189
-#define slice_type 1190
-#define atom_type 1191
-#define group_type 1192
-#define lambdef_type 1193
-#define lambda_params_type 1194
-#define lambda_parameters_type 1195
-#define lambda_slash_no_default_type 1196
-#define lambda_slash_with_default_type 1197
-#define lambda_star_etc_type 1198
-#define lambda_kwds_type 1199
-#define lambda_param_no_default_type 1200
-#define lambda_param_with_default_type 1201
-#define lambda_param_maybe_default_type 1202
-#define lambda_param_type 1203
-#define fstring_middle_type 1204
-#define fstring_replacement_field_type 1205
-#define fstring_conversion_type 1206
-#define fstring_full_format_spec_type 1207
-#define fstring_format_spec_type 1208
-#define fstring_type 1209
-#define tstring_format_spec_replacement_field_type 1210
-#define tstring_format_spec_type 1211
-#define tstring_full_format_spec_type 1212
-#define tstring_replacement_field_type 1213
-#define tstring_middle_type 1214
-#define tstring_type 1215
-#define string_type 1216
-#define strings_type 1217
-#define list_type 1218
-#define tuple_type 1219
-#define set_type 1220
-#define dict_type 1221
-#define double_starred_kvpairs_type 1222
-#define double_starred_kvpair_type 1223
-#define kvpair_type 1224
-#define for_if_clauses_type 1225
-#define for_if_clause_type 1226
-#define listcomp_type 1227
-#define setcomp_type 1228
-#define genexp_type 1229
-#define dictcomp_type 1230
-#define arguments_no_paren_type 1231
-#define arguments_type 1232
-#define args_type 1233
-#define kwargs_type 1234
-#define starred_expression_type 1235
-#define kwarg_or_starred_type 1236
-#define kwarg_or_double_starred_type 1237
-#define star_targets_type 1238
-#define star_targets_list_seq_type 1239
-#define star_targets_tuple_seq_type 1240
-#define star_target_type 1241
-#define target_with_star_atom_type 1242
-#define star_atom_type 1243
-#define single_target_type 1244
-#define single_subscript_attribute_target_type 1245
-#define t_primary_type 1246  // Left-recursive
-#define t_lookahead_type 1247
-#define del_targets_type 1248
-#define del_target_type 1249
-#define del_t_atom_type 1250
-#define type_expressions_type 1251
-#define func_type_comment_type 1252
-#define invalid_arguments_type 1253
-#define invalid_kwarg_type 1254
-#define expression_without_invalid_type 1255
-#define invalid_legacy_expression_type 1256
-#define invalid_type_param_type 1257
-#define invalid_expression_type 1258
-#define invalid_named_expression_type 1259
-#define invalid_assignment_type 1260
-#define invalid_ann_assign_target_type 1261
-#define invalid_del_stmt_type 1262
-#define invalid_block_type 1263
-#define invalid_comprehension_type 1264
-#define invalid_dict_comprehension_type 1265
-#define invalid_parameters_type 1266
-#define invalid_default_type 1267
-#define invalid_star_etc_type 1268
-#define invalid_kwds_type 1269
-#define invalid_parameters_helper_type 1270
-#define invalid_lambda_parameters_type 1271
-#define invalid_lambda_parameters_helper_type 1272
-#define invalid_lambda_star_etc_type 1273
-#define invalid_lambda_kwds_type 1274
-#define invalid_double_type_comments_type 1275
-#define invalid_with_item_type 1276
-#define invalid_for_if_clause_type 1277
-#define invalid_for_target_type 1278
-#define invalid_group_type 1279
-#define invalid_import_type 1280
-#define invalid_dotted_as_name_type 1281
-#define invalid_import_from_as_name_type 1282
-#define invalid_import_from_targets_type 1283
-#define invalid_with_stmt_type 1284
-#define invalid_with_stmt_indent_type 1285
-#define invalid_try_stmt_type 1286
-#define invalid_except_stmt_type 1287
-#define invalid_except_star_stmt_type 1288
-#define invalid_finally_stmt_type 1289
-#define invalid_except_stmt_indent_type 1290
-#define invalid_except_star_stmt_indent_type 1291
-#define invalid_match_stmt_type 1292
-#define invalid_case_block_type 1293
-#define invalid_as_pattern_type 1294
-#define invalid_class_pattern_type 1295
-#define invalid_class_argument_pattern_type 1296
-#define invalid_if_stmt_type 1297
-#define invalid_elif_stmt_type 1298
-#define invalid_try_else_stmt_type 1299
-#define invalid_else_stmt_type 1300
-#define invalid_while_stmt_type 1301
-#define invalid_for_stmt_type 1302
-#define invalid_def_raw_type 1303
-#define invalid_class_def_raw_type 1304
-#define invalid_double_starred_kvpairs_type 1305
-#define invalid_kvpair_type 1306
-#define invalid_starred_expression_unpacking_type 1307
-#define invalid_starred_expression_type 1308
-#define invalid_fstring_replacement_field_type 1309
-#define invalid_fstring_conversion_character_type 1310
-#define invalid_tstring_replacement_field_type 1311
-#define invalid_tstring_conversion_character_type 1312
-#define invalid_string_tstring_concat_type 1313
-#define invalid_arithmetic_type 1314
-#define invalid_factor_type 1315
-#define invalid_type_params_type 1316
-#define _loop0_1_type 1317
-#define _loop1_2_type 1318
-#define _loop0_3_type 1319
-#define _gather_4_type 1320
-#define _tmp_5_type 1321
-#define _tmp_6_type 1322
-#define _tmp_7_type 1323
-#define _tmp_8_type 1324
-#define _tmp_9_type 1325
-#define _tmp_10_type 1326
-#define _tmp_11_type 1327
-#define _tmp_12_type 1328
-#define _tmp_13_type 1329
-#define _loop1_14_type 1330
-#define _tmp_15_type 1331
-#define _loop0_16_type 1332
-#define _gather_17_type 1333
-#define _tmp_18_type 1334
-#define _tmp_19_type 1335
-#define _loop0_20_type 1336
-#define _loop1_21_type 1337
-#define _loop0_22_type 1338
-#define _gather_23_type 1339
-#define _tmp_24_type 1340
-#define _loop0_25_type 1341
-#define _gather_26_type 1342
-#define _loop1_27_type 1343
-#define _tmp_28_type 1344
-#define _tmp_29_type 1345
-#define _tmp_30_type 1346
-#define _loop0_31_type 1347
-#define _loop0_32_type 1348
-#define _loop1_33_type 1349
-#define _loop1_34_type 1350
-#define _loop0_35_type 1351
-#define _loop1_36_type 1352
-#define _tmp_37_type 1353
-#define _loop0_38_type 1354
-#define _gather_39_type 1355
-#define _tmp_40_type 1356
-#define _loop1_41_type 1357
-#define _loop1_42_type 1358
-#define _loop1_43_type 1359
-#define _loop0_44_type 1360
-#define _gather_45_type 1361
-#define _tmp_46_type 1362
-#define _tmp_47_type 1363
-#define _tmp_48_type 1364
-#define _loop0_49_type 1365
-#define _gather_50_type 1366
-#define _loop0_51_type 1367
-#define _gather_52_type 1368
-#define _tmp_53_type 1369
-#define _loop0_54_type 1370
-#define _gather_55_type 1371
-#define _loop0_56_type 1372
-#define _gather_57_type 1373
-#define _loop0_58_type 1374
-#define _gather_59_type 1375
-#define _tmp_60_type 1376
-#define _loop1_61_type 1377
-#define _loop1_62_type 1378
-#define _loop0_63_type 1379
-#define _gather_64_type 1380
-#define _loop1_65_type 1381
-#define _loop1_66_type 1382
-#define _loop1_67_type 1383
-#define _tmp_68_type 1384
-#define _tmp_69_type 1385
-#define _loop0_70_type 1386
-#define _gather_71_type 1387
-#define _tmp_72_type 1388
-#define _tmp_73_type 1389
-#define _tmp_74_type 1390
-#define _tmp_75_type 1391
-#define _tmp_76_type 1392
-#define _tmp_77_type 1393
-#define _loop0_78_type 1394
-#define _loop0_79_type 1395
-#define _loop1_80_type 1396
-#define _loop1_81_type 1397
-#define _tmp_82_type 1398
-#define _loop0_83_type 1399
-#define _loop1_84_type 1400
-#define _loop0_85_type 1401
-#define _loop0_86_type 1402
-#define _loop0_87_type 1403
-#define _loop0_88_type 1404
-#define _loop1_89_type 1405
-#define _loop1_90_type 1406
-#define _tmp_91_type 1407
-#define _loop0_92_type 1408
-#define _gather_93_type 1409
-#define _tmp_94_type 1410
-#define _loop1_95_type 1411
-#define _loop0_96_type 1412
-#define _tmp_97_type 1413
-#define _loop0_98_type 1414
-#define _gather_99_type 1415
-#define _tmp_100_type 1416
-#define _loop0_101_type 1417
-#define _gather_102_type 1418
-#define _loop0_103_type 1419
-#define _gather_104_type 1420
-#define _tmp_105_type 1421
-#define _loop0_106_type 1422
-#define _loop0_107_type 1423
-#define _gather_108_type 1424
-#define _loop1_109_type 1425
-#define _tmp_110_type 1426
-#define _tmp_111_type 1427
-#define _tmp_112_type 1428
-#define _loop0_113_type 1429
-#define _gather_114_type 1430
-#define _loop0_115_type 1431
-#define _gather_116_type 1432
-#define _tmp_117_type 1433
-#define _tmp_118_type 1434
-#define _loop0_119_type 1435
-#define _gather_120_type 1436
-#define _tmp_121_type 1437
-#define _tmp_122_type 1438
-#define _tmp_123_type 1439
-#define _tmp_124_type 1440
-#define _tmp_125_type 1441
-#define _loop1_126_type 1442
-#define _tmp_127_type 1443
-#define _tmp_128_type 1444
-#define _tmp_129_type 1445
-#define _tmp_130_type 1446
-#define _tmp_131_type 1447
-#define _loop0_132_type 1448
-#define _loop0_133_type 1449
-#define _tmp_134_type 1450
-#define _tmp_135_type 1451
-#define _tmp_136_type 1452
-#define _tmp_137_type 1453
-#define _tmp_138_type 1454
-#define _tmp_139_type 1455
-#define _tmp_140_type 1456
-#define _tmp_141_type 1457
-#define _tmp_142_type 1458
-#define _loop0_143_type 1459
-#define _gather_144_type 1460
-#define _tmp_145_type 1461
-#define _tmp_146_type 1462
-#define _tmp_147_type 1463
-#define _tmp_148_type 1464
-#define _loop0_149_type 1465
-#define _gather_150_type 1466
-#define _tmp_151_type 1467
-#define _loop0_152_type 1468
-#define _gather_153_type 1469
-#define _loop0_154_type 1470
-#define _gather_155_type 1471
-#define _tmp_156_type 1472
-#define _loop0_157_type 1473
-#define _tmp_158_type 1474
-#define _tmp_159_type 1475
-#define _tmp_160_type 1476
-#define _tmp_161_type 1477
-#define _tmp_162_type 1478
-#define _tmp_163_type 1479
-#define _tmp_164_type 1480
-#define _tmp_165_type 1481
-#define _tmp_166_type 1482
-#define _tmp_167_type 1483
-#define _tmp_168_type 1484
-#define _tmp_169_type 1485
-#define _tmp_170_type 1486
-#define _tmp_171_type 1487
-#define _tmp_172_type 1488
-#define _tmp_173_type 1489
-#define _tmp_174_type 1490
-#define _tmp_175_type 1491
-#define _tmp_176_type 1492
-#define _tmp_177_type 1493
-#define _tmp_178_type 1494
-#define _tmp_179_type 1495
-#define _tmp_180_type 1496
-#define _tmp_181_type 1497
-#define _tmp_182_type 1498
-#define _tmp_183_type 1499
-#define _tmp_184_type 1500
-#define _tmp_185_type 1501
-#define _loop0_186_type 1502
-#define _tmp_187_type 1503
-#define _tmp_188_type 1504
-#define _tmp_189_type 1505
-#define _tmp_190_type 1506
-#define _loop0_191_type 1507
-#define _gather_192_type 1508
-#define _tmp_193_type 1509
-#define _tmp_194_type 1510
-#define _tmp_195_type 1511
-#define _tmp_196_type 1512
+#define range_expression_type 1168
+#define compare_op_bitwise_or_pair_type 1169
+#define eq_bitwise_or_type 1170
+#define noteq_bitwise_or_type 1171
+#define lte_bitwise_or_type 1172
+#define lt_bitwise_or_type 1173
+#define gte_bitwise_or_type 1174
+#define gt_bitwise_or_type 1175
+#define notin_bitwise_or_type 1176
+#define in_bitwise_or_type 1177
+#define isnot_bitwise_or_type 1178
+#define is_bitwise_or_type 1179
+#define bitwise_or_type 1180  // Left-recursive
+#define bitwise_xor_type 1181  // Left-recursive
+#define bitwise_and_type 1182  // Left-recursive
+#define shift_expr_type 1183  // Left-recursive
+#define sum_type 1184  // Left-recursive
+#define term_type 1185  // Left-recursive
+#define factor_type 1186
+#define power_type 1187
+#define await_primary_type 1188
+#define primary_type 1189  // Left-recursive
+#define slices_type 1190
+#define slice_type 1191
+#define atom_type 1192
+#define group_type 1193
+#define lambdef_type 1194
+#define lambda_params_type 1195
+#define lambda_parameters_type 1196
+#define lambda_slash_no_default_type 1197
+#define lambda_slash_with_default_type 1198
+#define lambda_star_etc_type 1199
+#define lambda_kwds_type 1200
+#define lambda_param_no_default_type 1201
+#define lambda_param_with_default_type 1202
+#define lambda_param_maybe_default_type 1203
+#define lambda_param_type 1204
+#define fstring_middle_type 1205
+#define fstring_replacement_field_type 1206
+#define fstring_conversion_type 1207
+#define fstring_full_format_spec_type 1208
+#define fstring_format_spec_type 1209
+#define fstring_type 1210
+#define tstring_format_spec_replacement_field_type 1211
+#define tstring_format_spec_type 1212
+#define tstring_full_format_spec_type 1213
+#define tstring_replacement_field_type 1214
+#define tstring_middle_type 1215
+#define tstring_type 1216
+#define string_type 1217
+#define strings_type 1218
+#define list_type 1219
+#define tuple_type 1220
+#define set_type 1221
+#define dict_type 1222
+#define double_starred_kvpairs_type 1223
+#define double_starred_kvpair_type 1224
+#define kvpair_type 1225
+#define for_if_clauses_type 1226
+#define for_if_clause_type 1227
+#define listcomp_type 1228
+#define setcomp_type 1229
+#define genexp_type 1230
+#define dictcomp_type 1231
+#define arguments_no_paren_type 1232
+#define arguments_type 1233
+#define args_type 1234
+#define kwargs_type 1235
+#define starred_expression_type 1236
+#define kwarg_or_starred_type 1237
+#define kwarg_or_double_starred_type 1238
+#define star_targets_type 1239
+#define star_targets_list_seq_type 1240
+#define star_targets_tuple_seq_type 1241
+#define star_target_type 1242
+#define target_with_star_atom_type 1243
+#define star_atom_type 1244
+#define single_target_type 1245
+#define single_subscript_attribute_target_type 1246
+#define t_primary_type 1247  // Left-recursive
+#define t_lookahead_type 1248
+#define del_targets_type 1249
+#define del_target_type 1250
+#define del_t_atom_type 1251
+#define type_expressions_type 1252
+#define func_type_comment_type 1253
+#define invalid_arguments_type 1254
+#define invalid_kwarg_type 1255
+#define expression_without_invalid_type 1256
+#define invalid_legacy_expression_type 1257
+#define invalid_type_param_type 1258
+#define invalid_expression_type 1259
+#define invalid_named_expression_type 1260
+#define invalid_assignment_type 1261
+#define invalid_ann_assign_target_type 1262
+#define invalid_del_stmt_type 1263
+#define invalid_block_type 1264
+#define invalid_comprehension_type 1265
+#define invalid_dict_comprehension_type 1266
+#define invalid_parameters_type 1267
+#define invalid_default_type 1268
+#define invalid_star_etc_type 1269
+#define invalid_kwds_type 1270
+#define invalid_parameters_helper_type 1271
+#define invalid_lambda_parameters_type 1272
+#define invalid_lambda_parameters_helper_type 1273
+#define invalid_lambda_star_etc_type 1274
+#define invalid_lambda_kwds_type 1275
+#define invalid_double_type_comments_type 1276
+#define invalid_with_item_type 1277
+#define invalid_for_if_clause_type 1278
+#define invalid_for_target_type 1279
+#define invalid_group_type 1280
+#define invalid_import_type 1281
+#define invalid_dotted_as_name_type 1282
+#define invalid_import_from_as_name_type 1283
+#define invalid_import_from_targets_type 1284
+#define invalid_with_stmt_type 1285
+#define invalid_with_stmt_indent_type 1286
+#define invalid_try_stmt_type 1287
+#define invalid_except_stmt_type 1288
+#define invalid_except_star_stmt_type 1289
+#define invalid_finally_stmt_type 1290
+#define invalid_except_stmt_indent_type 1291
+#define invalid_except_star_stmt_indent_type 1292
+#define invalid_match_stmt_type 1293
+#define invalid_case_block_type 1294
+#define invalid_as_pattern_type 1295
+#define invalid_class_pattern_type 1296
+#define invalid_class_argument_pattern_type 1297
+#define invalid_if_stmt_type 1298
+#define invalid_elif_stmt_type 1299
+#define invalid_try_else_stmt_type 1300
+#define invalid_else_stmt_type 1301
+#define invalid_while_stmt_type 1302
+#define invalid_for_stmt_type 1303
+#define invalid_def_raw_type 1304
+#define invalid_class_def_raw_type 1305
+#define invalid_double_starred_kvpairs_type 1306
+#define invalid_kvpair_type 1307
+#define invalid_starred_expression_unpacking_type 1308
+#define invalid_starred_expression_type 1309
+#define invalid_fstring_replacement_field_type 1310
+#define invalid_fstring_conversion_character_type 1311
+#define invalid_tstring_replacement_field_type 1312
+#define invalid_tstring_conversion_character_type 1313
+#define invalid_string_tstring_concat_type 1314
+#define invalid_arithmetic_type 1315
+#define invalid_factor_type 1316
+#define invalid_type_params_type 1317
+#define _loop0_1_type 1318
+#define _loop1_2_type 1319
+#define _loop0_3_type 1320
+#define _gather_4_type 1321
+#define _tmp_5_type 1322
+#define _tmp_6_type 1323
+#define _tmp_7_type 1324
+#define _tmp_8_type 1325
+#define _tmp_9_type 1326
+#define _tmp_10_type 1327
+#define _tmp_11_type 1328
+#define _tmp_12_type 1329
+#define _tmp_13_type 1330
+#define _loop1_14_type 1331
+#define _tmp_15_type 1332
+#define _loop0_16_type 1333
+#define _gather_17_type 1334
+#define _tmp_18_type 1335
+#define _tmp_19_type 1336
+#define _loop0_20_type 1337
+#define _loop1_21_type 1338
+#define _loop0_22_type 1339
+#define _gather_23_type 1340
+#define _tmp_24_type 1341
+#define _loop0_25_type 1342
+#define _gather_26_type 1343
+#define _loop1_27_type 1344
+#define _tmp_28_type 1345
+#define _tmp_29_type 1346
+#define _tmp_30_type 1347
+#define _loop0_31_type 1348
+#define _loop0_32_type 1349
+#define _loop1_33_type 1350
+#define _loop1_34_type 1351
+#define _loop0_35_type 1352
+#define _loop1_36_type 1353
+#define _tmp_37_type 1354
+#define _loop0_38_type 1355
+#define _gather_39_type 1356
+#define _tmp_40_type 1357
+#define _loop1_41_type 1358
+#define _loop1_42_type 1359
+#define _loop1_43_type 1360
+#define _loop0_44_type 1361
+#define _gather_45_type 1362
+#define _tmp_46_type 1363
+#define _tmp_47_type 1364
+#define _tmp_48_type 1365
+#define _loop0_49_type 1366
+#define _gather_50_type 1367
+#define _loop0_51_type 1368
+#define _gather_52_type 1369
+#define _tmp_53_type 1370
+#define _loop0_54_type 1371
+#define _gather_55_type 1372
+#define _loop0_56_type 1373
+#define _gather_57_type 1374
+#define _loop0_58_type 1375
+#define _gather_59_type 1376
+#define _tmp_60_type 1377
+#define _loop1_61_type 1378
+#define _loop1_62_type 1379
+#define _loop0_63_type 1380
+#define _gather_64_type 1381
+#define _loop1_65_type 1382
+#define _loop1_66_type 1383
+#define _loop1_67_type 1384
+#define _tmp_68_type 1385
+#define _tmp_69_type 1386
+#define _loop0_70_type 1387
+#define _gather_71_type 1388
+#define _tmp_72_type 1389
+#define _tmp_73_type 1390
+#define _tmp_74_type 1391
+#define _tmp_75_type 1392
+#define _tmp_76_type 1393
+#define _tmp_77_type 1394
+#define _loop0_78_type 1395
+#define _loop0_79_type 1396
+#define _loop1_80_type 1397
+#define _loop1_81_type 1398
+#define _tmp_82_type 1399
+#define _loop0_83_type 1400
+#define _loop1_84_type 1401
+#define _loop0_85_type 1402
+#define _loop0_86_type 1403
+#define _loop0_87_type 1404
+#define _loop0_88_type 1405
+#define _loop1_89_type 1406
+#define _loop1_90_type 1407
+#define _tmp_91_type 1408
+#define _loop0_92_type 1409
+#define _gather_93_type 1410
+#define _tmp_94_type 1411
+#define _loop1_95_type 1412
+#define _loop0_96_type 1413
+#define _tmp_97_type 1414
+#define _loop0_98_type 1415
+#define _gather_99_type 1416
+#define _tmp_100_type 1417
+#define _loop0_101_type 1418
+#define _gather_102_type 1419
+#define _loop0_103_type 1420
+#define _gather_104_type 1421
+#define _tmp_105_type 1422
+#define _loop0_106_type 1423
+#define _loop0_107_type 1424
+#define _gather_108_type 1425
+#define _loop1_109_type 1426
+#define _tmp_110_type 1427
+#define _tmp_111_type 1428
+#define _tmp_112_type 1429
+#define _loop0_113_type 1430
+#define _gather_114_type 1431
+#define _loop0_115_type 1432
+#define _gather_116_type 1433
+#define _tmp_117_type 1434
+#define _tmp_118_type 1435
+#define _loop0_119_type 1436
+#define _gather_120_type 1437
+#define _tmp_121_type 1438
+#define _tmp_122_type 1439
+#define _tmp_123_type 1440
+#define _tmp_124_type 1441
+#define _tmp_125_type 1442
+#define _loop1_126_type 1443
+#define _tmp_127_type 1444
+#define _tmp_128_type 1445
+#define _tmp_129_type 1446
+#define _tmp_130_type 1447
+#define _tmp_131_type 1448
+#define _loop0_132_type 1449
+#define _loop0_133_type 1450
+#define _tmp_134_type 1451
+#define _tmp_135_type 1452
+#define _tmp_136_type 1453
+#define _tmp_137_type 1454
+#define _tmp_138_type 1455
+#define _tmp_139_type 1456
+#define _tmp_140_type 1457
+#define _tmp_141_type 1458
+#define _tmp_142_type 1459
+#define _loop0_143_type 1460
+#define _gather_144_type 1461
+#define _tmp_145_type 1462
+#define _tmp_146_type 1463
+#define _tmp_147_type 1464
+#define _tmp_148_type 1465
+#define _loop0_149_type 1466
+#define _gather_150_type 1467
+#define _tmp_151_type 1468
+#define _loop0_152_type 1469
+#define _gather_153_type 1470
+#define _loop0_154_type 1471
+#define _gather_155_type 1472
+#define _tmp_156_type 1473
+#define _loop0_157_type 1474
+#define _tmp_158_type 1475
+#define _tmp_159_type 1476
+#define _tmp_160_type 1477
+#define _tmp_161_type 1478
+#define _tmp_162_type 1479
+#define _tmp_163_type 1480
+#define _tmp_164_type 1481
+#define _tmp_165_type 1482
+#define _tmp_166_type 1483
+#define _tmp_167_type 1484
+#define _tmp_168_type 1485
+#define _tmp_169_type 1486
+#define _tmp_170_type 1487
+#define _tmp_171_type 1488
+#define _tmp_172_type 1489
+#define _tmp_173_type 1490
+#define _tmp_174_type 1491
+#define _tmp_175_type 1492
+#define _tmp_176_type 1493
+#define _tmp_177_type 1494
+#define _tmp_178_type 1495
+#define _tmp_179_type 1496
+#define _tmp_180_type 1497
+#define _tmp_181_type 1498
+#define _tmp_182_type 1499
+#define _tmp_183_type 1500
+#define _tmp_184_type 1501
+#define _tmp_185_type 1502
+#define _loop0_186_type 1503
+#define _tmp_187_type 1504
+#define _tmp_188_type 1505
+#define _tmp_189_type 1506
+#define _tmp_190_type 1507
+#define _loop0_191_type 1508
+#define _gather_192_type 1509
+#define _tmp_193_type 1510
+#define _tmp_194_type 1511
+#define _tmp_195_type 1512
+#define _tmp_196_type 1513
 
 static mod_ty file_rule(Parser *p);
 static mod_ty interactive_rule(Parser *p);
@@ -766,6 +767,7 @@ static expr_ty disjunction_rule(Parser *p);
 static expr_ty conjunction_rule(Parser *p);
 static expr_ty inversion_rule(Parser *p);
 static expr_ty comparison_rule(Parser *p);
+static expr_ty range_expression_rule(Parser *p);
 static CmpopExprPair* compare_op_bitwise_or_pair_rule(Parser *p);
 static CmpopExprPair* eq_bitwise_or_rule(Parser *p);
 static CmpopExprPair* noteq_bitwise_or_rule(Parser *p);
@@ -2152,7 +2154,7 @@ else_rule(Parser *p)
         D(fprintf(stderr, "%*c> else[%d-%d]: %s\n", p->level, ' ', _mark, p->mark, "'else'"));
         Token * _keyword;
         if (
-            (_keyword = _PyPegen_expect_token(p, 545))  // token='else'
+            (_keyword = _PyPegen_expect_token(p, 543))  // token='else'
         )
         {
             D(fprintf(stderr, "%*c+ else[%d-%d]: %s succeeded!\n", p->level, ' ', _mark, p->mark, "'else'"));
@@ -2437,7 +2439,7 @@ try_else_rule(Parser *p)
         D(fprintf(stderr, "%*c> try_else[%d-%d]: %s\n", p->level, ' ', _mark, p->mark, "'else'"));
         Token * _keyword;
         if (
-            (_keyword = _PyPegen_expect_token(p, 545))  // token='else'
+            (_keyword = _PyPegen_expect_token(p, 543))  // token='else'
         )
         {
             D(fprintf(stderr, "%*c+ try_else[%d-%d]: %s succeeded!\n", p->level, ' ', _mark, p->mark, "'else'"));
@@ -3159,7 +3161,7 @@ del_rule(Parser *p)
         D(fprintf(stderr, "%*c> del[%d-%d]: %s\n", p->level, ' ', _mark, p->mark, "'del'"));
         Token * _keyword;
         if (
-            (_keyword = _PyPegen_expect_token(p, 548))  // token='del'
+            (_keyword = _PyPegen_expect_token(p, 546))  // token='del'
         )
         {
             D(fprintf(stderr, "%*c+ del[%d-%d]: %s succeeded!\n", p->level, ' ', _mark, p->mark, "'del'"));
@@ -3482,7 +3484,7 @@ in_rule(Parser *p)
         D(fprintf(stderr, "%*c> in[%d-%d]: %s\n", p->level, ' ', _mark, p->mark, "'in'"));
         Token * _keyword;
         if (
-            (_keyword = _PyPegen_expect_token(p, 550))  // token='in'
+            (_keyword = _PyPegen_expect_token(p, 548))  // token='in'
         )
         {
             D(fprintf(stderr, "%*c+ in[%d-%d]: %s succeeded!\n", p->level, ' ', _mark, p->mark, "'in'"));
@@ -6436,8 +6438,8 @@ import_name_rule(Parser *p)
 }
 
 // import_from:
-//     | from (('.' | '...'))* dotted_name import import_from_targets
-//     | from (('.' | '...'))+ import import_from_targets
+//     | from (('.' | '...' | '..'))* dotted_name import import_from_targets
+//     | from (('.' | '...' | '..'))+ import import_from_targets
 static stmt_ty
 import_from_rule(Parser *p)
 {
@@ -6459,12 +6461,12 @@ import_from_rule(Parser *p)
     UNUSED(_start_lineno); // Only used by EXTRA macro
     int _start_col_offset = p->tokens[_mark]->col_offset;
     UNUSED(_start_col_offset); // Only used by EXTRA macro
-    { // from (('.' | '...'))* dotted_name import import_from_targets
+    { // from (('.' | '...' | '..'))* dotted_name import import_from_targets
         if (p->error_indicator) {
             p->level--;
             return NULL;
         }
-        D(fprintf(stderr, "%*c> import_from[%d-%d]: %s\n", p->level, ' ', _mark, p->mark, "from (('.' | '...'))* dotted_name import import_from_targets"));
+        D(fprintf(stderr, "%*c> import_from[%d-%d]: %s\n", p->level, ' ', _mark, p->mark, "from (('.' | '...' | '..'))* dotted_name import import_from_targets"));
         asdl_seq * a;
         expr_ty b;
         asdl_alias_seq* c;
@@ -6473,7 +6475,7 @@ import_from_rule(Parser *p)
         if (
             (from_var = from_rule(p))  // from
             &&
-            (a = _loop0_20_rule(p))  // (('.' | '...'))*
+            (a = _loop0_20_rule(p))  // (('.' | '...' | '..'))*
             &&
             (b = dotted_name_rule(p))  // dotted_name
             &&
@@ -6482,7 +6484,7 @@ import_from_rule(Parser *p)
             (c = import_from_targets_rule(p))  // import_from_targets
         )
         {
-            D(fprintf(stderr, "%*c+ import_from[%d-%d]: %s succeeded!\n", p->level, ' ', _mark, p->mark, "from (('.' | '...'))* dotted_name import import_from_targets"));
+            D(fprintf(stderr, "%*c+ import_from[%d-%d]: %s succeeded!\n", p->level, ' ', _mark, p->mark, "from (('.' | '...' | '..'))* dotted_name import import_from_targets"));
             Token *_token = _PyPegen_get_last_nonnwhitespace_token(p);
             if (_token == NULL) {
                 p->level--;
@@ -6502,14 +6504,14 @@ import_from_rule(Parser *p)
         }
         p->mark = _mark;
         D(fprintf(stderr, "%*c%s import_from[%d-%d]: %s failed!\n", p->level, ' ',
-                  p->error_indicator ? "ERROR!" : "-", _mark, p->mark, "from (('.' | '...'))* dotted_name import import_from_targets"));
+                  p->error_indicator ? "ERROR!" : "-", _mark, p->mark, "from (('.' | '...' | '..'))* dotted_name import import_from_targets"));
     }
-    { // from (('.' | '...'))+ import import_from_targets
+    { // from (('.' | '...' | '..'))+ import import_from_targets
         if (p->error_indicator) {
             p->level--;
             return NULL;
         }
-        D(fprintf(stderr, "%*c> import_from[%d-%d]: %s\n", p->level, ' ', _mark, p->mark, "from (('.' | '...'))+ import import_from_targets"));
+        D(fprintf(stderr, "%*c> import_from[%d-%d]: %s\n", p->level, ' ', _mark, p->mark, "from (('.' | '...' | '..'))+ import import_from_targets"));
         asdl_seq * a;
         asdl_alias_seq* b;
         void *from_var;
@@ -6517,14 +6519,14 @@ import_from_rule(Parser *p)
         if (
             (from_var = from_rule(p))  // from
             &&
-            (a = _loop1_21_rule(p))  // (('.' | '...'))+
+            (a = _loop1_21_rule(p))  // (('.' | '...' | '..'))+
             &&
             (import_var = import_rule(p))  // import
             &&
             (b = import_from_targets_rule(p))  // import_from_targets
         )
         {
-            D(fprintf(stderr, "%*c+ import_from[%d-%d]: %s succeeded!\n", p->level, ' ', _mark, p->mark, "from (('.' | '...'))+ import import_from_targets"));
+            D(fprintf(stderr, "%*c+ import_from[%d-%d]: %s succeeded!\n", p->level, ' ', _mark, p->mark, "from (('.' | '...' | '..'))+ import import_from_targets"));
             Token *_token = _PyPegen_get_last_nonnwhitespace_token(p);
             if (_token == NULL) {
                 p->level--;
@@ -6544,7 +6546,7 @@ import_from_rule(Parser *p)
         }
         p->mark = _mark;
         D(fprintf(stderr, "%*c%s import_from[%d-%d]: %s failed!\n", p->level, ' ',
-                  p->error_indicator ? "ERROR!" : "-", _mark, p->mark, "from (('.' | '...'))+ import import_from_targets"));
+                  p->error_indicator ? "ERROR!" : "-", _mark, p->mark, "from (('.' | '...' | '..'))+ import import_from_targets"));
     }
     _res = NULL;
   done:
@@ -7308,7 +7310,7 @@ class_def_raw_rule(Parser *p)
         asdl_stmt_seq* c;
         void *t;
         if (
-            (_keyword = _PyPegen_expect_token(p, 554))  // token='class'
+            (_keyword = _PyPegen_expect_token(p, 552))  // token='class'
             &&
             (a = _PyPegen_name_token(p))  // NAME
             &&
@@ -7633,7 +7635,7 @@ function_def_raw_rule(Parser *p)
         void *t;
         void *tc;
         if (
-            (_keyword = _PyPegen_expect_token(p, 552))  // token='def'
+            (_keyword = _PyPegen_expect_token(p, 550))  // token='def'
             &&
             (n = _PyPegen_name_token(p))  // NAME
             &&
@@ -7695,7 +7697,7 @@ function_def_raw_rule(Parser *p)
         void *t;
         void *tc;
         if (
-            (_opt_var = _PyPegen_expect_token(p, 552), !p->error_indicator)  // 'def'?
+            (_opt_var = _PyPegen_expect_token(p, 550), !p->error_indicator)  // 'def'?
             &&
             (d = dot_rule(p))  // dot
             &&
@@ -7761,7 +7763,7 @@ function_def_raw_rule(Parser *p)
         if (
             (async_var = async_rule(p))  // async
             &&
-            (_opt_var = _PyPegen_expect_token(p, 552), !p->error_indicator)  // 'def'?
+            (_opt_var = _PyPegen_expect_token(p, 550), !p->error_indicator)  // 'def'?
             &&
             (n = _PyPegen_name_token(p))  // NAME
             &&
@@ -7826,7 +7828,7 @@ function_def_raw_rule(Parser *p)
         if (
             (async_var = async_rule(p))  // async
             &&
-            (_opt_var = _PyPegen_expect_token(p, 552), !p->error_indicator)  // 'def'?
+            (_opt_var = _PyPegen_expect_token(p, 550), !p->error_indicator)  // 'def'?
             &&
             (d = dot_rule(p))  // dot
             &&
@@ -9923,7 +9925,7 @@ loop_else_block_rule(Parser *p)
         Token * _literal;
         asdl_stmt_seq* b;
         if (
-            (_keyword = _PyPegen_expect_token(p, 545))  // token='else'
+            (_keyword = _PyPegen_expect_token(p, 543))  // token='else'
             &&
             (_literal = _PyPegen_expect_forced_token(p, 11, ":"))  // forced_token=':'
             &&
@@ -10044,8 +10046,8 @@ while_stmt_rule(Parser *p)
 // for_stmt:
 //     | invalid_for_stmt
 //     | for star_targets ':=' ~ star_expressions ':' TYPE_COMMENT? block loop_else_block?
-//     | for star_targets 'in' ~ star_expressions ':' TYPE_COMMENT? block loop_else_block?
-//     | async for star_targets 'in' ~ star_expressions ':' TYPE_COMMENT? block loop_else_block?
+//     | for star_targets in ~ star_expressions ':' TYPE_COMMENT? block loop_else_block?
+//     | async for star_targets in ~ star_expressions ':' TYPE_COMMENT? block loop_else_block?
 //     | invalid_for_target
 static stmt_ty
 for_stmt_rule(Parser *p)
@@ -10148,19 +10150,19 @@ for_stmt_rule(Parser *p)
             return NULL;
         }
     }
-    { // for star_targets 'in' ~ star_expressions ':' TYPE_COMMENT? block loop_else_block?
+    { // for star_targets in ~ star_expressions ':' TYPE_COMMENT? block loop_else_block?
         if (p->error_indicator) {
             p->level--;
             return NULL;
         }
-        D(fprintf(stderr, "%*c> for_stmt[%d-%d]: %s\n", p->level, ' ', _mark, p->mark, "for star_targets 'in' ~ star_expressions ':' TYPE_COMMENT? block loop_else_block?"));
+        D(fprintf(stderr, "%*c> for_stmt[%d-%d]: %s\n", p->level, ' ', _mark, p->mark, "for star_targets in ~ star_expressions ':' TYPE_COMMENT? block loop_else_block?"));
         int _cut_var = 0;
-        Token * _keyword;
         Token * _literal;
         asdl_stmt_seq* b;
         void *el;
         expr_ty ex;
         void *for_var;
+        void *in_var;
         expr_ty t;
         void *tc;
         if (
@@ -10168,7 +10170,7 @@ for_stmt_rule(Parser *p)
             &&
             (t = star_targets_rule(p))  // star_targets
             &&
-            (_keyword = _PyPegen_expect_token(p, 550))  // token='in'
+            (in_var = in_rule(p))  // in
             &&
             (_cut_var = 1)
             &&
@@ -10183,7 +10185,7 @@ for_stmt_rule(Parser *p)
             (el = loop_else_block_rule(p), !p->error_indicator)  // loop_else_block?
         )
         {
-            D(fprintf(stderr, "%*c+ for_stmt[%d-%d]: %s succeeded!\n", p->level, ' ', _mark, p->mark, "for star_targets 'in' ~ star_expressions ':' TYPE_COMMENT? block loop_else_block?"));
+            D(fprintf(stderr, "%*c+ for_stmt[%d-%d]: %s succeeded!\n", p->level, ' ', _mark, p->mark, "for star_targets in ~ star_expressions ':' TYPE_COMMENT? block loop_else_block?"));
             Token *_token = _PyPegen_get_last_nonnwhitespace_token(p);
             if (_token == NULL) {
                 p->level--;
@@ -10203,26 +10205,26 @@ for_stmt_rule(Parser *p)
         }
         p->mark = _mark;
         D(fprintf(stderr, "%*c%s for_stmt[%d-%d]: %s failed!\n", p->level, ' ',
-                  p->error_indicator ? "ERROR!" : "-", _mark, p->mark, "for star_targets 'in' ~ star_expressions ':' TYPE_COMMENT? block loop_else_block?"));
+                  p->error_indicator ? "ERROR!" : "-", _mark, p->mark, "for star_targets in ~ star_expressions ':' TYPE_COMMENT? block loop_else_block?"));
         if (_cut_var) {
             p->level--;
             return NULL;
         }
     }
-    { // async for star_targets 'in' ~ star_expressions ':' TYPE_COMMENT? block loop_else_block?
+    { // async for star_targets in ~ star_expressions ':' TYPE_COMMENT? block loop_else_block?
         if (p->error_indicator) {
             p->level--;
             return NULL;
         }
-        D(fprintf(stderr, "%*c> for_stmt[%d-%d]: %s\n", p->level, ' ', _mark, p->mark, "async for star_targets 'in' ~ star_expressions ':' TYPE_COMMENT? block loop_else_block?"));
+        D(fprintf(stderr, "%*c> for_stmt[%d-%d]: %s\n", p->level, ' ', _mark, p->mark, "async for star_targets in ~ star_expressions ':' TYPE_COMMENT? block loop_else_block?"));
         int _cut_var = 0;
-        Token * _keyword;
         Token * _literal;
         void *async_var;
         asdl_stmt_seq* b;
         void *el;
         expr_ty ex;
         void *for_var;
+        void *in_var;
         expr_ty t;
         void *tc;
         if (
@@ -10232,7 +10234,7 @@ for_stmt_rule(Parser *p)
             &&
             (t = star_targets_rule(p))  // star_targets
             &&
-            (_keyword = _PyPegen_expect_token(p, 550))  // token='in'
+            (in_var = in_rule(p))  // in
             &&
             (_cut_var = 1)
             &&
@@ -10247,7 +10249,7 @@ for_stmt_rule(Parser *p)
             (el = loop_else_block_rule(p), !p->error_indicator)  // loop_else_block?
         )
         {
-            D(fprintf(stderr, "%*c+ for_stmt[%d-%d]: %s succeeded!\n", p->level, ' ', _mark, p->mark, "async for star_targets 'in' ~ star_expressions ':' TYPE_COMMENT? block loop_else_block?"));
+            D(fprintf(stderr, "%*c+ for_stmt[%d-%d]: %s succeeded!\n", p->level, ' ', _mark, p->mark, "async for star_targets in ~ star_expressions ':' TYPE_COMMENT? block loop_else_block?"));
             Token *_token = _PyPegen_get_last_nonnwhitespace_token(p);
             if (_token == NULL) {
                 p->level--;
@@ -10267,7 +10269,7 @@ for_stmt_rule(Parser *p)
         }
         p->mark = _mark;
         D(fprintf(stderr, "%*c%s for_stmt[%d-%d]: %s failed!\n", p->level, ' ',
-                  p->error_indicator ? "ERROR!" : "-", _mark, p->mark, "async for star_targets 'in' ~ star_expressions ':' TYPE_COMMENT? block loop_else_block?"));
+                  p->error_indicator ? "ERROR!" : "-", _mark, p->mark, "async for star_targets in ~ star_expressions ':' TYPE_COMMENT? block loop_else_block?"));
         if (_cut_var) {
             p->level--;
             return NULL;
@@ -16487,7 +16489,7 @@ inversion_rule(Parser *p)
     return _res;
 }
 
-// comparison: bitwise_or compare_op_bitwise_or_pair+ | bitwise_or
+// comparison: range_expression compare_op_bitwise_or_pair+ | range_expression
 static expr_ty
 comparison_rule(Parser *p)
 {
@@ -16509,21 +16511,21 @@ comparison_rule(Parser *p)
     UNUSED(_start_lineno); // Only used by EXTRA macro
     int _start_col_offset = p->tokens[_mark]->col_offset;
     UNUSED(_start_col_offset); // Only used by EXTRA macro
-    { // bitwise_or compare_op_bitwise_or_pair+
+    { // range_expression compare_op_bitwise_or_pair+
         if (p->error_indicator) {
             p->level--;
             return NULL;
         }
-        D(fprintf(stderr, "%*c> comparison[%d-%d]: %s\n", p->level, ' ', _mark, p->mark, "bitwise_or compare_op_bitwise_or_pair+"));
+        D(fprintf(stderr, "%*c> comparison[%d-%d]: %s\n", p->level, ' ', _mark, p->mark, "range_expression compare_op_bitwise_or_pair+"));
         expr_ty a;
         asdl_seq * b;
         if (
-            (a = bitwise_or_rule(p))  // bitwise_or
+            (a = range_expression_rule(p))  // range_expression
             &&
             (b = _loop1_67_rule(p))  // compare_op_bitwise_or_pair+
         )
         {
-            D(fprintf(stderr, "%*c+ comparison[%d-%d]: %s succeeded!\n", p->level, ' ', _mark, p->mark, "bitwise_or compare_op_bitwise_or_pair+"));
+            D(fprintf(stderr, "%*c+ comparison[%d-%d]: %s succeeded!\n", p->level, ' ', _mark, p->mark, "range_expression compare_op_bitwise_or_pair+"));
             Token *_token = _PyPegen_get_last_nonnwhitespace_token(p);
             if (_token == NULL) {
                 p->level--;
@@ -16543,25 +16545,93 @@ comparison_rule(Parser *p)
         }
         p->mark = _mark;
         D(fprintf(stderr, "%*c%s comparison[%d-%d]: %s failed!\n", p->level, ' ',
-                  p->error_indicator ? "ERROR!" : "-", _mark, p->mark, "bitwise_or compare_op_bitwise_or_pair+"));
+                  p->error_indicator ? "ERROR!" : "-", _mark, p->mark, "range_expression compare_op_bitwise_or_pair+"));
+    }
+    { // range_expression
+        if (p->error_indicator) {
+            p->level--;
+            return NULL;
+        }
+        D(fprintf(stderr, "%*c> comparison[%d-%d]: %s\n", p->level, ' ', _mark, p->mark, "range_expression"));
+        expr_ty range_expression_var;
+        if (
+            (range_expression_var = range_expression_rule(p))  // range_expression
+        )
+        {
+            D(fprintf(stderr, "%*c+ comparison[%d-%d]: %s succeeded!\n", p->level, ' ', _mark, p->mark, "range_expression"));
+            _res = range_expression_var;
+            goto done;
+        }
+        p->mark = _mark;
+        D(fprintf(stderr, "%*c%s comparison[%d-%d]: %s failed!\n", p->level, ' ',
+                  p->error_indicator ? "ERROR!" : "-", _mark, p->mark, "range_expression"));
+    }
+    _res = NULL;
+  done:
+    p->level--;
+    return _res;
+}
+
+// range_expression: bitwise_or '..' bitwise_or | bitwise_or
+static expr_ty
+range_expression_rule(Parser *p)
+{
+    if (p->level++ == MAXSTACK || _Py_ReachedRecursionLimitWithMargin(PyThreadState_Get(), 1)) {
+        _Pypegen_stack_overflow(p);
+    }
+    if (p->error_indicator) {
+        p->level--;
+        return NULL;
+    }
+    expr_ty _res = NULL;
+    int _mark = p->mark;
+    { // bitwise_or '..' bitwise_or
+        if (p->error_indicator) {
+            p->level--;
+            return NULL;
+        }
+        D(fprintf(stderr, "%*c> range_expression[%d-%d]: %s\n", p->level, ' ', _mark, p->mark, "bitwise_or '..' bitwise_or"));
+        Token * _literal;
+        expr_ty a;
+        expr_ty b;
+        if (
+            (a = bitwise_or_rule(p))  // bitwise_or
+            &&
+            (_literal = _PyPegen_expect_token(p, 86))  // token='..'
+            &&
+            (b = bitwise_or_rule(p))  // bitwise_or
+        )
+        {
+            D(fprintf(stderr, "%*c+ range_expression[%d-%d]: %s succeeded!\n", p->level, ' ', _mark, p->mark, "bitwise_or '..' bitwise_or"));
+            _res = _PyPegen_range_literal ( p , a , b );
+            if (_res == NULL && PyErr_Occurred()) {
+                p->error_indicator = 1;
+                p->level--;
+                return NULL;
+            }
+            goto done;
+        }
+        p->mark = _mark;
+        D(fprintf(stderr, "%*c%s range_expression[%d-%d]: %s failed!\n", p->level, ' ',
+                  p->error_indicator ? "ERROR!" : "-", _mark, p->mark, "bitwise_or '..' bitwise_or"));
     }
     { // bitwise_or
         if (p->error_indicator) {
             p->level--;
             return NULL;
         }
-        D(fprintf(stderr, "%*c> comparison[%d-%d]: %s\n", p->level, ' ', _mark, p->mark, "bitwise_or"));
+        D(fprintf(stderr, "%*c> range_expression[%d-%d]: %s\n", p->level, ' ', _mark, p->mark, "bitwise_or"));
         expr_ty bitwise_or_var;
         if (
             (bitwise_or_var = bitwise_or_rule(p))  // bitwise_or
         )
         {
-            D(fprintf(stderr, "%*c+ comparison[%d-%d]: %s succeeded!\n", p->level, ' ', _mark, p->mark, "bitwise_or"));
+            D(fprintf(stderr, "%*c+ range_expression[%d-%d]: %s succeeded!\n", p->level, ' ', _mark, p->mark, "bitwise_or"));
             _res = bitwise_or_var;
             goto done;
         }
         p->mark = _mark;
-        D(fprintf(stderr, "%*c%s comparison[%d-%d]: %s failed!\n", p->level, ' ',
+        D(fprintf(stderr, "%*c%s range_expression[%d-%d]: %s failed!\n", p->level, ' ',
                   p->error_indicator ? "ERROR!" : "-", _mark, p->mark, "bitwise_or"));
     }
     _res = NULL;
@@ -16789,7 +16859,7 @@ compare_op_bitwise_or_pair_rule(Parser *p)
     return _res;
 }
 
-// eq_bitwise_or: '==' (bitwise_or | implicit_none)
+// eq_bitwise_or: '==' (range_expression | implicit_none)
 static CmpopExprPair*
 eq_bitwise_or_rule(Parser *p)
 {
@@ -16802,21 +16872,21 @@ eq_bitwise_or_rule(Parser *p)
     }
     CmpopExprPair* _res = NULL;
     int _mark = p->mark;
-    { // '==' (bitwise_or | implicit_none)
+    { // '==' (range_expression | implicit_none)
         if (p->error_indicator) {
             p->level--;
             return NULL;
         }
-        D(fprintf(stderr, "%*c> eq_bitwise_or[%d-%d]: %s\n", p->level, ' ', _mark, p->mark, "'==' (bitwise_or | implicit_none)"));
+        D(fprintf(stderr, "%*c> eq_bitwise_or[%d-%d]: %s\n", p->level, ' ', _mark, p->mark, "'==' (range_expression | implicit_none)"));
         Token * _literal;
         void *a;
         if (
             (_literal = _PyPegen_expect_token(p, 27))  // token='=='
             &&
-            (a = _tmp_68_rule(p))  // bitwise_or | implicit_none
+            (a = _tmp_68_rule(p))  // range_expression | implicit_none
         )
         {
-            D(fprintf(stderr, "%*c+ eq_bitwise_or[%d-%d]: %s succeeded!\n", p->level, ' ', _mark, p->mark, "'==' (bitwise_or | implicit_none)"));
+            D(fprintf(stderr, "%*c+ eq_bitwise_or[%d-%d]: %s succeeded!\n", p->level, ' ', _mark, p->mark, "'==' (range_expression | implicit_none)"));
             _res = _PyPegen_cmpop_expr_pair ( p , Eq , a );
             if (_res == NULL && PyErr_Occurred()) {
                 p->error_indicator = 1;
@@ -16827,7 +16897,7 @@ eq_bitwise_or_rule(Parser *p)
         }
         p->mark = _mark;
         D(fprintf(stderr, "%*c%s eq_bitwise_or[%d-%d]: %s failed!\n", p->level, ' ',
-                  p->error_indicator ? "ERROR!" : "-", _mark, p->mark, "'==' (bitwise_or | implicit_none)"));
+                  p->error_indicator ? "ERROR!" : "-", _mark, p->mark, "'==' (range_expression | implicit_none)"));
     }
     _res = NULL;
   done:
@@ -16835,7 +16905,7 @@ eq_bitwise_or_rule(Parser *p)
     return _res;
 }
 
-// noteq_bitwise_or: '!=' (bitwise_or | implicit_none)
+// noteq_bitwise_or: '!=' (range_expression | implicit_none)
 static CmpopExprPair*
 noteq_bitwise_or_rule(Parser *p)
 {
@@ -16848,21 +16918,21 @@ noteq_bitwise_or_rule(Parser *p)
     }
     CmpopExprPair* _res = NULL;
     int _mark = p->mark;
-    { // '!=' (bitwise_or | implicit_none)
+    { // '!=' (range_expression | implicit_none)
         if (p->error_indicator) {
             p->level--;
             return NULL;
         }
-        D(fprintf(stderr, "%*c> noteq_bitwise_or[%d-%d]: %s\n", p->level, ' ', _mark, p->mark, "'!=' (bitwise_or | implicit_none)"));
+        D(fprintf(stderr, "%*c> noteq_bitwise_or[%d-%d]: %s\n", p->level, ' ', _mark, p->mark, "'!=' (range_expression | implicit_none)"));
         Token * _literal;
         void *a;
         if (
             (_literal = _PyPegen_expect_token(p, 28))  // token='!='
             &&
-            (a = _tmp_68_rule(p))  // bitwise_or | implicit_none
+            (a = _tmp_68_rule(p))  // range_expression | implicit_none
         )
         {
-            D(fprintf(stderr, "%*c+ noteq_bitwise_or[%d-%d]: %s succeeded!\n", p->level, ' ', _mark, p->mark, "'!=' (bitwise_or | implicit_none)"));
+            D(fprintf(stderr, "%*c+ noteq_bitwise_or[%d-%d]: %s succeeded!\n", p->level, ' ', _mark, p->mark, "'!=' (range_expression | implicit_none)"));
             _res = _PyPegen_cmpop_expr_pair ( p , NotEq , a );
             if (_res == NULL && PyErr_Occurred()) {
                 p->error_indicator = 1;
@@ -16873,7 +16943,7 @@ noteq_bitwise_or_rule(Parser *p)
         }
         p->mark = _mark;
         D(fprintf(stderr, "%*c%s noteq_bitwise_or[%d-%d]: %s failed!\n", p->level, ' ',
-                  p->error_indicator ? "ERROR!" : "-", _mark, p->mark, "'!=' (bitwise_or | implicit_none)"));
+                  p->error_indicator ? "ERROR!" : "-", _mark, p->mark, "'!=' (range_expression | implicit_none)"));
     }
     _res = NULL;
   done:
@@ -16881,7 +16951,7 @@ noteq_bitwise_or_rule(Parser *p)
     return _res;
 }
 
-// lte_bitwise_or: '<=' bitwise_or
+// lte_bitwise_or: '<=' range_expression
 static CmpopExprPair*
 lte_bitwise_or_rule(Parser *p)
 {
@@ -16894,21 +16964,21 @@ lte_bitwise_or_rule(Parser *p)
     }
     CmpopExprPair* _res = NULL;
     int _mark = p->mark;
-    { // '<=' bitwise_or
+    { // '<=' range_expression
         if (p->error_indicator) {
             p->level--;
             return NULL;
         }
-        D(fprintf(stderr, "%*c> lte_bitwise_or[%d-%d]: %s\n", p->level, ' ', _mark, p->mark, "'<=' bitwise_or"));
+        D(fprintf(stderr, "%*c> lte_bitwise_or[%d-%d]: %s\n", p->level, ' ', _mark, p->mark, "'<=' range_expression"));
         Token * _literal;
         expr_ty a;
         if (
             (_literal = _PyPegen_expect_token(p, 29))  // token='<='
             &&
-            (a = bitwise_or_rule(p))  // bitwise_or
+            (a = range_expression_rule(p))  // range_expression
         )
         {
-            D(fprintf(stderr, "%*c+ lte_bitwise_or[%d-%d]: %s succeeded!\n", p->level, ' ', _mark, p->mark, "'<=' bitwise_or"));
+            D(fprintf(stderr, "%*c+ lte_bitwise_or[%d-%d]: %s succeeded!\n", p->level, ' ', _mark, p->mark, "'<=' range_expression"));
             _res = _PyPegen_cmpop_expr_pair ( p , LtE , a );
             if (_res == NULL && PyErr_Occurred()) {
                 p->error_indicator = 1;
@@ -16919,7 +16989,7 @@ lte_bitwise_or_rule(Parser *p)
         }
         p->mark = _mark;
         D(fprintf(stderr, "%*c%s lte_bitwise_or[%d-%d]: %s failed!\n", p->level, ' ',
-                  p->error_indicator ? "ERROR!" : "-", _mark, p->mark, "'<=' bitwise_or"));
+                  p->error_indicator ? "ERROR!" : "-", _mark, p->mark, "'<=' range_expression"));
     }
     _res = NULL;
   done:
@@ -16927,7 +16997,7 @@ lte_bitwise_or_rule(Parser *p)
     return _res;
 }
 
-// lt_bitwise_or: '<' bitwise_or
+// lt_bitwise_or: '<' range_expression
 static CmpopExprPair*
 lt_bitwise_or_rule(Parser *p)
 {
@@ -16940,21 +17010,21 @@ lt_bitwise_or_rule(Parser *p)
     }
     CmpopExprPair* _res = NULL;
     int _mark = p->mark;
-    { // '<' bitwise_or
+    { // '<' range_expression
         if (p->error_indicator) {
             p->level--;
             return NULL;
         }
-        D(fprintf(stderr, "%*c> lt_bitwise_or[%d-%d]: %s\n", p->level, ' ', _mark, p->mark, "'<' bitwise_or"));
+        D(fprintf(stderr, "%*c> lt_bitwise_or[%d-%d]: %s\n", p->level, ' ', _mark, p->mark, "'<' range_expression"));
         Token * _literal;
         expr_ty a;
         if (
             (_literal = _PyPegen_expect_token(p, 20))  // token='<'
             &&
-            (a = bitwise_or_rule(p))  // bitwise_or
+            (a = range_expression_rule(p))  // range_expression
         )
         {
-            D(fprintf(stderr, "%*c+ lt_bitwise_or[%d-%d]: %s succeeded!\n", p->level, ' ', _mark, p->mark, "'<' bitwise_or"));
+            D(fprintf(stderr, "%*c+ lt_bitwise_or[%d-%d]: %s succeeded!\n", p->level, ' ', _mark, p->mark, "'<' range_expression"));
             _res = _PyPegen_cmpop_expr_pair ( p , Lt , a );
             if (_res == NULL && PyErr_Occurred()) {
                 p->error_indicator = 1;
@@ -16965,7 +17035,7 @@ lt_bitwise_or_rule(Parser *p)
         }
         p->mark = _mark;
         D(fprintf(stderr, "%*c%s lt_bitwise_or[%d-%d]: %s failed!\n", p->level, ' ',
-                  p->error_indicator ? "ERROR!" : "-", _mark, p->mark, "'<' bitwise_or"));
+                  p->error_indicator ? "ERROR!" : "-", _mark, p->mark, "'<' range_expression"));
     }
     _res = NULL;
   done:
@@ -16973,7 +17043,7 @@ lt_bitwise_or_rule(Parser *p)
     return _res;
 }
 
-// gte_bitwise_or: '>=' bitwise_or
+// gte_bitwise_or: '>=' range_expression
 static CmpopExprPair*
 gte_bitwise_or_rule(Parser *p)
 {
@@ -16986,21 +17056,21 @@ gte_bitwise_or_rule(Parser *p)
     }
     CmpopExprPair* _res = NULL;
     int _mark = p->mark;
-    { // '>=' bitwise_or
+    { // '>=' range_expression
         if (p->error_indicator) {
             p->level--;
             return NULL;
         }
-        D(fprintf(stderr, "%*c> gte_bitwise_or[%d-%d]: %s\n", p->level, ' ', _mark, p->mark, "'>=' bitwise_or"));
+        D(fprintf(stderr, "%*c> gte_bitwise_or[%d-%d]: %s\n", p->level, ' ', _mark, p->mark, "'>=' range_expression"));
         Token * _literal;
         expr_ty a;
         if (
             (_literal = _PyPegen_expect_token(p, 30))  // token='>='
             &&
-            (a = bitwise_or_rule(p))  // bitwise_or
+            (a = range_expression_rule(p))  // range_expression
         )
         {
-            D(fprintf(stderr, "%*c+ gte_bitwise_or[%d-%d]: %s succeeded!\n", p->level, ' ', _mark, p->mark, "'>=' bitwise_or"));
+            D(fprintf(stderr, "%*c+ gte_bitwise_or[%d-%d]: %s succeeded!\n", p->level, ' ', _mark, p->mark, "'>=' range_expression"));
             _res = _PyPegen_cmpop_expr_pair ( p , GtE , a );
             if (_res == NULL && PyErr_Occurred()) {
                 p->error_indicator = 1;
@@ -17011,7 +17081,7 @@ gte_bitwise_or_rule(Parser *p)
         }
         p->mark = _mark;
         D(fprintf(stderr, "%*c%s gte_bitwise_or[%d-%d]: %s failed!\n", p->level, ' ',
-                  p->error_indicator ? "ERROR!" : "-", _mark, p->mark, "'>=' bitwise_or"));
+                  p->error_indicator ? "ERROR!" : "-", _mark, p->mark, "'>=' range_expression"));
     }
     _res = NULL;
   done:
@@ -17019,7 +17089,7 @@ gte_bitwise_or_rule(Parser *p)
     return _res;
 }
 
-// gt_bitwise_or: '>' bitwise_or
+// gt_bitwise_or: '>' range_expression
 static CmpopExprPair*
 gt_bitwise_or_rule(Parser *p)
 {
@@ -17032,21 +17102,21 @@ gt_bitwise_or_rule(Parser *p)
     }
     CmpopExprPair* _res = NULL;
     int _mark = p->mark;
-    { // '>' bitwise_or
+    { // '>' range_expression
         if (p->error_indicator) {
             p->level--;
             return NULL;
         }
-        D(fprintf(stderr, "%*c> gt_bitwise_or[%d-%d]: %s\n", p->level, ' ', _mark, p->mark, "'>' bitwise_or"));
+        D(fprintf(stderr, "%*c> gt_bitwise_or[%d-%d]: %s\n", p->level, ' ', _mark, p->mark, "'>' range_expression"));
         Token * _literal;
         expr_ty a;
         if (
             (_literal = _PyPegen_expect_token(p, 21))  // token='>'
             &&
-            (a = bitwise_or_rule(p))  // bitwise_or
+            (a = range_expression_rule(p))  // range_expression
         )
         {
-            D(fprintf(stderr, "%*c+ gt_bitwise_or[%d-%d]: %s succeeded!\n", p->level, ' ', _mark, p->mark, "'>' bitwise_or"));
+            D(fprintf(stderr, "%*c+ gt_bitwise_or[%d-%d]: %s succeeded!\n", p->level, ' ', _mark, p->mark, "'>' range_expression"));
             _res = _PyPegen_cmpop_expr_pair ( p , Gt , a );
             if (_res == NULL && PyErr_Occurred()) {
                 p->error_indicator = 1;
@@ -17057,7 +17127,7 @@ gt_bitwise_or_rule(Parser *p)
         }
         p->mark = _mark;
         D(fprintf(stderr, "%*c%s gt_bitwise_or[%d-%d]: %s failed!\n", p->level, ' ',
-                  p->error_indicator ? "ERROR!" : "-", _mark, p->mark, "'>' bitwise_or"));
+                  p->error_indicator ? "ERROR!" : "-", _mark, p->mark, "'>' range_expression"));
     }
     _res = NULL;
   done:
@@ -17065,7 +17135,7 @@ gt_bitwise_or_rule(Parser *p)
     return _res;
 }
 
-// notin_bitwise_or: not in bitwise_or
+// notin_bitwise_or: not in range_expression
 static CmpopExprPair*
 notin_bitwise_or_rule(Parser *p)
 {
@@ -17078,12 +17148,12 @@ notin_bitwise_or_rule(Parser *p)
     }
     CmpopExprPair* _res = NULL;
     int _mark = p->mark;
-    { // not in bitwise_or
+    { // not in range_expression
         if (p->error_indicator) {
             p->level--;
             return NULL;
         }
-        D(fprintf(stderr, "%*c> notin_bitwise_or[%d-%d]: %s\n", p->level, ' ', _mark, p->mark, "not in bitwise_or"));
+        D(fprintf(stderr, "%*c> notin_bitwise_or[%d-%d]: %s\n", p->level, ' ', _mark, p->mark, "not in range_expression"));
         expr_ty a;
         void *in_var;
         void *not_var;
@@ -17092,10 +17162,10 @@ notin_bitwise_or_rule(Parser *p)
             &&
             (in_var = in_rule(p))  // in
             &&
-            (a = bitwise_or_rule(p))  // bitwise_or
+            (a = range_expression_rule(p))  // range_expression
         )
         {
-            D(fprintf(stderr, "%*c+ notin_bitwise_or[%d-%d]: %s succeeded!\n", p->level, ' ', _mark, p->mark, "not in bitwise_or"));
+            D(fprintf(stderr, "%*c+ notin_bitwise_or[%d-%d]: %s succeeded!\n", p->level, ' ', _mark, p->mark, "not in range_expression"));
             _res = _PyPegen_cmpop_expr_pair ( p , NotIn , a );
             if (_res == NULL && PyErr_Occurred()) {
                 p->error_indicator = 1;
@@ -17106,7 +17176,7 @@ notin_bitwise_or_rule(Parser *p)
         }
         p->mark = _mark;
         D(fprintf(stderr, "%*c%s notin_bitwise_or[%d-%d]: %s failed!\n", p->level, ' ',
-                  p->error_indicator ? "ERROR!" : "-", _mark, p->mark, "not in bitwise_or"));
+                  p->error_indicator ? "ERROR!" : "-", _mark, p->mark, "not in range_expression"));
     }
     _res = NULL;
   done:
@@ -17114,7 +17184,7 @@ notin_bitwise_or_rule(Parser *p)
     return _res;
 }
 
-// in_bitwise_or: in bitwise_or
+// in_bitwise_or: in range_expression
 static CmpopExprPair*
 in_bitwise_or_rule(Parser *p)
 {
@@ -17127,21 +17197,21 @@ in_bitwise_or_rule(Parser *p)
     }
     CmpopExprPair* _res = NULL;
     int _mark = p->mark;
-    { // in bitwise_or
+    { // in range_expression
         if (p->error_indicator) {
             p->level--;
             return NULL;
         }
-        D(fprintf(stderr, "%*c> in_bitwise_or[%d-%d]: %s\n", p->level, ' ', _mark, p->mark, "in bitwise_or"));
+        D(fprintf(stderr, "%*c> in_bitwise_or[%d-%d]: %s\n", p->level, ' ', _mark, p->mark, "in range_expression"));
         expr_ty a;
         void *in_var;
         if (
             (in_var = in_rule(p))  // in
             &&
-            (a = bitwise_or_rule(p))  // bitwise_or
+            (a = range_expression_rule(p))  // range_expression
         )
         {
-            D(fprintf(stderr, "%*c+ in_bitwise_or[%d-%d]: %s succeeded!\n", p->level, ' ', _mark, p->mark, "in bitwise_or"));
+            D(fprintf(stderr, "%*c+ in_bitwise_or[%d-%d]: %s succeeded!\n", p->level, ' ', _mark, p->mark, "in range_expression"));
             _res = _PyPegen_cmpop_expr_pair ( p , In , a );
             if (_res == NULL && PyErr_Occurred()) {
                 p->error_indicator = 1;
@@ -17152,7 +17222,7 @@ in_bitwise_or_rule(Parser *p)
         }
         p->mark = _mark;
         D(fprintf(stderr, "%*c%s in_bitwise_or[%d-%d]: %s failed!\n", p->level, ' ',
-                  p->error_indicator ? "ERROR!" : "-", _mark, p->mark, "in bitwise_or"));
+                  p->error_indicator ? "ERROR!" : "-", _mark, p->mark, "in range_expression"));
     }
     _res = NULL;
   done:
@@ -17160,7 +17230,7 @@ in_bitwise_or_rule(Parser *p)
     return _res;
 }
 
-// isnot_bitwise_or: ((is not) | is_not) (bitwise_or | implicit_none)
+// isnot_bitwise_or: ((is not) | is_not) (range_expression | implicit_none)
 static CmpopExprPair*
 isnot_bitwise_or_rule(Parser *p)
 {
@@ -17173,21 +17243,21 @@ isnot_bitwise_or_rule(Parser *p)
     }
     CmpopExprPair* _res = NULL;
     int _mark = p->mark;
-    { // ((is not) | is_not) (bitwise_or | implicit_none)
+    { // ((is not) | is_not) (range_expression | implicit_none)
         if (p->error_indicator) {
             p->level--;
             return NULL;
         }
-        D(fprintf(stderr, "%*c> isnot_bitwise_or[%d-%d]: %s\n", p->level, ' ', _mark, p->mark, "((is not) | is_not) (bitwise_or | implicit_none)"));
+        D(fprintf(stderr, "%*c> isnot_bitwise_or[%d-%d]: %s\n", p->level, ' ', _mark, p->mark, "((is not) | is_not) (range_expression | implicit_none)"));
         void *_tmp_69_var;
         void *a;
         if (
             (_tmp_69_var = _tmp_69_rule(p))  // (is not) | is_not
             &&
-            (a = _tmp_68_rule(p))  // bitwise_or | implicit_none
+            (a = _tmp_68_rule(p))  // range_expression | implicit_none
         )
         {
-            D(fprintf(stderr, "%*c+ isnot_bitwise_or[%d-%d]: %s succeeded!\n", p->level, ' ', _mark, p->mark, "((is not) | is_not) (bitwise_or | implicit_none)"));
+            D(fprintf(stderr, "%*c+ isnot_bitwise_or[%d-%d]: %s succeeded!\n", p->level, ' ', _mark, p->mark, "((is not) | is_not) (range_expression | implicit_none)"));
             _res = _PyPegen_cmpop_expr_pair ( p , IsNot , a );
             if (_res == NULL && PyErr_Occurred()) {
                 p->error_indicator = 1;
@@ -17198,7 +17268,7 @@ isnot_bitwise_or_rule(Parser *p)
         }
         p->mark = _mark;
         D(fprintf(stderr, "%*c%s isnot_bitwise_or[%d-%d]: %s failed!\n", p->level, ' ',
-                  p->error_indicator ? "ERROR!" : "-", _mark, p->mark, "((is not) | is_not) (bitwise_or | implicit_none)"));
+                  p->error_indicator ? "ERROR!" : "-", _mark, p->mark, "((is not) | is_not) (range_expression | implicit_none)"));
     }
     _res = NULL;
   done:
@@ -17206,7 +17276,7 @@ isnot_bitwise_or_rule(Parser *p)
     return _res;
 }
 
-// is_bitwise_or: is (bitwise_or | implicit_none)
+// is_bitwise_or: is (range_expression | implicit_none)
 static CmpopExprPair*
 is_bitwise_or_rule(Parser *p)
 {
@@ -17219,21 +17289,21 @@ is_bitwise_or_rule(Parser *p)
     }
     CmpopExprPair* _res = NULL;
     int _mark = p->mark;
-    { // is (bitwise_or | implicit_none)
+    { // is (range_expression | implicit_none)
         if (p->error_indicator) {
             p->level--;
             return NULL;
         }
-        D(fprintf(stderr, "%*c> is_bitwise_or[%d-%d]: %s\n", p->level, ' ', _mark, p->mark, "is (bitwise_or | implicit_none)"));
+        D(fprintf(stderr, "%*c> is_bitwise_or[%d-%d]: %s\n", p->level, ' ', _mark, p->mark, "is (range_expression | implicit_none)"));
         void *a;
         void *is_var;
         if (
             (is_var = is_rule(p))  // is
             &&
-            (a = _tmp_68_rule(p))  // bitwise_or | implicit_none
+            (a = _tmp_68_rule(p))  // range_expression | implicit_none
         )
         {
-            D(fprintf(stderr, "%*c+ is_bitwise_or[%d-%d]: %s succeeded!\n", p->level, ' ', _mark, p->mark, "is (bitwise_or | implicit_none)"));
+            D(fprintf(stderr, "%*c+ is_bitwise_or[%d-%d]: %s succeeded!\n", p->level, ' ', _mark, p->mark, "is (range_expression | implicit_none)"));
             _res = _PyPegen_cmpop_expr_pair ( p , Is , a );
             if (_res == NULL && PyErr_Occurred()) {
                 p->error_indicator = 1;
@@ -17244,7 +17314,7 @@ is_bitwise_or_rule(Parser *p)
         }
         p->mark = _mark;
         D(fprintf(stderr, "%*c%s is_bitwise_or[%d-%d]: %s failed!\n", p->level, ' ',
-                  p->error_indicator ? "ERROR!" : "-", _mark, p->mark, "is (bitwise_or | implicit_none)"));
+                  p->error_indicator ? "ERROR!" : "-", _mark, p->mark, "is (range_expression | implicit_none)"));
     }
     _res = NULL;
   done:
@@ -19571,7 +19641,7 @@ lambdef_rule(Parser *p)
         void *a;
         expr_ty b;
         if (
-            (_keyword = _PyPegen_expect_token(p, 547))  // token='lambda'
+            (_keyword = _PyPegen_expect_token(p, 545))  // token='lambda'
             &&
             (a = lambda_params_rule(p), !p->error_indicator)  // lambda_params?
             &&
@@ -26278,7 +26348,7 @@ invalid_expression_rule(Parser *p)
             &&
             (b = disjunction_rule(p))  // disjunction
             &&
-            (_keyword = _PyPegen_expect_token(p, 545))  // token='else'
+            (_keyword = _PyPegen_expect_token(p, 543))  // token='else'
             &&
             (c = simple_stmt_rule(p))  // simple_stmt
         )
@@ -26307,7 +26377,7 @@ invalid_expression_rule(Parser *p)
         Token * a;
         Token * b;
         if (
-            (a = _PyPegen_expect_token(p, 547))  // token='lambda'
+            (a = _PyPegen_expect_token(p, 545))  // token='lambda'
             &&
             (_opt_var = lambda_params_rule(p), !p->error_indicator)  // lambda_params?
             &&
@@ -26340,7 +26410,7 @@ invalid_expression_rule(Parser *p)
         Token * a;
         Token * b;
         if (
-            (a = _PyPegen_expect_token(p, 547))  // token='lambda'
+            (a = _PyPegen_expect_token(p, 545))  // token='lambda'
             &&
             (_opt_var = lambda_params_rule(p), !p->error_indicator)  // lambda_params?
             &&
@@ -26811,7 +26881,7 @@ invalid_del_stmt_rule(Parser *p)
         Token * _keyword;
         expr_ty a;
         if (
-            (_keyword = _PyPegen_expect_token(p, 548))  // token='del'
+            (_keyword = _PyPegen_expect_token(p, 546))  // token='del'
             &&
             (a = star_expressions_rule(p))  // star_expressions
         )
@@ -30430,7 +30500,7 @@ invalid_for_stmt_rule(Parser *p)
             &&
             (star_targets_var = star_targets_rule(p))  // star_targets
             &&
-            (_keyword = _PyPegen_expect_token(p, 550))  // token='in'
+            (_keyword = _PyPegen_expect_token(p, 548))  // token='in'
             &&
             (star_expressions_var = star_expressions_rule(p))  // star_expressions
             &&
@@ -30471,7 +30541,7 @@ invalid_for_stmt_rule(Parser *p)
             &&
             (star_targets_var = star_targets_rule(p))  // star_targets
             &&
-            (_keyword = _PyPegen_expect_token(p, 550))  // token='in'
+            (_keyword = _PyPegen_expect_token(p, 548))  // token='in'
             &&
             (star_expressions_var = star_expressions_rule(p))  // star_expressions
             &&
@@ -30539,7 +30609,7 @@ invalid_def_raw_rule(Parser *p)
         if (
             (_opt_var = async_rule(p), !p->error_indicator)  // async?
             &&
-            (a = _PyPegen_expect_token(p, 552))  // token='def'
+            (a = _PyPegen_expect_token(p, 550))  // token='def'
             &&
             (name_var = _PyPegen_name_token(p))  // NAME
             &&
@@ -30598,7 +30668,7 @@ invalid_def_raw_rule(Parser *p)
         if (
             (_opt_var = async_rule(p), !p->error_indicator)  // async?
             &&
-            (_keyword = _PyPegen_expect_token(p, 552))  // token='def'
+            (_keyword = _PyPegen_expect_token(p, 550))  // token='def'
             &&
             (name_var = _PyPegen_name_token(p))  // NAME
             &&
@@ -30662,7 +30732,7 @@ invalid_class_def_raw_rule(Parser *p)
         expr_ty name_var;
         Token * newline_var;
         if (
-            (_keyword = _PyPegen_expect_token(p, 554))  // token='class'
+            (_keyword = _PyPegen_expect_token(p, 552))  // token='class'
             &&
             (name_var = _PyPegen_name_token(p))  // NAME
             &&
@@ -30701,7 +30771,7 @@ invalid_class_def_raw_rule(Parser *p)
         expr_ty name_var;
         Token * newline_var;
         if (
-            (a = _PyPegen_expect_token(p, 554))  // token='class'
+            (a = _PyPegen_expect_token(p, 552))  // token='class'
             &&
             (name_var = _PyPegen_name_token(p))  // NAME
             &&
@@ -33247,7 +33317,7 @@ _tmp_19_rule(Parser *p)
     return _res;
 }
 
-// _loop0_20: ('.' | '...')
+// _loop0_20: ('.' | '...' | '..')
 static asdl_seq *
 _loop0_20_rule(Parser *p)
 {
@@ -33269,15 +33339,15 @@ _loop0_20_rule(Parser *p)
     }
     Py_ssize_t _children_capacity = 1;
     Py_ssize_t _n = 0;
-    { // ('.' | '...')
+    { // ('.' | '...' | '..')
         if (p->error_indicator) {
             p->level--;
             return NULL;
         }
-        D(fprintf(stderr, "%*c> _loop0_20[%d-%d]: %s\n", p->level, ' ', _mark, p->mark, "('.' | '...')"));
+        D(fprintf(stderr, "%*c> _loop0_20[%d-%d]: %s\n", p->level, ' ', _mark, p->mark, "('.' | '...' | '..')"));
         void *_tmp_170_var;
         while (
-            (_tmp_170_var = _tmp_170_rule(p))  // '.' | '...'
+            (_tmp_170_var = _tmp_170_rule(p))  // '.' | '...' | '..'
         )
         {
             _res = _tmp_170_var;
@@ -33298,7 +33368,7 @@ _loop0_20_rule(Parser *p)
         }
         p->mark = _mark;
         D(fprintf(stderr, "%*c%s _loop0_20[%d-%d]: %s failed!\n", p->level, ' ',
-                  p->error_indicator ? "ERROR!" : "-", _mark, p->mark, "('.' | '...')"));
+                  p->error_indicator ? "ERROR!" : "-", _mark, p->mark, "('.' | '...' | '..')"));
     }
     asdl_seq *_seq = (asdl_seq*)_Py_asdl_generic_seq_new(_n, p->arena);
     if (!_seq) {
@@ -33314,7 +33384,7 @@ _loop0_20_rule(Parser *p)
     return _seq;
 }
 
-// _loop1_21: ('.' | '...')
+// _loop1_21: ('.' | '...' | '..')
 static asdl_seq *
 _loop1_21_rule(Parser *p)
 {
@@ -33336,15 +33406,15 @@ _loop1_21_rule(Parser *p)
     }
     Py_ssize_t _children_capacity = 1;
     Py_ssize_t _n = 0;
-    { // ('.' | '...')
+    { // ('.' | '...' | '..')
         if (p->error_indicator) {
             p->level--;
             return NULL;
         }
-        D(fprintf(stderr, "%*c> _loop1_21[%d-%d]: %s\n", p->level, ' ', _mark, p->mark, "('.' | '...')"));
+        D(fprintf(stderr, "%*c> _loop1_21[%d-%d]: %s\n", p->level, ' ', _mark, p->mark, "('.' | '...' | '..')"));
         void *_tmp_170_var;
         while (
-            (_tmp_170_var = _tmp_170_rule(p))  // '.' | '...'
+            (_tmp_170_var = _tmp_170_rule(p))  // '.' | '...' | '..'
         )
         {
             _res = _tmp_170_var;
@@ -33365,7 +33435,7 @@ _loop1_21_rule(Parser *p)
         }
         p->mark = _mark;
         D(fprintf(stderr, "%*c%s _loop1_21[%d-%d]: %s failed!\n", p->level, ' ',
-                  p->error_indicator ? "ERROR!" : "-", _mark, p->mark, "('.' | '...')"));
+                  p->error_indicator ? "ERROR!" : "-", _mark, p->mark, "('.' | '...' | '..')"));
     }
     if (_n == 0 || p->error_indicator) {
         PyMem_Free(_children);
@@ -36337,7 +36407,7 @@ _loop1_67_rule(Parser *p)
     return _seq;
 }
 
-// _tmp_68: bitwise_or | implicit_none
+// _tmp_68: range_expression | implicit_none
 static void *
 _tmp_68_rule(Parser *p)
 {
@@ -36350,24 +36420,24 @@ _tmp_68_rule(Parser *p)
     }
     void * _res = NULL;
     int _mark = p->mark;
-    { // bitwise_or
+    { // range_expression
         if (p->error_indicator) {
             p->level--;
             return NULL;
         }
-        D(fprintf(stderr, "%*c> _tmp_68[%d-%d]: %s\n", p->level, ' ', _mark, p->mark, "bitwise_or"));
-        expr_ty bitwise_or_var;
+        D(fprintf(stderr, "%*c> _tmp_68[%d-%d]: %s\n", p->level, ' ', _mark, p->mark, "range_expression"));
+        expr_ty range_expression_var;
         if (
-            (bitwise_or_var = bitwise_or_rule(p))  // bitwise_or
+            (range_expression_var = range_expression_rule(p))  // range_expression
         )
         {
-            D(fprintf(stderr, "%*c+ _tmp_68[%d-%d]: %s succeeded!\n", p->level, ' ', _mark, p->mark, "bitwise_or"));
-            _res = bitwise_or_var;
+            D(fprintf(stderr, "%*c+ _tmp_68[%d-%d]: %s succeeded!\n", p->level, ' ', _mark, p->mark, "range_expression"));
+            _res = range_expression_var;
             goto done;
         }
         p->mark = _mark;
         D(fprintf(stderr, "%*c%s _tmp_68[%d-%d]: %s failed!\n", p->level, ' ',
-                  p->error_indicator ? "ERROR!" : "-", _mark, p->mark, "bitwise_or"));
+                  p->error_indicator ? "ERROR!" : "-", _mark, p->mark, "range_expression"));
     }
     { // implicit_none
         if (p->error_indicator) {
@@ -42685,7 +42755,7 @@ _tmp_169_rule(Parser *p)
     return _res;
 }
 
-// _tmp_170: '.' | '...'
+// _tmp_170: '.' | '...' | '..'
 static void *
 _tmp_170_rule(Parser *p)
 {
@@ -42735,6 +42805,25 @@ _tmp_170_rule(Parser *p)
         p->mark = _mark;
         D(fprintf(stderr, "%*c%s _tmp_170[%d-%d]: %s failed!\n", p->level, ' ',
                   p->error_indicator ? "ERROR!" : "-", _mark, p->mark, "'...'"));
+    }
+    { // '..'
+        if (p->error_indicator) {
+            p->level--;
+            return NULL;
+        }
+        D(fprintf(stderr, "%*c> _tmp_170[%d-%d]: %s\n", p->level, ' ', _mark, p->mark, "'..'"));
+        Token * _literal;
+        if (
+            (_literal = _PyPegen_expect_token(p, 86))  // token='..'
+        )
+        {
+            D(fprintf(stderr, "%*c+ _tmp_170[%d-%d]: %s succeeded!\n", p->level, ' ', _mark, p->mark, "'..'"));
+            _res = _literal;
+            goto done;
+        }
+        p->mark = _mark;
+        D(fprintf(stderr, "%*c%s _tmp_170[%d-%d]: %s failed!\n", p->level, ' ',
+                  p->error_indicator ? "ERROR!" : "-", _mark, p->mark, "'..'"));
     }
     _res = NULL;
   done:
