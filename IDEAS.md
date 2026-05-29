@@ -164,3 +164,162 @@ host = config.host if config.host is not None else "localhost"
 
 ### Grammar Conflict Check
 No conflict. In Python/Loh, `~` is a unary operator (bitwise NOT). The grammar never allows `expression ~ ~ expression` without an infix binary operator in between, enabling `~~` to be cleanly parsed as a single binary operator.
+
+---
+
+## 6. None-Coalescing Assignment Operator (`~~=`)
+
+### Motivation
+In Loh, `~~` acts as the binary None-coalescing operator. Developers frequently need to assign a fallback value to a variable or attribute if and only if its current value is `None`. This avoids verbose conditional checks or repeating the variable name.
+
+### Proposed Syntax
+```python
+config.timeout ~~= 30
+self.display_name ~~= "Guest"
+```
+
+### Compile-Time Desugaring
+At parse/compile time, this operator desugars into:
+```python
+config.timeout = (30 ? config.timeout is None ?? config.timeout)
+```
+
+---
+
+## 7. Inline Match-Case Expressions (`?==`)
+
+### Motivation
+Pattern matching (`?==`) in Loh is currently statement-only. In functional pipelines or variable declarations, developers often need to match a value against patterns and return/assign the result directly, matching the expression-oriented design of other modern programming languages.
+
+### Proposed Syntax
+```python
+status_desc = code ?== {
+    200: "Success",
+    404: "Not Found",
+    500: "Server Error",
+    _: "Unknown Status"
+}
+```
+
+### Compile-Time Desugaring
+This expression parses into an AST that compiles to a nested set of conditional checks or an inline self-evaluating match structure:
+```python
+status_desc = ("Success" ? code == 200 
+               ?? "Not Found" ? code == 404 
+               ?? "Server Error" ? code == 500 
+               ?? "Unknown Status")
+```
+
+---
+
+## 8. Destructuring Assignment with Default Values
+
+### Motivation
+Unpacking lists or dicts in standard Python raises `ValueError` if the shape of the data doesn't match perfectly. When reading API data or optional configurations, developers want safe unpacking with default fallback values.
+
+### Proposed Syntax
+```python
+[name, role="guest", active=--] = get_user_details()
+```
+
+### Compile-Time Desugaring
+Desugars into intermediate index extraction and fallback checks:
+```python
+_data = get_user_details()
+name = _data[0]
+role = _data[1] ? len(_data) > 1 ?? "guest"
+active = _data[2] ? len(_data) > 2 ?? False
+```
+
+---
+
+## 9. Type Coercion / Cast Operator (`: type`)
+
+### Motivation
+Developers often need to cast or coerce values explicitly (e.g., converting a string port to an integer). While Python uses function constructor calls like `int(value)`, using a dedicated cast operator `:` (borrowed from languages like TypeScript, Rust, and SQL) is more visually distinct and cleaner to chain.
+
+Since type annotations in Python are statement-level constructs (e.g., `x: int = 5`), utilizing `:` as a binary operator in expression contexts is syntactically unambiguous.
+
+### Proposed Syntax
+```python
+port = raw_port : int
+```
+
+### Compile-Time Desugaring
+The cast operator desugars directly into constructor function calls:
+```python
+port = int(raw_port)
+```
+
+---
+
+## 10. None-Safe Type Coercion Operator (`~: type`)
+
+### Motivation
+When parsing untrusted or optional input, type casting (e.g., `value : int`) can raise a `ValueError` or `TypeError`. Combining safe navigation `~` with the cast operator `:` provides a clean way to attempt a cast and return `None` on failure rather than crashing.
+
+### Proposed Syntax
+```python
+# Tries to cast to int, returns None on failure
+port = raw_port ~: int
+
+# Easily chains with None-coalescing
+port = raw_port ~: int ~~ 8080
+```
+
+### Compile-Time Desugaring
+Desugars into an inline try-except call wrapper:
+```python
+def _safe_cast(v, t):
+    try:
+        return t(v)
+    except (TypeError, ValueError):
+        return None
+
+port = _safe_cast(raw_port, int)
+```
+
+---
+
+## 11. Dictionary Object Property Punning (`{=x, =y}`)
+
+### Motivation
+Creating a dictionary key-value pair where the key name matches the variable name (e.g., `{'x': x}`) is a repetitive task. In JavaScript, this is called property shorthand or punning (`{x, y}`). Since Loh already uses `=var` syntax for implicit parameter binding (`foo(=name)`), using `{=x, =y}` for dictionary literals is a logical extension.
+
+### Proposed Syntax
+```python
+x = 10
+y = 20
+coord = {=x, =y}
+```
+
+### Compile-Time Desugaring
+The parser translates this into keyword-style dict literals or standard key-value assignments:
+```python
+coord = {"x": x, "y": y}
+```
+
+---
+
+## 12. None-Safe Callable Invocation (`func~()`)
+
+### Motivation
+Often a callback, event handler, or configuration strategy might be optional (`None`). Calling `callback()` directly throws a `TypeError: 'NoneType' object is not callable` if it is missing.
+
+### Proposed Syntax
+```python
+# Safe execution of optional callback
+on_complete~()
+
+# With arguments
+on_error~(code, message)
+```
+
+### Compile-Time Desugaring
+```python
+on_complete() if on_complete is not None else None
+```
+
+
+
+
