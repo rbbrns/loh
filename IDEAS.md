@@ -64,69 +64,7 @@ This is implemented entirely in the parser, with zero changes required to the by
 
 ---
 
-## 2. None-Safe Navigation / Safe Attribute Access (`~.`)
-
-### The Lexical & Parser Conflict with `?.` (Question-Dot)
-In Loh, `?` is used for conditional `if` and ternary expressions, and `.` is used for accessing properties on `self`. This creates a severe grammatical conflict when parsing `?.`:
-```python
-print(x ? .y ?? z)  # Valid ternary expression checking x, returning self.y or z
-```
-If `?.` is treated as a safe navigation operator, the parser cannot distinguish it from a standard ternary followed by a self-attribute access (`x ? .y`), leading to parsing ambiguities. 
-
-To resolve this conflict and align with Loh's established symbols, we adopt the **`~.` (Tilde-Dot)** operator.
-
----
-
-### Proposed Syntax
-Using the tilde-dot `~.` operator signifies a "maybe `.property`" access:
-```python
-city = user~.profile~.address~.city
-```
-* **Mental Model**: *"Access `profile` if `user` is not `None` (`~`)."*
-* **Grammar Conflict Check**: No conflict. Tilde `~` is a unary operator in Python/Loh, meaning `expression ~ .attribute` is syntactically invalid, allowing the parser to disambiguate `~.` with 100% certainty.
-
----
-
-### Alternative Candidates Evaluated
-1. **The "Dot-with-a-line" Operator (`!`)**: `config!host`. Uses exclamation as a modified dot. Dropped because `!` represents logical NOT, and Swift/Kotlin developers expect `!` to mean force-unwrap (unsafe) rather than safe-navigation.
-2. **The "Dot-Pipe" Operator (`.|`)**: `config.|host`. Combines dot and pipe to represent a diversion path if the value is `None`.
-
----
-
-### Compile-Time Desugaring
-The `~.` operator desugars at parse-time into nested ternary checks:
-```python
-# Desugared Python AST
-_val1 = user
-city = (_val1.profile.address.city if (_val2 := _val1.profile) and _val2.address else None) if _val1 else None
-```
-
----
-
-## 3. TypeScript-Style Constructor Parameter Properties (`.param`)
-
-### Motivation
-Automatically declares constructor parameters as instance attributes and generates assignments at the beginning of the function body.
-
-### Proposed Syntax
-```python
-Account:BaseAccount:
-    .__init__(.owner, .balance, .email):
-        pass # assignments are implicitly generated
-```
-
-### Compile-Time Desugaring
-```python
-class Account(BaseAccount):
-    def __init__(self, owner, balance, email):
-        self.owner = owner
-        self.balance = balance
-        self.email = email
-```
-
----
-
-## 4. Pipe Operator Placeholders (`_`)
+## 2. Pipe Operator Placeholders (`_`)
 
 ### Motivation
 Allows calling multi-argument functions within a pipe chain without wrapping them in an anonymous lambda.
@@ -142,32 +80,7 @@ If the parser detects a `_` identifier within the call argument list of the pipe
 
 ---
 
-## 5. None-Coalescing Binary Operator (`~~`)
-
-### Motivation
-Similar to how JavaScript/TypeScript doubled the conditional symbol `?` to create the null-coalescing operator `??`, Loh doubles its native `None` symbol `~` to create the None-coalescing operator `~~`. This operator behaves like logical OR (`||`), but checks strictly for `None` instead of general truthiness.
-
----
-
-### Proposed Syntax
-```python
-host = config.host ~~ "localhost"
-port = config.port ~~ 8080
-```
-
-### Compile-Time Desugaring
-At parse-time, the binary `~~` operator desugars into a standard conditional expression:
-```python
-# Desugared Python AST
-host = config.host if config.host is not None else "localhost"
-```
-
-### Grammar Conflict Check
-No conflict. In Python/Loh, `~` is a unary operator (bitwise NOT). The grammar never allows `expression ~ ~ expression` without an infix binary operator in between, enabling `~~` to be cleanly parsed as a single binary operator.
-
----
-
-## 6. None-Coalescing Assignment Operator (`~~=`)
+## 3. None-Coalescing Assignment Operator (`~~=`)
 
 ### Motivation
 In Loh, `~~` acts as the binary None-coalescing operator. Developers frequently need to assign a fallback value to a variable or attribute if and only if its current value is `None`. This avoids verbose conditional checks or repeating the variable name.
@@ -186,7 +99,7 @@ config.timeout = (30 ? config.timeout is None ?? config.timeout)
 
 ---
 
-## 7. Inline Match-Case Expressions (`?==`)
+## 4. Inline Match-Case Expressions (`?==`)
 
 ### Motivation
 Pattern matching (`?==`) in Loh is currently statement-only. In functional pipelines or variable declarations, developers often need to match a value against patterns and return/assign the result directly, matching the expression-oriented design of other modern programming languages.
@@ -212,7 +125,7 @@ status_desc = ("Success" ? code == 200
 
 ---
 
-## 8. Destructuring Assignment with Default Values
+## 5. Destructuring Assignment with Default Values
 
 ### Motivation
 Unpacking lists or dicts in standard Python raises `ValueError` if the shape of the data doesn't match perfectly. When reading API data or optional configurations, developers want safe unpacking with default fallback values.
@@ -233,7 +146,7 @@ active = _data[2] ? len(_data) > 2 ?? False
 
 ---
 
-## 9. Type Coercion / Cast Operator (`: type`)
+## 6. Type Coercion / Cast Operator (`: type`)
 
 ### Motivation
 Developers often need to cast or coerce values explicitly (e.g., converting a string port to an integer). While Python uses function constructor calls like `int(value)`, using a dedicated cast operator `:` (borrowed from languages like TypeScript, Rust, and SQL) is more visually distinct and cleaner to chain.
@@ -253,7 +166,7 @@ port = int(raw_port)
 
 ---
 
-## 10. None-Safe Type Coercion Operator (`~: type`)
+## 7. None-Safe Type Coercion Operator (`~: type`)
 
 ### Motivation
 When parsing untrusted or optional input, type casting (e.g., `value : int`) can raise a `ValueError` or `TypeError`. Combining safe navigation `~` with the cast operator `:` provides a clean way to attempt a cast and return `None` on failure rather than crashing.
@@ -281,7 +194,7 @@ port = _safe_cast(raw_port, int)
 
 ---
 
-## 11. Dictionary Object Property Punning (`{=x, =y}`)
+## 8. Dictionary Object Property Punning (`{=x, =y}`)
 
 ### Motivation
 Creating a dictionary key-value pair where the key name matches the variable name (e.g., `{'x': x}`) is a repetitive task. In JavaScript, this is called property shorthand or punning (`{x, y}`). Since Loh already uses `=var` syntax for implicit parameter binding (`foo(=name)`), using `{=x, =y}` for dictionary literals is a logical extension.
@@ -301,7 +214,7 @@ coord = {"x": x, "y": y}
 
 ---
 
-## 12. None-Safe Callable Invocation (`func~()`)
+## 9. None-Safe Callable Invocation (`func~()`)
 
 ### Motivation
 Often a callback, event handler, or configuration strategy might be optional (`None`). Calling `callback()` directly throws a `TypeError: 'NoneType' object is not callable` if it is missing.
@@ -322,7 +235,7 @@ on_complete() if on_complete is not None else None
 
 ---
 
-## 13. Range Slice Notation (`lst[start..stop]`)
+## 10. Range Slice Notation (`lst[start..stop]`)
 
 ### Motivation
 Standard Python uses `lst[start:stop]`. Since we already planned range literals `start..stop`, we should allow them to be used inside subscripts as a clean alternative to standard slicing.
@@ -342,7 +255,7 @@ Translates `a..b` inside subscript brackets to standard Python slice AST nodes: 
 
 ---
 
-## 14. Automatic f-Strings (Implicit Interpolation)
+## 11. Automatic f-Strings (Implicit Interpolation)
 
 ### Motivation
 Python requires prefixing string literals with `f` (e.g., `f"Hello {name}"`) for interpolation. Forgetting the `f` prefix is a very common bug.
@@ -359,7 +272,7 @@ The parser checks string token content; if it contains braces `{}` and is not a 
 
 ---
 
-## 15. None-Safe Attribute Assignment (`obj~.prop = value`)
+## 12. None-Safe Attribute Assignment (`obj~.prop = value`)
 
 ### Motivation
 Safe navigation `user~.profile~.address` protects against attribute reads crashing on `None` values. However, trying to assign to a nested property where a parent might be `None` still results in a traceback. 
@@ -380,10 +293,11 @@ if _val1 is not None:
     _val2 = _val1.profile
     if _val2 is not None:
         _val2.address = new_address
+```
 
 ---
 
-## 16. Infinite Loops Shorthand (`$:`)
+## 13. Infinite Loops Shorthand (`$:`)
 
 ### Motivation
 Python lacks a dedicated infinite loop construct, requiring `while True:`. Loh can use the loop sigil alone to represent an infinite loop.
@@ -402,7 +316,7 @@ Translates directly to `while True:`.
 
 ---
 
-## 17. Parenthesized Expression Blocks (`(expr; expr; expr)`)
+## 14. Parenthesized Expression Blocks (`(expr; expr; expr)`)
 
 ### Motivation
 Standard Python lacks support for multi-line or chained expression blocks, forcing developers to write helper functions or Immediately Invoked Function Expressions (IIFEs) for inline calculations. 
@@ -435,10 +349,3 @@ total_cost = _block()
 
 ### Semicolon Requirement Note
 Because Python's tokenizer ignores newlines inside parentheses to support implicit line continuation, semicolons `;` are strictly required even when statements are written on separate lines. Without semicolons, the tokenizer would treat the statements as if they were written on a single line, causing syntax errors. Semicolons also serve as the explicit marker distinguishing an expression block from standard parenthesized expressions.
-```
-
-
-
-
-
-

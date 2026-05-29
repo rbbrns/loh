@@ -36,3 +36,10 @@ This document outlines the systematic workflow for implementing new syntax featu
 6. **Documentation**:
    - Add the new syntax to the mapping cheat sheet table and write a dedicated features section in [README.md](file:///Users/robbarnes/Development/loh/README.md).
    - Verify README examples by writing assertions in [test_readme.py](file:///Users/robbarnes/Development/loh/Lib/test/test_loh/test_readme.py).
+
+7. **Feature Lifecycle Management**:
+   - **IDEAS.md** acts as a general pool of potential/proposed language feature ideas.
+   - When an idea is selected to be implemented next, it is moved from **IDEAS.md** to **PLANNED.md**.
+   - A feature must never exist in both **IDEAS.md** and **PLANNED.md** at the same time.
+   - Once a feature is fully implemented, verified, and committed, it must be completely removed from **PLANNED.md** (and also from **IDEAS.md** if any traces remain there).
+
