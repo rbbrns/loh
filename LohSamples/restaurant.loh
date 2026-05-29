@@ -1,0 +1,119 @@
+# Loh Restaurant Management Software Sample
+# Demonstrates modern, concise Loh syntax features.
+
+# 1. Custom exception using standard class definition
+MenuItemNotFound:: Exception
+
+# 2. MenuItem Class using shorthand constructor and parameter properties
+MenuItem::
+    .(.id: int, .name: str, .price: float, .category: str):
+        ...
+
+
+# 3. Order Class demonstrating:
+#    - Shorthand constructor with parameter properties (.order_id, .table)
+#    - Pipe operator feeding items into sum generator
+#    - Comprehensions with iteration sigil ($)
+Order::
+    .(.order_id: int, .table: int):
+        .items = []
+        .status = "pending"
+        
+    .add_item(item: MenuItem):
+        .items.append(item)
+        
+    .get_total() -> float:
+        # Pipe operator feeding items into sum generator
+        -> .items |> (lst) -> sum([x.price $ x <~ lst])
+
+# 4. RestaurantManager Class demonstrating:
+#    - Loops and break flow ($ and $>>)
+#    - Loop-else checking (?!$>>:)
+#    - None-safe navigation (~.) and None-coalescing (~~)
+#    - Dict keyword-style syntax ({key=val})
+RestaurantManager::
+    .(.name: str):
+        .menu = {}
+        .orders = []
+
+    .add_menu_item(id: int, name: str, price: float, category: str):
+        # Keyword-style dict literal
+        .menu[id] = MenuItem(id, name, price, category)
+
+    .create_order(order_id: int, table: int) -> Order:
+        order = Order(order_id, table)
+        .orders.append(order)
+        -> order
+
+    .process_billing(order_id: int) -> str:
+        # Find order using loop search and break
+        order = ~
+        $ o <~ .orders:
+            ? o.order_id === order_id:
+                order = o
+                $>>
+        ?!$>>:
+            ^^^ ValueError("Order ID not found")
+
+        # None-safe operations
+        total = order~.get_total() ~~ 0.0
+        tax = total * 0.08
+        grand_total = total + tax
+
+        receipt = f"Receipt for Table {order~.table}\nTotal: ${total:.2f}\nTax (8%): ${tax:.2f}\nGrand Total: ${grand_total:.2f}"
+        -> receipt
+
+# 5. Testing the Loh Restaurant Management System
+manager = RestaurantManager("The Loh Bistro")
+
+# Add menu items
+manager.add_menu_item(101, "Truffle Fries", 12.50, "appetizer")
+manager.add_menu_item(102, "Loh Burger", 18.99, "main")
+manager.add_menu_item(103, "Chocolate Souffle", 9.50, "dessert")
+
+# Create orders for Tables 3 and 4
+order1 = manager.create_order(1, 3)
+order2 = manager.create_order(2, 4)
+
+# None-safe dictionary retrieval
+item1 = manager.menu.get(101)
+item2 = manager.menu.get(102)
+item3 = manager.menu.get(999)  # Does not exist (evaluates to None)
+
+# Demonstrate None-safe subscripting (~[]) on a None object
+none_menu = ~
+item_from_none = none_menu~[101]  # Safely evaluates to None without raising KeyError
+
+# Add items safely if they exist
+? item1 !==:
+    order1.add_item(item1)
+? item2 !==:
+    order1.add_item(item2)
+? item3 !==:
+    # This block won't execute as item3 is None
+    order1.add_item(item3)
+
+
+# Test range literal and loop to add multiple main courses to order2
+$ i <~ 1..4:
+    # Add Loh Burger three times to Order 2
+    order2.add_item(manager.menu[102])
+
+# Print receipts
+print(f"--- Billing {manager.name} Order 1 ---")
+print(manager.process_billing(1))
+
+print(f"\n--- Billing {manager.name} Order 2 ---")
+print(manager.process_billing(2))
+
+# Verify assertions
+# order1 total: 12.50 + 18.99 = 31.49
+^?! order1.get_total() == 31.49, "Order 1 total calculation failed!"
+
+# order2 total: 18.99 * 3 = 56.97
+^?! order2.get_total() == 56.97, "Order 2 total calculation failed!"
+
+# Verify that item3 was safely ignored
+^? item3, "item3 should be None"
+
+print("\nAll assertions passed! Loh Restaurant Management Sample completed successfully.")
