@@ -4,36 +4,39 @@ This document tracks features that have been approved for implementation in **Lo
 
 ---
 
-## 1. Inline Scope Initializer Block (`obj() { .method(); .prop = val }`)
+## 1. Inline Scope Initializer Block (`obj { .method(); .prop = val }`)
 
 ### Motivation
-Constructing and configuring objects in standard Python requires multiple statement-level assignments, making inline initialization (such as inside list comprehensions or function calls) impossible without bloating constructors. 
+Constructing, configuring, and updating objects in standard Python requires multiple statement-level assignments, making inline initialization (such as inside list comprehensions or function calls) impossible without bloating constructors. 
 
-Adding an inline `{}` scope block allows developers to configure an object immediately upon instantiation, executing method calls and attribute assignments using Loh's established leading-dot `.` receiver context. The block returns the initialized object.
+Adding an inline `{}` scope block following any object expression (such as a constructor call, an identifier, or a function return) allows developers to configure or modify the object inline using Loh's established leading-dot `.` receiver context. The entire expression evaluates to the receiver object.
 
 ### Proposed Syntax
-The block uses the leading dot `.` prefix to assign properties and invoke methods on the constructed object:
+The block uses the leading dot `.` prefix to assign properties and invoke methods on the object. It can be applied directly to a constructor call or an existing variable:
 ```python
+# Initialization on construction
 manager = RestaurantManager("The Loh Bistro") {
-    # Method invocation on receiver
     .add_menu_item(101, "Truffle Fries", 12.50, "appetizer")
-    .add_menu_item(102, "Loh Burger", 18.99, "main")
-    
-    # Attribute setting on receiver
     .active = ++
+}
+
+# Configuration on an existing reference
+configured_user = user {
+    .name = "Alice",
+    .update_status("active")
 }
 ```
 
 ### Compile-Time Desugaring
-The parser compiles this block by creating a temporary builder scope that instantiates the receiver, executes the dot-prefixed assignments and calls, and returns the receiver instance:
+The parser compiles this block by evaluating the receiver expression, executing the dot-prefixed assignments and calls, and returning the receiver instance:
 ```python
-def _init_RestaurantManager():
-    _inst = RestaurantManager("The Loh Bistro")
-    _inst.add_menu_item(101, "Truffle Fries", 12.50, "appetizer")
-    _inst.add_menu_item(102, "Loh Burger", 18.99, "main")
-    _inst.active = True
+# For: configured_user = user { .name = "Alice", .update_status("active") }
+def _init_block(_inst):
+    _inst.name = "Alice"
+    _inst.update_status("active")
     return _inst
 
-manager = _init_RestaurantManager()
+configured_user = _init_block(user)
 ```
-Because standard Python syntax does not allow curly braces immediately following a function/constructor call, this syntax has zero grammatical conflicts.
+Because standard Python syntax does not allow curly braces immediately following a primary expression (variables, constructor calls), this syntax has zero grammatical conflicts in the PEG parser.
+
