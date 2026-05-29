@@ -1,8 +1,8 @@
-# **Loh: A Superset of Python**
+# **Loh: A Near-Superset of Python**
 
-**Loh** is a syntax extension and superset of Python designed to make coding more concise, intuitive, and expressive. By replacing verbose keywords with symbol-based operators and introducing powerful syntactic sugar, Loh reduces boilerplate while keeping the full power of the Python ecosystem.
+**Loh** is a syntax extension and near-superset of Python designed to make coding more concise, intuitive, and expressive. By replacing verbose keywords with symbol-based operators and introducing powerful syntactic sugar, Loh reduces boilerplate while keeping the full power of the Python ecosystem.
 
-Since Loh is a strict superset, **any valid Python code is also valid Loh code**.
+While Loh aims for maximum compatibility, it is **not a strict superset**. It intentionally breaks or repurposes a small number of redundant or obsolete Python syntax patterns (such as double bitwise NOT `~~x` or double logical NOT `!!x`) for its own symbol-based features, and adjusts certain parser edge cases (such as keyword-argument order restrictions). Any standard Python code that avoids these redundant patterns will compile and run identically under Loh.
 
 ---
 
