@@ -352,7 +352,7 @@ Because Python's tokenizer ignores newlines inside parentheses to support implic
 
 ---
 
-## 15. Late-Bound / Call-Time Default Arguments
+## 15. Late-Bound / Call-Time Default Arguments (`%`)
 
 ### Motivation
 In standard Python, default argument values are evaluated once at **definition time**. This leads to major language design pain points:
@@ -360,25 +360,35 @@ In standard Python, default argument values are evaluated once at **definition t
 2. **Dynamic values** (e.g. `now=datetime.now()`) capture the import/definition time rather than call time.
 3. **Reference constraints**: Default expressions cannot reference other parameters (e.g. `width, height = width * 2`) or the instance receiver context (e.g. `self.default_value`).
 
-Loh can resolve this by evaluating default expressions **lazily at call-time** (late binding) inside the function's scope, unlocking full reference capabilities and fixing mutable/dynamic default gotchas.
+Loh can resolve this in a **100% Python-compatible** way by using the **`%`** symbol (which already represents deferred/async operations in Loh) to explicitly mark default arguments as evaluated **lazily at call-time** inside the function scope. Standard default arguments (using `=`) remain eager and fully CPython-compatible.
 
 ### Proposed Syntax
-Default argument expressions are evaluated inside the method body when the method is invoked, allowing them to reference previous arguments and the `.` receiver context:
+The `%` symbol is used inside the parameter list to denote a deferred default value. There are two clean syntax variants:
+
+#### **Option A: Expression-level Prefix (`x = % expr`)**
+The `%` prefix is applied directly to the default value expression, indicating the value itself is deferred/lazy:
 ```python
 Foo::
-    # Default 'x' evaluates at call-time, referencing self properties '.a' and '.b'
-    .method(x = .a + .b):
+    # 'x' defaults to the deferred expression '.a + .b'
+    .method(x = % .a + .b):
         print(x)
-
-# Function parameters referencing other arguments
-calculate(width, height = width * 2):
-    print(width, height)
 ```
 
-### Compile-Time Desugaring
-The parser compiles default expressions by moving their evaluation inside the function body. If the caller does not pass an argument, it evaluates the expression at the start of the function scope:
+#### **Option B: Parameter-level Prefix (`% x = expr`)**
+The `%` prefix is applied to the parameter declaration, indicating that the parameter uses a late-bound default:
 ```python
-# For: .method(x = self.a + self.b)
+Foo::
+    # 'x' is marked as a late-bound parameter
+    .method(% x = .a + .b):
+        print(x)
+```
+
+Both options allow the default expression to reference previous arguments and leading-dot receiver properties.
+
+### Compile-Time Desugaring
+The parser compiles the late-bound parameter by setting its default value to a unique sentinel in the signature, and injecting the fallback evaluation at the start of the body:
+```python
+# For: .method(x = % self.a + self.b)
 _MISSING = object()
 
 def method(self, x=_MISSING):
@@ -386,7 +396,8 @@ def method(self, x=_MISSING):
         x = self.a + self.b
     # ... Rest of method body ...
 ```
-This requires zero caller-side changes and runs natively on the standard VM.
+This requires zero caller-side changes and remains fully compatible with standard CPython signature inspection.
+
 
 
 
