@@ -1,122 +1,413 @@
 # Loh Restaurant Management Software Sample
-# Demonstrates modern, concise Loh syntax features.
+# A realistic simulation of restaurant management operations.
+# Integrates employee schedules, menu planning, realtime order dispatching,
+# building control operations, reservation seating, and automated smart system overrides.
+#
+# Demonstrates a wide range of modern, concise Loh syntax features.
 
-# 1. Custom exception using standard class definition
-MenuItemNotFound:: Exception
+from __future__ import empty_none_str
+/datetime/datetime => dt
+/datetime/timedelta => td
+/sys
 
-# 2. MenuItem Class using shorthand constructor and parameter properties
+# Type Alias for documentation and type clarity
+: PresetDict = dict[str, int]
+: EmployeeId = int
+
+# Custom Exceptions using unified class syntax
+MenuItemNotFound: Exception: pass
+TableUnavailable: Exception: pass
+StaffNotAvailable: Exception: pass
+SystemDiagnosticFailed: Exception: pass
+
+# Base Employee Class
+Employee::
+    # Shorthand constructor with parameter properties
+    .(.emp_id: EmployeeId, .name: str, .role: str):
+        .clocked_in = --
+
+    .clock_in():
+        .clocked_in = ++
+        print(f"[Staff] {.name} ({.role}) clocked IN.")
+
+    .clock_out():
+        .clocked_in = --
+        print(f"[Staff] {.name} ({.role}) clocked OUT.")
+
+# Subclasses demonstrating single inheritance
+Waiter:Employee:
+    .(emp_id: EmployeeId, name: str, .section: str):
+        super().__init__(emp_id, name, "Waiter")
+        .tips = 0.0
+        .assigned_tables = []
+
+    .assign_table(table_num: int):
+        .assigned_tables.append(table_num)
+
+    .add_tips(amount: float):
+        .tips += amount
+
+Chef:Employee:
+    .(emp_id: EmployeeId, name: str, .specialty: str):
+        super().__init__(emp_id, name, "Chef")
+        .active_orders_count = 0
+
+Technician:Employee:
+    .(emp_id: EmployeeId, name: str):
+        super().__init__(emp_id, name, "Technician")
+
+# MenuItem using shorthand parameter properties
 MenuItem::
-    .(.id: int, .name: str, .price: float, .category: str):
-        ...
+    .(.id: int, .name: str, .price: float, .category: str, .prep_time: int):
+        pass
 
+# Table representing physical dining location in Building Operations
+Table::
+    .(.table_num: int, .capacity: int):
+        .status = "Available"  # Available, Occupied, Reserved, NeedsCleaning
+        .current_order_id = ~  # Explicit None assignment
 
-# 3. Order Class demonstrating:
-#    - Shorthand constructor with parameter properties (.order_id, .table)
-#    - Pipe operator feeding items into sum generator
-#    - Comprehensions with iteration sigil ($)
+    .occupy(order_id: int):
+        .status = "Occupied"
+        .current_order_id = order_id
+
+    .clean():
+        .status = "Available"
+        .current_order_id = ~
+
+# Reservation model
+Reservation::
+    .(.guest_name: str, .party_size: int, .time: dt):
+        .assigned_table_num = ~
+
+# Lighting System (Smart Building Operations)
+LightingSystem::
+    .():
+        # Initialize zones with default brightness using dict keyword syntax
+        .zones = {dining=0, bar=0, patio=0, kitchen=0}
+
+    .set_preset(preset: str):
+        # Structural pattern matching on preset names
+        levels = {}
+        ?== preset:
+            "Morning":
+                levels = {dining=30, bar=10, patio=0, kitchen=80}
+            "Lunch":
+                levels = {dining=70, bar=50, patio=50, kitchen=90}
+            "Dinner":
+                levels = {dining=40, bar=30, patio=60, kitchen=95}
+            _:
+                levels = {dining=10, bar=10, patio=0, kitchen=10}
+
+        .zones = levels
+        print(f"[System] Lighting set to '{preset}': {.zones}")
+
+# A/V System (Smart Building Operations)
+AVSystem::
+    .():
+        .audio_source = "Silent"
+        .volume = {dining=0, bar=0, patio=0}
+        .bar_tv_channel = "Off"
+
+    .configure_av(audio_source: str, vol_dining: int, vol_bar: int, vol_patio: int, bar_tv_channel: str):
+        .audio_source = audio_source
+        .volume = {dining=vol_dining, bar=vol_bar, patio=vol_patio}
+        .bar_tv_channel = bar_tv_channel
+        print(f"[System] A/V Configured -> Playlist: {.audio_source}, Vol: {.volume}, Bar TV: {.bar_tv_channel}")
+
+# Order Class
 Order::
-    .(.order_id: int, .table: int):
+    .(.order_id: int, .table_num: int, .waiter_id: EmployeeId):
         .items = []
-        .status = "pending"
-        
+        .status = "pending" # pending, preparing, ready, served, paid
+        .chef_id = ~
+
     .add_item(item: MenuItem):
         .items.append(item)
-        
+
     .get_total() -> float:
         # Pipe operator feeding items into sum generator
         -> .items |> (lst) -> sum([x.price $ x <~ lst])
 
-# 4. RestaurantManager Class demonstrating:
-#    - Loops and break flow ($ and $>>)
-#    - Loop-else checking (?!$>>:)
-#    - None-safe navigation (~.) and None-coalescing (~~)
-#    - Dict keyword-style syntax ({key=val})
+    .get_prep_time() -> int:
+        # Pipe operator finding max prep time among ordered items
+        ? !.items:
+            -> 0
+        -> .items |> (lst) -> max([x.prep_time $ x <~ lst])
+
+# Config Class for Implicit Attribute Binding demo
+SystemConfig::
+    .(.debug_mode: bool, .tax_rate: float):
+        pass
+
+# RestaurantManager class orchestrator
 RestaurantManager::
-    .(.name: str):
+    .(.name: str, .config: SystemConfig):
         .menu = {}
-        .orders = []
+        .tables = {}
+        .employees = {}
+        .reservations = []
+        .orders = {}
+        .lighting = LightingSystem()
+        .av = AVSystem()
 
-    .add_menu_item(id: int, name: str, price: float, category: str):
-        # Keyword-style dict literal
-        .menu[id] = MenuItem(id, name, price, category)
+    .add_menu_item(id: int, name: str, price: float, category: str, prep_time: int):
+        .menu[id] = MenuItem(id, name, price, category, prep_time)
 
-    .create_order(order_id: int, table: int) -> Order:
-        order = Order(order_id, table)
-        .orders.append(order)
+    .add_table(table_num: int, capacity: int):
+        .tables[table_num] = Table(table_num, capacity)
+
+    .add_employee(emp: Employee):
+        .employees[emp.emp_id] = emp
+
+    .add_reservation(guest_name: str, party_size: int, time: dt):
+        .reservations.append(Reservation(guest_name, party_size, time))
+
+    .get_waiter_for_table(table_num: int) -> Waiter:
+        # Find waiter assigned to the section containing this table using loop break
+        waiter = ~
+        $ emp <~ .employees.values():
+            ? emp.role == "Waiter" && emp.clocked_in:
+                ? table_num <~ emp.assigned_tables:
+                    waiter = emp
+                    $>>
+        -> waiter
+
+    .assign_order_to_chef(order: Order) -> Chef:
+        # Find clocked-in chef with the least active orders
+        best_chef = ~
+        $ emp <~ .employees.values():
+            ? emp.role == "Chef" && emp.clocked_in:
+                ? best_chef === ~ || emp.active_orders_count < best_chef.active_orders_count:
+                    best_chef = emp
+
+        ? best_chef !== ~:
+            best_chef.active_orders_count += 1
+            order.chef_id = best_chef.emp_id
+            order.status = "preparing"
+        -> best_chef
+
+    .create_order(order_id: int, table_num: int) -> Order:
+        # Implicit Attribute Binding demonstration: unpack debug_mode from config
+        config = .config
+        =config.debug_mode
+        ? debug_mode:
+            print(f"[Debug] Creating order {order_id} for Table {table_num}")
+
+        table = .tables.get(table_num)
+        ? table === ~ || table.status != "Occupied":
+            ^^^ TableUnavailable(f"Table {table_num} is not occupied by any active dining party.")
+
+        waiter = .get_waiter_for_table(table_num)
+        ? waiter === ~:
+            ^^^ StaffNotAvailable(f"No clocked-in waiter is assigned to Table {table_num}'s section.")
+
+        order = Order(order_id, table_num, waiter.emp_id)
+        .orders[order_id] = order
         -> order
 
     .process_billing(order_id: int) -> str:
-        # Find order using loop search and break
-        order = ~
-        $ o <~ .orders:
-            ? o.order_id === order_id:
-                order = o
-                $>>
-        ?!$>>:
-            ^^^ ValueError("Order ID not found")
+        order = .orders.get(order_id)
+        ? order === ~:
+            ^^^ ValueError(f"Order ID {order_id} not found.")
 
         # None-safe operations
         total = order~.get_total() ~~ 0.0
-        tax = total * 0.08
+        tax = total * .config.tax_rate
         grand_total = total + tax
 
-        receipt = f"Receipt for Table {order~.table}\nTotal: ${total:.2f}\nTax (8%): ${tax:.2f}\nGrand Total: ${grand_total:.2f}"
+        # Mark table as cleaning
+        table_num = order~.table_num
+        table = .tables.get(table_num)
+        ? table !== ~:
+            table.status = "NeedsCleaning"
+
+        # Relieve chef
+        chef_id = order~.chef_id
+        chef = .employees.get(chef_id)
+        ? chef !== ~:
+            chef.active_orders_count -= 1
+
+        order.status = "paid"
+
+        receipt = (
+            f"Receipt for Table {table_num}\n"
+            f"Subtotal: ${total:.2f}\n"
+            f"Tax: ${tax:.2f}\n"
+            f"Grand Total: ${grand_total:.2f}"
+        )
         -> receipt
 
-# 5. Testing the Loh Restaurant Management System
-# Construct and configure the RestaurantManager using the Inline Scope Initializer Block
-manager = RestaurantManager("The Loh Bistro") {
-    .add_menu_item(101, "Truffle Fries", 12.50, "appetizer");
-    .add_menu_item(102, "Loh Burger", 18.99, "main");
-    .add_menu_item(103, "Chocolate Souffle", 9.50, "dessert");
+    .perform_system_diagnostics() -> str:
+        # Run building diagnostics. Requires technician
+        tech = ~
+        $ emp <~ .employees.values():
+            ? emp.role == "Technician" && emp.clocked_in:
+                tech = emp
+                $>>
+
+        ? tech === ~:
+            ^^^ StaffNotAvailable("No clocked-in Technician to run diagnostics.")
+
+        # Check HVAC temperature, range bounds
+        temp = 72
+        ? temp !<~ 68..76:
+            ^^^ SystemDiagnosticFailed("HVAC temperature is out of range!")
+
+        -> f"System diagnostics passed by Technician {tech.name}. HVAC: {temp}°F."
+
+
+# ----------------------------------------------------
+# Simulation and Operational Testing of the Loh Restaurant
+# ----------------------------------------------------
+
+print("Initializing simulation for 'The Loh Lounge'...")
+
+# Construct configurations using Inline Scope Initializer Block
+config = SystemConfig(debug_mode=++, tax_rate=0.08)
+
+manager = RestaurantManager("The Loh Lounge", config) {
+    # Populate the Menu
+    .add_menu_item(1, "Garlic Bruschetta", 10.99, "appetizer", 5);
+    .add_menu_item(2, "Ribeye Steak", 34.99, "main", 15);
+    .add_menu_item(3, "Seared Salmon", 26.50, "main", 12);
+    .add_menu_item(4, "Molten Chocolate Cake", 9.50, "dessert", 8);
+
+    # Set up physical layout (Tables)
+    .add_table(10, 2);
+    .add_table(20, 4);
+    .add_table(30, 6)
 }
 
-# Create orders for Tables 3 and 4
-order1 = manager.create_order(1, 3)
-order2 = manager.create_order(2, 4)
+# Add Employees (Waiters, Chefs, Technicians)
+waiter_alice = Waiter(101, "Alice", "Dining Section A") { .assign_table(10); .assign_table(20) }
+waiter_bob = Waiter(102, "Bob", "Dining Section B") { .assign_table(30) }
+chef_charlie = Chef(201, "Charlie", "Grill & Mains")
+tech_dave = Technician(301, "Dave")
 
-# None-safe dictionary retrieval
-item1 = manager.menu.get(101)
-item2 = manager.menu.get(102)
-item3 = manager.menu.get(999)  # Does not exist (evaluates to None)
+manager.add_employee(waiter_alice)
+manager.add_employee(waiter_bob)
+manager.add_employee(chef_charlie)
+manager.add_employee(tech_dave)
+
+# Configure Morning Prep mode
+manager.lighting.set_preset("Morning")
+manager.av.configure_av("Acoustic Morning Jazz", 20, 10, 0, "Off")
+
+# Alice, Bob, Charlie and Dave clock in for work
+waiter_alice.clock_in()
+waiter_bob.clock_in()
+chef_charlie.clock_in()
+tech_dave.clock_in()
+
+# Perform system diagnostics before opening using unified carets exception block
+diagnostics_msg = ""
+^:
+    diagnostics_msg = manager.perform_system_diagnostics()
+^? StaffNotAvailable => e:
+    print(f"Opening failed: {e}")
+    sys.exit(1)
+^??:
+    print(f"[Ops] {diagnostics_msg}")
+
+# Transition to Lunch mode
+manager.lighting.set_preset("Lunch")
+manager.av.configure_av("Lively Bistro Hits", 40, 30, 20, "Sports Network")
+
+# Table Seating Operations
+# Seat table 20 for a walk-in party of 3
+table_20 = manager.tables[20]
+? table_20.status == "Available":
+    table_20.status = "Occupied"
+    print(f"[Tables] Seated party of 3 at Table 20.")
+
+# Create Order for Table 20 (Order ID = 5001)
+order = manager.create_order(5001, 20)
+
+# Unpack items from menu safely
+item_app = manager.menu.get(1)
+item_main1 = manager.menu.get(2)
+item_main2 = manager.menu.get(3)
+item_dessert = manager.menu.get(4)
+item_missing = manager.menu.get(999)  # Safe dictionary lookup returning None
+
+# Add items safely checking for None identity
+? item_app !== ~:
+    order.add_item(item_app)
+? item_main1 !== ~:
+    order.add_item(item_main1)
+? item_main2 !== ~:
+    order.add_item(item_main2)
+? item_missing !== ~:
+    order.add_item(item_missing)  # Won't run since item_missing is None
+
+# Verify assertions on order items list and total
+# 10.99 (Bruschetta) + 34.99 (Ribeye) + 26.50 (Salmon) = 72.48
+^?! len(order.items) == 3, "Failed to add items to order 5001"
+^?! abs(order.get_total() - 72.48) < 1e-5, "Total calculation incorrect!"
+
+# Dispatch order to Chef Charlie
+chef = manager.assign_order_to_chef(order)
+print(f"[Kitchen] Assigned Order 5001 to Chef {chef.name}. Prep Time: {order.get_prep_time()} mins.")
+
+# Seat Table 10 and try to order a nonexistent item inside a unified exception block
+table_10 = manager.tables[10]
+table_10.status = "Occupied"
+order_10 = manager.create_order(5002, 10)
+
+raised_not_found = --
+^:
+    # Try to access a missing menu item and raise custom error if None
+    item = manager.menu.get(999)
+    ? item === ~:
+        ^^^ MenuItemNotFound("Requested menu item is not offered.")
+    order_10.add_item(item)
+^? MenuItemNotFound => e:
+    raised_not_found = ++
+    print(f"[Order Error] Handled expected order failure: {e}")
+^*:
+    # Clean up empty order for table 10
+    print("[Ops] Cleaned up table 10's order setup.")
+
+# Verify that the exception was triggered and handled
+^?! raised_not_found, "MenuItemNotFound was not raised!"
+
+# Serve the food at Table 20
+order.status = "served"
+print(f"[Service] Waiter {waiter_alice.name} served Table 20.")
+
+# Transition to Dinner mode
+manager.lighting.set_preset("Dinner")
+manager.av.configure_av("Smooth Evening R&B", 50, 45, 30, "Movie Channel")
+
+# Generate bill & process payment for Table 20
+receipt_details = manager.process_billing(5001)
+print(f"\n--- Billing Table 20 ---")
+print(receipt_details)
+print("------------------------\n")
+
+# Verify billing effects
+^?! table_20.status == "NeedsCleaning", "Table 20 should need cleaning"
+^?! order.status == "paid", "Order should be marked paid"
+^?! chef_charlie.active_orders_count == 0, "Chef active orders not decremented"
+
+# Clean table 20
+table_20.clean()
+^?! table_20.status == "Available", "Table 20 should be Available after cleaning"
+
+# Alice and Bob clock out at end of shift
+waiter_alice.clock_out()
+waiter_bob.clock_out()
+chef_charlie.clock_out()
+tech_dave.clock_out()
+
+# Demonstrate implicit None string formatting using future import
+print(f"Demonstrating str(None): '{str(None)}' (should be empty string)")
+^?! str(None) == "", "Future import empty_none_str failed to format None as empty string"
 
 # Demonstrate None-safe subscripting (~[]) on a None object
 none_menu = ~
-item_from_none = none_menu~[101]  # Safely evaluates to None without raising KeyError
+item_from_none = none_menu~[1]
+^?! item_from_none === ~, "None-safe subscripting failed"
 
-# Add items safely if they exist
-? item1 !==:
-    order1.add_item(item1)
-? item2 !==:
-    order1.add_item(item2)
-? item3 !==:
-    # This block won't execute as item3 is None
-    order1.add_item(item3)
-
-
-# Test range literal and loop to add multiple main courses to order2
-$ i <~ 1..4:
-    # Add Loh Burger three times to Order 2
-    order2.add_item(manager.menu[102])
-
-# Print receipts
-print(f"--- Billing {manager.name} Order 1 ---")
-print(manager.process_billing(1))
-
-print(f"\n--- Billing {manager.name} Order 2 ---")
-print(manager.process_billing(2))
-
-# Verify assertions
-# order1 total: 12.50 + 18.99 = 31.49
-^?! order1.get_total() == 31.49, "Order 1 total calculation failed!"
-
-# order2 total: 18.99 * 3 = 56.97
-^?! order2.get_total() == 56.97, "Order 2 total calculation failed!"
-
-# Verify that item3 was safely ignored
-^? item3, "item3 should be None"
-
-# Verify that the temporary property was successfully deleted inside the initializer block
-^? hasattr(manager, "temp_tag"), "temp_tag was not deleted!"
-
-print("\nAll assertions passed! Loh Restaurant Management Sample completed successfully.")
+print("\nAll assertions passed! The Loh Restaurant simulation ran successfully.")
