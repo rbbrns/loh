@@ -352,51 +352,80 @@ Because Python's tokenizer ignores newlines inside parentheses to support implic
 
 ---
 
-## 15. Late-Bound / Call-Time Default Arguments (`%`)
+## 15. Lazy Evaluation & Late-Bound Expressions (`` `expr` `` and `%`)
 
 ### Motivation
-In standard Python, default argument values are evaluated once at **definition time**. This leads to major language design pain points:
-1. **Mutable default arguments** (e.g. `x=[]`) share the same list instance across all calls.
-2. **Dynamic values** (e.g. `now=datetime.now()`) capture the import/definition time rather than call time.
-3. **Reference constraints**: Default expressions cannot reference other parameters (e.g. `width, height = width * 2`) or the instance receiver context (e.g. `self.default_value`).
+Eager evaluation in Python forces all variables, function arguments, and default parameters to be evaluated immediately. This is inefficient for optional computations and leads to major issues like mutable default arguments (`x=[]`) or static definitions (`now=datetime.now()`).
 
-Loh can resolve this in a **100% Python-compatible** way by using the **`%`** symbol (which already represents deferred/async operations in Loh) to explicitly mark default arguments as evaluated **lazily at call-time** inside the function scope. Standard default arguments (using `=`) remain eager and fully CPython-compatible.
+Loh can resolve this by introducing a unified lazy evaluation model using two complimentary features:
+1. **Backtick Code Quote Operator (`` `expr` ``)**: For general-purpose deferred expressions (variables, arguments).
+2. **Late-Bound Default Arguments (`%`)**: For call-time evaluation of default parameters inside the method body.
+
+---
 
 ### Proposed Syntax
-The `%` symbol is used inside the parameter list to denote a deferred default value. There are two clean syntax variants:
 
-#### **Option A: Expression-level Prefix (`x = % expr`)**
-The `%` prefix is applied directly to the default value expression, indicating the value itself is deferred/lazy:
+#### **1. General Lazy Expressions (`` `expr` ``)**
+Enclosing an expression in backticks `` ` `` defers its evaluation, creating a thunk. It evaluates automatically (and caches the result) when accessed:
+```python
+# Deferred evaluation
+heavy_data = `load_huge_dataset()`
+
+# Evaluated on first read and cached
+print(heavy_data.summary)
+```
+
+#### **2. Late-Bound Parameter Defaults (`%`)**
+Default arguments can opt-in to call-time evaluation using the `%` prefix (Loh's symbol for async/deferred operations):
 ```python
 Foo::
-    # 'x' defaults to the deferred expression '.a + .b'
+    # 'x' defaults to the late-bound expression '.a + .b'
     .method(x = % .a + .b):
         print(x)
 ```
 
-#### **Option B: Parameter-level Prefix (`% x = expr`)**
-The `%` prefix is applied to the parameter declaration, indicating that the parameter uses a late-bound default:
+---
+
+### Scoping Rules
+
+#### **A. Lexical Closures (For `` `expr` ``)**
+General lazy expressions use standard **Lexical Scope**. They capture the variables in their enclosing environment by reference at the moment the thunk is declared:
 ```python
-Foo::
-    # 'x' is marked as a late-bound parameter
-    .method(% x = .a + .b):
-        print(x)
+a = 10
+lazy_val = `a + 5`
+
+a = 20
+print(lazy_val) # Evaluates to 25 (uses the updated value of 'a')
 ```
 
-Both options allow the default expression to reference previous arguments and leading-dot receiver properties.
+#### **B. Method Body Scope (For `%` defaults)**
+Late-bound default arguments evaluate inside the **Method Body Scope** upon invocation. This gives them access to the instance receiver context (`self`/`.`) and previous method parameters:
+```python
+calculate(width, height = % width * 2):
+    # 'height' can safely reference 'width' because it evaluates inside the body
+    print(width, height)
+```
+
+---
 
 ### Compile-Time Desugaring
-The parser compiles the late-bound parameter by setting its default value to a unique sentinel in the signature, and injecting the fallback evaluation at the start of the body:
-```python
-# For: .method(x = % self.a + self.b)
-_MISSING = object()
 
+#### **Backtick Desugaring**
+The parser compiles `` `expr` `` into a memoization proxy wrapping a lambda:
+```python
+heavy_data = _LohLazy(lambda: load_huge_dataset())
+```
+The runtime helper `_LohLazy` uses magic methods to force evaluation on first access and delegate properties.
+
+#### **Parameter Default Desugaring**
+The parser compiles the late-bound default argument by setting its signature default to a sentinel, and injecting the fallback check at the start of the function body:
+```python
 def method(self, x=_MISSING):
     if x is _MISSING:
         x = self.a + self.b
-    # ... Rest of method body ...
+    # ... Rest of body ...
 ```
-This requires zero caller-side changes and remains fully compatible with standard CPython signature inspection.
+
 
 
 
