@@ -261,153 +261,154 @@ RestaurantManager::
 # Simulation and Operational Testing of the Loh Restaurant
 # ----------------------------------------------------
 
-print("Initializing simulation for 'The Loh Lounge'...")
+? __name__ == "__main__":
+    print("Initializing simulation for 'The Loh Lounge'...")
 
-# Construct configurations using Inline Scope Initializer Block
-config = SystemConfig(debug_mode=++, tax_rate=0.08)
+    # Construct configurations using Inline Scope Initializer Block
+    config = SystemConfig(debug_mode=++, tax_rate=0.08)
 
-manager = RestaurantManager("The Loh Lounge", config) {
-    # Populate the Menu
-    .add_menu_item(1, "Garlic Bruschetta", 10.99, "appetizer", 5);
-    .add_menu_item(2, "Ribeye Steak", 34.99, "main", 15);
-    .add_menu_item(3, "Seared Salmon", 26.50, "main", 12);
-    .add_menu_item(4, "Molten Chocolate Cake", 9.50, "dessert", 8);
+    manager = RestaurantManager("The Loh Lounge", config) {
+        # Populate the Menu
+        .add_menu_item(1, "Garlic Bruschetta", 10.99, "appetizer", 5);
+        .add_menu_item(2, "Ribeye Steak", 34.99, "main", 15);
+        .add_menu_item(3, "Seared Salmon", 26.50, "main", 12);
+        .add_menu_item(4, "Molten Chocolate Cake", 9.50, "dessert", 8);
 
-    # Set up physical layout (Tables)
-    .add_table(10, 2);
-    .add_table(20, 4);
-    .add_table(30, 6)
-}
+        # Set up physical layout (Tables)
+        .add_table(10, 2);
+        .add_table(20, 4);
+        .add_table(30, 6)
+    }
 
-# Add Employees (Waiters, Chefs, Technicians)
-waiter_alice = Waiter(101, "Alice", "Dining Section A") { .assign_table(10); .assign_table(20) }
-waiter_bob = Waiter(102, "Bob", "Dining Section B") { .assign_table(30) }
-chef_charlie = Chef(201, "Charlie", "Grill & Mains")
-tech_dave = Technician(301, "Dave")
+    # Add Employees (Waiters, Chefs, Technicians)
+    waiter_alice = Waiter(101, "Alice", "Dining Section A") { .assign_table(10); .assign_table(20) }
+    waiter_bob = Waiter(102, "Bob", "Dining Section B") { .assign_table(30) }
+    chef_charlie = Chef(201, "Charlie", "Grill & Mains")
+    tech_dave = Technician(301, "Dave")
 
-manager.add_employee(waiter_alice)
-manager.add_employee(waiter_bob)
-manager.add_employee(chef_charlie)
-manager.add_employee(tech_dave)
+    manager.add_employee(waiter_alice)
+    manager.add_employee(waiter_bob)
+    manager.add_employee(chef_charlie)
+    manager.add_employee(tech_dave)
 
-# Configure Morning Prep mode
-manager.lighting.set_preset("Morning")
-manager.av.configure_av("Acoustic Morning Jazz", 20, 10, 0, "Off")
+    # Configure Morning Prep mode
+    manager.lighting.set_preset("Morning")
+    manager.av.configure_av("Acoustic Morning Jazz", 20, 10, 0, "Off")
 
-# Alice, Bob, Charlie and Dave clock in for work
-waiter_alice.clock_in()
-waiter_bob.clock_in()
-chef_charlie.clock_in()
-tech_dave.clock_in()
+    # Alice, Bob, Charlie and Dave clock in for work
+    waiter_alice.clock_in()
+    waiter_bob.clock_in()
+    chef_charlie.clock_in()
+    tech_dave.clock_in()
 
-# Perform system diagnostics before opening using unified carets exception block
-diagnostics_msg = ""
-^:
-    diagnostics_msg = manager.perform_system_diagnostics()
-^? StaffNotAvailable => e:
-    print(f"Opening failed: {e}")
-    sys.exit(1)
-^??:
-    print(f"[Ops] {diagnostics_msg}")
+    # Perform system diagnostics before opening using unified carets exception block
+    diagnostics_msg = ""
+    ^:
+        diagnostics_msg = manager.perform_system_diagnostics()
+    ^? StaffNotAvailable => e:
+        print(f"Opening failed: {e}")
+        sys.exit(1)
+    ^??:
+        print(f"[Ops] {diagnostics_msg}")
 
-# Transition to Lunch mode
-manager.lighting.set_preset("Lunch")
-manager.av.configure_av("Lively Bistro Hits", 40, 30, 20, "Sports Network")
+    # Transition to Lunch mode
+    manager.lighting.set_preset("Lunch")
+    manager.av.configure_av("Lively Bistro Hits", 40, 30, 20, "Sports Network")
 
-# Table Seating Operations
-# Seat table 20 for a walk-in party of 3
-table_20 = manager.tables[20]
-? table_20.status == "Available":
-    table_20.status = "Occupied"
-    print(f"[Tables] Seated party of 3 at Table 20.")
+    # Table Seating Operations
+    # Seat table 20 for a walk-in party of 3
+    table_20 = manager.tables[20]
+    ? table_20.status == "Available":
+        table_20.status = "Occupied"
+        print(f"[Tables] Seated party of 3 at Table 20.")
 
-# Create Order for Table 20 (Order ID = 5001)
-order = manager.create_order(5001, 20)
+    # Create Order for Table 20 (Order ID = 5001)
+    order = manager.create_order(5001, 20)
 
-# Unpack items from menu safely
-item_app = manager.menu.get(1)
-item_main1 = manager.menu.get(2)
-item_main2 = manager.menu.get(3)
-item_dessert = manager.menu.get(4)
-item_missing = manager.menu.get(999)  # Safe dictionary lookup returning None
+    # Unpack items from menu safely
+    item_app = manager.menu.get(1)
+    item_main1 = manager.menu.get(2)
+    item_main2 = manager.menu.get(3)
+    item_dessert = manager.menu.get(4)
+    item_missing = manager.menu.get(999)  # Safe dictionary lookup returning None
 
-# Add items safely checking for None identity
-? item_app !== ~:
-    order.add_item(item_app)
-? item_main1 !== ~:
-    order.add_item(item_main1)
-? item_main2 !== ~:
-    order.add_item(item_main2)
-? item_missing !== ~:
-    order.add_item(item_missing)  # Won't run since item_missing is None
+    # Add items safely checking for None identity
+    ? item_app !== ~:
+        order.add_item(item_app)
+    ? item_main1 !== ~:
+        order.add_item(item_main1)
+    ? item_main2 !== ~:
+        order.add_item(item_main2)
+    ? item_missing !== ~:
+        order.add_item(item_missing)  # Won't run since item_missing is None
 
-# Verify assertions on order items list and total
-# 10.99 (Bruschetta) + 34.99 (Ribeye) + 26.50 (Salmon) = 72.48
-^?! len(order.items) == 3, "Failed to add items to order 5001"
-^?! abs(order.get_total() - 72.48) < 1e-5, "Total calculation incorrect!"
+    # Verify assertions on order items list and total
+    # 10.99 (Bruschetta) + 34.99 (Ribeye) + 26.50 (Salmon) = 72.48
+    ^?! len(order.items) == 3, "Failed to add items to order 5001"
+    ^?! abs(order.get_total() - 72.48) < 1e-5, "Total calculation incorrect!"
 
-# Dispatch order to Chef Charlie
-chef = manager.assign_order_to_chef(order)
-print(f"[Kitchen] Assigned Order 5001 to Chef {chef.name}. Prep Time: {order.get_prep_time()} mins.")
+    # Dispatch order to Chef Charlie
+    chef = manager.assign_order_to_chef(order)
+    print(f"[Kitchen] Assigned Order 5001 to Chef {chef.name}. Prep Time: {order.get_prep_time()} mins.")
 
-# Seat Table 10 and try to order a nonexistent item inside a unified exception block
-table_10 = manager.tables[10]
-table_10.status = "Occupied"
-order_10 = manager.create_order(5002, 10)
+    # Seat Table 10 and try to order a nonexistent item inside a unified exception block
+    table_10 = manager.tables[10]
+    table_10.status = "Occupied"
+    order_10 = manager.create_order(5002, 10)
 
-raised_not_found = --
-^:
-    # Try to access a missing menu item and raise custom error if None
-    item = manager.menu.get(999)
-    ? item === ~:
-        ^^^ MenuItemNotFound("Requested menu item is not offered.")
-    order_10.add_item(item)
-^? MenuItemNotFound => e:
-    raised_not_found = ++
-    print(f"[Order Error] Handled expected order failure: {e}")
-^*:
-    # Clean up empty order for table 10
-    print("[Ops] Cleaned up table 10's order setup.")
+    raised_not_found = --
+    ^:
+        # Try to access a missing menu item and raise custom error if None
+        item = manager.menu.get(999)
+        ? item === ~:
+            ^^^ MenuItemNotFound("Requested menu item is not offered.")
+        order_10.add_item(item)
+    ^? MenuItemNotFound => e:
+        raised_not_found = ++
+        print(f"[Order Error] Handled expected order failure: {e}")
+    ^*:
+        # Clean up empty order for table 10
+        print("[Ops] Cleaned up table 10's order setup.")
 
-# Verify that the exception was triggered and handled
-^?! raised_not_found, "MenuItemNotFound was not raised!"
+    # Verify that the exception was triggered and handled
+    ^?! raised_not_found, "MenuItemNotFound was not raised!"
 
-# Serve the food at Table 20
-order.status = "served"
-print(f"[Service] Waiter {waiter_alice.name} served Table 20.")
+    # Serve the food at Table 20
+    order.status = "served"
+    print(f"[Service] Waiter {waiter_alice.name} served Table 20.")
 
-# Transition to Dinner mode
-manager.lighting.set_preset("Dinner")
-manager.av.configure_av("Smooth Evening R&B", 50, 45, 30, "Movie Channel")
+    # Transition to Dinner mode
+    manager.lighting.set_preset("Dinner")
+    manager.av.configure_av("Smooth Evening R&B", 50, 45, 30, "Movie Channel")
 
-# Generate bill & process payment for Table 20
-receipt_details = manager.process_billing(5001)
-print(f"\n--- Billing Table 20 ---")
-print(receipt_details)
-print("------------------------\n")
+    # Generate bill & process payment for Table 20
+    receipt_details = manager.process_billing(5001)
+    print(f"\n--- Billing Table 20 ---")
+    print(receipt_details)
+    print("------------------------\n")
 
-# Verify billing effects
-^?! table_20.status == "NeedsCleaning", "Table 20 should need cleaning"
-^?! order.status == "paid", "Order should be marked paid"
-^?! chef_charlie.active_orders_count == 0, "Chef active orders not decremented"
+    # Verify billing effects
+    ^?! table_20.status == "NeedsCleaning", "Table 20 should need cleaning"
+    ^?! order.status == "paid", "Order should be marked paid"
+    ^?! chef_charlie.active_orders_count == 0, "Chef active orders not decremented"
 
-# Clean table 20
-table_20.clean()
-^?! table_20.status == "Available", "Table 20 should be Available after cleaning"
+    # Clean table 20
+    table_20.clean()
+    ^?! table_20.status == "Available", "Table 20 should be Available after cleaning"
 
-# Alice and Bob clock out at end of shift
-waiter_alice.clock_out()
-waiter_bob.clock_out()
-chef_charlie.clock_out()
-tech_dave.clock_out()
+    # Alice and Bob clock out at end of shift
+    waiter_alice.clock_out()
+    waiter_bob.clock_out()
+    chef_charlie.clock_out()
+    tech_dave.clock_out()
 
-# Demonstrate implicit None string formatting using future import
-print(f"Demonstrating str(None): '{str(None)}' (should be empty string)")
-^?! str(None) == "", "Future import empty_none_str failed to format None as empty string"
+    # Demonstrate implicit None string formatting using future import
+    print(f"Demonstrating str(None): '{str(None)}' (should be empty string)")
+    ^?! str(None) == "", "Future import empty_none_str failed to format None as empty string"
 
-# Demonstrate None-safe subscripting (~[]) on a None object
-none_menu = ~
-item_from_none = none_menu~[1]
-^?! item_from_none === ~, "None-safe subscripting failed"
+    # Demonstrate None-safe subscripting (~[]) on a None object
+    none_menu = ~
+    item_from_none = none_menu~[1]
+    ^?! item_from_none === ~, "None-safe subscripting failed"
 
-print("\nAll assertions passed! The Loh Restaurant simulation ran successfully.")
+    print("\nAll assertions passed! The Loh Restaurant simulation ran successfully.")
