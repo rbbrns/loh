@@ -428,61 +428,75 @@ def method(self, x=_MISSING):
 ```
 This requires zero caller-side changes and remains fully compatible with standard CPython signature inspection.
 
----
-
 ## 16. Expression & Statement Decorators (`@decorator`)
 
 ### Motivation
 In standard Python, decorators (`@decorator`) are strictly limited to preceding function, method, or class definitions. However, developers often need to wrap individual expressions or statement blocks in timing, logging, error-handling, or threading wrappers. 
 
-Allowing decorators to precede any expression or statement/block desugars them into inline wrappers, enabling lightweight custom flow control and monadic blocks.
+Allowing decorators to precede any statement or expression—stacked vertically on the line above, matching standard decorator conventions—provides a highly readable, cohesive syntax for inline custom flow control and monadic blocks.
 
 ### Proposed Syntax
+Decorators are placed on the line immediately preceding the target statement or expression:
 
-#### **1. Expression Decorators**
-Preceding any expression with `@decorator` wraps the expression evaluation in a deferred thunk and passes it to the decorator:
+#### **1. Expression / Assignment Decorators**
+Decorating an assignment or standalone expression statement:
 ```python
-# Timed execution of an expression
-result = @timed heavy_calculation(x)
+# Timed execution of an assignment
+@timed
+result = heavy_calculation(x)
 
 # Error-handling fallback
-value = @ignore_errors(default=0) db.fetch_user()
+@ignore_errors(default=0)
+value = db.fetch_user()
 ```
 
 #### **2. Statement / Block Decorators**
-Preceding an block or loop statement with `@decorator` wraps the block in a zero-argument callable and executes it through the decorator:
+Decorating a loop, condition, context block, or anonymous statement block:
 ```python
+# Decorating a loop statement
 @retry(attempts=3)
 $ item <~ items:
-    # If this loop iteration raises an error, retry will catch and repeat
     process(item)
 
-# An anonymous block decorator
+# Decorating a code block
 @transaction(db):
     user.balance -= 100
     user.save()
 ```
 
+---
+
 ### Compile-Time Desugaring
 
-#### **Expression Decorators**
-The parser compiles `@decorator expression` by wrapping the expression in a zero-argument lambda and calling the decorator function with it:
+#### **Expression/Assignment Decorators**
+When a decorator precedes an assignment statement (`target = expr`) or a return statement (`-> expr`), the compiler wraps the target expression in a zero-argument lambda and passes it to the decorator:
 ```python
-# result = @timed heavy_calculation(x)
+# For:
+# @timed
+# result = heavy_calculation(x)
 result = timed(lambda: heavy_calculation(x))
+
+# For return statement:
+# @logged
+# -> compute_value()
+return logged(lambda: compute_value())
 ```
 
-#### **Statement Decorators**
-The parser wraps the decorated block/statement in a nested helper function and passes it to the decorator:
+#### **Statement/Block Decorators**
+When a decorator precedes a compound statement (like a loop or condition) or a block statement, the compiler wraps the target block in a nested helper function and invokes the decorator with it:
 ```python
-# @retry(3) ...
+# For:
+# @retry(3)
+# $ item <~ items: ...
 def _loop_block():
     for item in items:
         process(item)
 
 retry(3)(_loop_block)
 ```
-Since decorators are not valid before general expressions or statements (other than `def` and `class`) in standard Python, this syntax does not create grammatical conflicts.
+
+Because standard Python syntax does not allow `@decorator` lines before general statements or assignments (only before `def` and `class`), this vertically stacked syntax has zero grammatical conflicts in the PEG parser.
+
 
 
 
