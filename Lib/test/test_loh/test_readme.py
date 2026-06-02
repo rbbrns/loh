@@ -10,7 +10,7 @@ class TestReadmeExamples(unittest.TestCase):
         val = 1
         my_list = [1, 2, 3]
 
-        ? (x === ++ && y !== --) || z === ~:
+        ? (x === + && y !== -) || z === ~:
             <> val
         
         # Test not in
@@ -177,37 +177,37 @@ class TestReadmeExamples(unittest.TestCase):
         self.assertTrue(listdir)
 
     def test_implicit_none(self):
-        x =
+        x = ~
         self.assertIsNone(x)
 
-        y: float =
+        y: float = ~
         self.assertIsNone(y)
 
         # Function with default None
-        foo(a=, b=):
+        foo(a~, b~):
             -> a, b
         self.assertEqual(foo(), (None, None))
 
         # None comparisons
         x = None
         ran = False
-        ? x is:
+        ? x is ~:
             ran = True
         self.assertTrue(ran)
 
         y = 1
         ran = False
-        ? y !==:
+        ? y !== ~:
             ran = True
         self.assertTrue(ran)
 
         z = None
         ran = False
-        ? z ==:
+        ? z == ~:
             ran = True
         self.assertTrue(ran)
 
-        my_dict = {'a':, 'b':}
+        my_dict = {'a': ~, 'b': ~}
         self.assertEqual(my_dict, {'a': None, 'b': None})
 
     def test_implicit_assignments(self):
@@ -240,17 +240,17 @@ class TestReadmeExamples(unittest.TestCase):
         self.assertTrue(verbose)
 
         # Bool defaults & statements
-        foo4(a++, b--):
+        foo4(a+, b-):
             -> a, b
         self.assertEqual(foo4(), (True, False))
 
-        x++
-        y--
+        x+
+        y-
         self.assertTrue(x)
         self.assertFalse(y)
 
     def test_dict_literals(self):
-        my_dict = {x=10, y=20, z=}
+        my_dict = {x=10, y=20, z=~}
         self.assertEqual(my_dict, {'x': 10, 'y': 20, 'z': None})
 
     def test_pipe_operator(self):
@@ -302,22 +302,22 @@ class TestReadmeExamples(unittest.TestCase):
 
         # Check if value in range
         x = 50
-        in_bounds = --
+        in_bounds = -
         ? x <~ 1..100:
-            in_bounds = ++
+            in_bounds = +
         self.assertTrue(in_bounds)
 
     def test_initializer_block(self):
         class RestaurantManager:
             .(.name):
                 .items = []
-                .active = --
+                .active = -
             .add_menu_item(item_id, name, price, category):
                 .items.append((item_id, name, price, category))
         
         manager = RestaurantManager("The Loh Bistro") {
             .add_menu_item(101, "Truffle Fries", 12.50, "appetizer");
-            .active = ++
+            .active = +
         }
         self.assertEqual(manager.name, "The Loh Bistro")
         self.assertEqual(manager.active, True)

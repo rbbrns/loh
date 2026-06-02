@@ -1,11 +1,10 @@
-
-assert !! is True
-assert !!! is False
+assert + is True
+assert - is False
 assert ~ is None
 
 x = ~
-y = !!
-z = !!!
+y = +
+z = -
 
 assert x is None
 assert y is True

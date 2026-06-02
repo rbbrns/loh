@@ -4,17 +4,17 @@ from test.support import import_helper
 
 class Tests(unittest.TestCase):
     def test_true(self):
-        assert ++
-        assert ++ === True
-        assert True === ++
+        assert +
+        assert + === True
+        assert True === +
 
 
     def test_false(self):
-        assert not --
-        assert -- === False
-        assert False === --
-        assert False == --
-        assert -- == False
+        assert not -
+        assert - === False
+        assert False === -
+        assert False == -
+        assert - == False
 
     def test_is_not(self):
         x = [1,2]
@@ -44,18 +44,18 @@ class Tests(unittest.TestCase):
         assert! False
         assert!False
 
-        ^?! !! ++
-        ^?! ! --
-        ^?!!--
+        ^?! !! +
+        ^?! ! -
+        ^?!!-
 
-        if_ran--
+        if_ran-
         ? ! False:
-            if_ran++
+            if_ran+
         assert if_ran
 
-        if_ran--
-        ? ! --:
-            if_ran++
+        if_ran-
+        ? ! -:
+            if_ran+
         assert if_ran
 
         assert True ?! False
@@ -69,7 +69,7 @@ class Tests(unittest.TestCase):
         assert False === False
         assert True === not False
         assert True === !False
-        assert ++ === !--
+        assert + === !-
 
     def test_del(self):
         x = 1

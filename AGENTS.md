@@ -1,6 +1,12 @@
-# Loh Feature Addition Process
+Loh is an expiremental superset of Python that adds concise syntax to make Python
+more intuitive and DRY. By replacing builtin keywords with symbols, the intent and reasoning
+of the solution is emphasized.
 
-This document outlines the systematic workflow for implementing new syntax features in the Loh language.
+See @README.md for more details on the language.
+
+See samples, tests and git history for even deeper context.
+
+## Loh Feature Addition Process
 
 1. **AST Helper Implementation**:
    - Declare AST desugaring helper functions in [pegen.h](file:///Users/robbarnes/Development/loh/Parser/pegen.h).

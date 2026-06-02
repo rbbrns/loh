@@ -26,6 +26,17 @@ _PyPegen_singleton_seq(Parser *p, void *a)
     return seq;
 }
 
+asdl_int_seq *
+_PyPegen_singleton_int_seq(Parser *p, int a)
+{
+    asdl_int_seq *seq = _Py_asdl_int_seq_new(1, p->arena);
+    if (!seq) {
+        return NULL;
+    }
+    asdl_seq_SET(seq, 0, a);
+    return seq;
+}
+
 /* Creates a copy of seq and prepends a to it */
 asdl_seq *
 _PyPegen_seq_insert_in_front(Parser *p, void *a, asdl_seq *seq)

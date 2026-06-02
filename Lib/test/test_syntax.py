@@ -413,7 +413,7 @@ SyntaxError: invalid syntax
 Traceback (most recent call last):
 SyntaxError: invalid syntax
 
->>> def foo(/,a,b=,c):
+>>> def foo(/,a,b~,c):
 ...    pass
 Traceback (most recent call last):
 SyntaxError: at least one argument must precede /
@@ -453,7 +453,7 @@ SyntaxError: / must be ahead of *
 Traceback (most recent call last):
 SyntaxError: var-positional argument cannot have default value
 
->>> def foo(a,*b: int=,c):
+>>> def foo(a,*b: int~,c):
 ...    pass
 Traceback (most recent call last):
 SyntaxError: var-positional argument cannot have default value
@@ -518,17 +518,17 @@ SyntaxError: * argument may appear only once
 Traceback (most recent call last):
 SyntaxError: expected comma between / and *
 
->>> def foo(a=1,d=,c):
+>>> def foo(a=1,d~,c):
 ...    pass
 Traceback (most recent call last):
 SyntaxError: parameter without a default follows parameter with a default
 
->>> def foo(a,d=,c):
+>>> def foo(a,d~,c):
 ...    pass
 Traceback (most recent call last):
 SyntaxError: parameter without a default follows parameter with a default
 
->>> def foo(a,d: int=,c):
+>>> def foo(a,d: int~,c):
 ...    pass
 Traceback (most recent call last):
 SyntaxError: parameter without a default follows parameter with a default
@@ -609,11 +609,11 @@ SyntaxError: * argument may appear only once
 Traceback (most recent call last):
 SyntaxError: * argument may appear only once
 
->>> lambda a=1,d=,c: None
+>>> lambda a=1,d~,c: None
 Traceback (most recent call last):
 SyntaxError: parameter without a default follows parameter with a default
 
->>> lambda a,d=,c: None
+>>> lambda a,d~,c: None
 Traceback (most recent call last):
 SyntaxError: parameter without a default follows parameter with a default
 

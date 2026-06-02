@@ -15,23 +15,23 @@ from __future__ import empty_none_str
 : EmployeeId = int
 
 # Custom Exceptions using unified class syntax
-MenuItemNotFound: Exception: pass
-TableUnavailable: Exception: pass
-StaffNotAvailable: Exception: pass
-SystemDiagnosticFailed: Exception: pass
+MenuItemNotFound: Exception: ...
+TableUnavailable: Exception: ...
+StaffNotAvailable: Exception: ...
+SystemDiagnosticFailed: Exception: ...
 
 # Base Employee Class
 Employee::
     # Shorthand constructor with parameter properties
     .(.emp_id: EmployeeId, .name: str, .role: str):
-        .clocked_in = --
+        .clocked_in-
 
     .clock_in():
-        .clocked_in = ++
+        .clocked_in+
         print(f"[Staff] {.name} ({.role}) clocked IN.")
 
     .clock_out():
-        .clocked_in = --
+        .clocked_in-
         print(f"[Staff] {.name} ({.role}) clocked OUT.")
 
 # Subclasses demonstrating single inheritance
@@ -59,7 +59,7 @@ Technician:Employee:
 # MenuItem using shorthand parameter properties
 MenuItem::
     .(.id: int, .name: str, .price: float, .category: str, .prep_time: int):
-        pass
+        ...
 
 # Table representing physical dining location in Building Operations
 Table::
@@ -138,7 +138,7 @@ Order::
 # Config Class for Implicit Attribute Binding demo
 SystemConfig::
     .(.debug_mode: bool, .tax_rate: float):
-        pass
+        ...
 
 # RestaurantManager class orchestrator
 RestaurantManager::
@@ -195,11 +195,11 @@ RestaurantManager::
             print(f"[Debug] Creating order {order_id} for Table {table_num}")
 
         table = .tables.get(table_num)
-        ? table === ~ || table.status != "Occupied":
+        ? table~~~ || table.status != "Occupied":
             ^^^ TableUnavailable(f"Table {table_num} is not occupied by any active dining party.")
 
         waiter = .get_waiter_for_table(table_num)
-        ? waiter === ~:
+        ? waiter~~~:
             ^^^ StaffNotAvailable(f"No clocked-in waiter is assigned to Table {table_num}'s section.")
 
         order = Order(order_id, table_num, waiter.emp_id)
@@ -208,7 +208,7 @@ RestaurantManager::
 
     .process_billing(order_id: int) -> str:
         order = .orders.get(order_id)
-        ? order === ~:
+        ? order~~~:
             ^^^ ValueError(f"Order ID {order_id} not found.")
 
         # None-safe operations
@@ -240,7 +240,7 @@ RestaurantManager::
 
     .perform_system_diagnostics() -> str:
         # Run building diagnostics. Requires technician
-        tech = ~
+        tech ~
         $ emp <~ .employees.values():
             ? emp.role == "Technician" && emp.clocked_in:
                 tech = emp
@@ -265,7 +265,7 @@ RestaurantManager::
     print("Initializing simulation for 'The Loh Lounge'...")
 
     # Construct configurations using Inline Scope Initializer Block
-    config = SystemConfig(debug_mode=++, tax_rate=0.08)
+    config = SystemConfig(debug_mode+, tax_rate=0.08)
 
     manager = RestaurantManager("The Loh Lounge", config) {
         # Populate the Menu
@@ -356,15 +356,15 @@ RestaurantManager::
     table_10.status = "Occupied"
     order_10 = manager.create_order(5002, 10)
 
-    raised_not_found = --
+    raised_not_found-
     ^:
         # Try to access a missing menu item and raise custom error if None
         item = manager.menu.get(999)
-        ? item === ~:
+        ? item ~~~:
             ^^^ MenuItemNotFound("Requested menu item is not offered.")
         order_10.add_item(item)
     ^? MenuItemNotFound => e:
-        raised_not_found = ++
+        raised_not_found = +
         print(f"[Order Error] Handled expected order failure: {e}")
     ^*:
         # Clean up empty order for table 10

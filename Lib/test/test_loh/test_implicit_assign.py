@@ -18,7 +18,7 @@ class Tests(unittest.TestCase):
         assert foo(=a, =b) == (5, 6)
         assert foo(=Foo.a, =Foo.b) == (1, 2)
         assert foo(a=7,b=8) == (7,8)
-        assert foo(a=, b=) == (None, None)
+        assert foo(a~, b~) == (None, None)
 
     def test_default_params(self):
         a = 1
@@ -37,7 +37,7 @@ class Tests(unittest.TestCase):
         assert foo(=a, =b) == (5, 6)
         assert foo(=Foo.a, =Foo.b) == (3, 4)
         assert foo(a=7,b=8) == (7,8)
-        assert foo(a=, b=) == (None, None)
+        assert foo(a~, b~) == (None, None)
 
         foo(=Foo.a, =Foo.b):
             return a, b
@@ -46,7 +46,7 @@ class Tests(unittest.TestCase):
         assert foo(=a, =b) == (5, 6)
         assert foo(=Foo.a, =Foo.b) == (3, 4)
         assert foo(a=7,b=8) == (7,8)
-        assert foo(a=, b=) == (None, None)
+        assert foo(a~, b~) == (None, None)
 
 
     def test_default_assign(self):
@@ -70,21 +70,38 @@ class Tests(unittest.TestCase):
         assert b == 2
 
     def test_implicit_false_true(self):
-        def foo(a++, b--):
+        def foo(a+, b-):
             return a, b
 
         assert foo() == (True, False)
 
-        def foo(a ++, b --):
+        def foo(a +, b -):
             return a, b
 
         assert foo() == (True, False)
-        assert foo(a--, b++) == (False, True)
+        assert foo(a-, b+) == (False, True)
 
-        x++
-        y--
+        x+
+        y-
 
         assert x == True
         assert x === True
         assert y == False
         assert y === False
+
+    def test_postfix_comparisons(self):
+        x = True
+        self.assertTrue(x++)
+        self.assertTrue(x+++)
+        self.assertFalse(x--)
+        self.assertFalse(x---)
+
+        y = 1
+        self.assertTrue(y++)
+        self.assertFalse(y+++)
+
+        z = None
+        self.assertTrue(z~~)
+        self.assertTrue(z~~~)
+        self.assertFalse(x~~)
+        self.assertFalse(x~~~)

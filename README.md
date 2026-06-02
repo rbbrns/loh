@@ -35,9 +35,18 @@ Loh maps Python's verbose keywords and structures to elegant, symbol-based alter
 
 | **Python** | **Loh** | **Description** |
 | :--- | :--- | :--- |
-| `True` | `++` | Boolean True constant |
-| `False` | `--` | Boolean False constant |
-| `None` | `~` *(or omit)* | None constant (empty space represents None) |
+| `True` | `+` | Boolean True constant |
+| `False` | `-` | Boolean False constant |
+| `None` | `~` | None constant |
+| `x = True` | `x+` | Shorthand Boolean assignment / default parameter |
+| `x = False` | `x-` | Shorthand Boolean assignment / default parameter |
+| `x = None` | `x~` | Shorthand None assignment / default parameter |
+| `x == True` | `x++` | Value equality comparison with True |
+| `x === True` | `x+++` | Identity equality comparison with True |
+| `x == False` | `x--` | Value equality comparison with False |
+| `x === False` | `x---` | Identity equality comparison with False |
+| `x == None` | `x~~` | Value equality comparison with None |
+| `x === None` | `x~~~` | Identity equality comparison with None |
 | None-safe member | `~.` | None-safe attribute access / navigation |
 | None-coalesce | `~~` | None-coalescing operator (fallback value) |
 | None-safe index | `~[]` | None-safe subscripting / indexing |
@@ -101,7 +110,7 @@ if x not in my_list:
 
 #### **Loh**
 ```python
-? (x === ++ && y !== --) || z === ~:
+? (x+++ && !y---) || z~~~:
     <> val
 ? x !<~ my_list:
     pass
@@ -438,11 +447,9 @@ from .. import helper
 
 ---
 
-### **13. Implicit None ("The Empty Space")**
+### **13. None Constants & Shorthands**
 
-> **Motivation:** In computer science and logic, the absence of a value is most intuitively represented by empty space. Loh translates this concept directly by interpreting empty syntax positions (in assignments, default arguments, and comparisons) as implicit `None` values, removing placeholder keywords.
-
-Loh treats empty syntax spaces as implicit `None` values, simplifying default assignments and None-checks.
+> **Motivation:** Using verbose keywords like `None` clutters declarations. Loh introduces `~` as a concise constant for `None`, along with postfix `~~` and `~~~` comparisons and shorthand parameter/assignment formats to streamline handling of missing values.
 
 #### **Python**
 ```python
@@ -464,20 +471,20 @@ my_dict = {'a': None, 'b': None}
 
 #### **Loh**
 ```python
-x =
-y: float =
+x = ~         # Or: x~
+y: float = ~  # Or: y: float = ~
 
-foo(a=, b=):
+foo(a~, b~):
     ...
 
-? x is:
+? x~~~:      # Or: ? x === ~:
     pass
-? y !==:
+? !y~~~:     # Or: ? y !== ~:
     pass
-? z ==:
+? z~~:       # Or: ? z == ~:
     pass
 
-my_dict = {'a':, 'b':}
+my_dict = {'a': ~, 'b': ~}
 ```
 
 ---
@@ -526,9 +533,9 @@ verbose = config.verbose
 
 ---
 
-### **16. Implicit Boolean Flags**
+### **16. Boolean Shorthands & Postfix Comparisons**
 
-> **Motivation:** The symbols `++` and `--` represent binary toggles of state. In Loh, applying them to variables (`x++` / `y--`) serves as a shorthand to toggle their boolean truth values (`True` or `False`), making flag assignments and parameter defaults highly readable.
+> **Motivation:** Declaring and checking boolean state is one of the most common tasks. In Loh, standard boolean constants are represented by `+` (`True`) and `-` (`False`). Using postfix shorthands (`x+` and `y-`) allows assigning boolean values or setting parameter defaults extremely compactly. Postfix operators `++`/`+++` and `--`/`---` allow quick check for value or identity equality.
 
 #### **Python**
 ```python
@@ -537,15 +544,25 @@ def foo(a=True, b=False):
 
 x = True
 y = False
+
+if x is True:
+    pass
+if y == False:
+    pass
 ```
 
 #### **Loh**
 ```python
-foo(a++, b--):
+foo(a+, b-):
     ...
 
-x++
-y--
+x+
+y-
+
+? x+++:
+    pass
+? y--:
+    pass
 ```
 
 ---
@@ -709,7 +726,7 @@ send_email(user)
 # Initialization on construction
 manager = RestaurantManager("The Loh Bistro") {
     .add_menu_item(101, "Truffle Fries", 12.50, "appetizer");
-    .active = ++
+    .active = +
 }
 
 # In-place configuration passed directly to a function
@@ -718,4 +735,5 @@ send_email(user {
     .update_status("active")
 })
 ```
+
 

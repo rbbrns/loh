@@ -310,6 +310,7 @@ INVALID_VERSION_CHECK(Parser *p, int version, char *msg, void *node)
 arg_ty _PyPegen_add_type_comment_to_arg(Parser *, arg_ty, Token *);
 PyObject *_PyPegen_new_identifier(Parser *, const char *);
 asdl_seq *_PyPegen_singleton_seq(Parser *, void *);
+asdl_int_seq *_PyPegen_singleton_int_seq(Parser *, int);
 asdl_seq *_PyPegen_seq_insert_in_front(Parser *, void *, asdl_seq *);
 asdl_seq *_PyPegen_seq_append_to_end(Parser *, asdl_seq *, void *);
 asdl_seq *_PyPegen_seq_flatten(Parser *, asdl_seq *);
