@@ -1795,7 +1795,8 @@ check_import_from(struct symtable *st, stmt_ty s)
     assert(s->kind == ImportFrom_kind);
     _Py_SourceLocation fut = st->st_future->ff_location;
     if (s->v.ImportFrom.module && s->v.ImportFrom.level == 0 &&
-        _PyUnicode_EqualToASCIIString(s->v.ImportFrom.module, "__future__") &&
+        (_PyUnicode_EqualToASCIIString(s->v.ImportFrom.module, "__future__") ||
+         _PyUnicode_EqualToASCIIString(s->v.ImportFrom.module, "__loh__")) &&
         ((s->lineno > fut.lineno) ||
          ((s->lineno == fut.end_lineno) && (s->col_offset > fut.end_col_offset))))
     {

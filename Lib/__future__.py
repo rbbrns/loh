@@ -58,6 +58,7 @@ all_feature_names = [
     "generator_stop",
     "annotations",
     "empty_none_str",
+    "auto_fstrings",
 ]
 
 __all__ = ["all_feature_names"] + all_feature_names
@@ -77,6 +78,7 @@ CO_FUTURE_BARRY_AS_BDFL = 0x400000
 CO_FUTURE_GENERATOR_STOP = 0x800000     # StopIteration becomes RuntimeError in generators
 CO_FUTURE_ANNOTATIONS = 0x1000000       # annotations become strings at runtime
 CO_FUTURE_EMPTY_NONE_STR = 0x10000000    # str(None) returns ""
+CO_FUTURE_AUTO_FSTRINGS = 0x20000000     # default strings to f-strings
 
 
 class _Feature:
@@ -146,3 +148,7 @@ annotations = _Feature((3, 7, 0, "beta", 1),
 empty_none_str = _Feature((3, 15, 0, "alpha", 0),
                           None,
                           CO_FUTURE_EMPTY_NONE_STR)
+
+auto_fstrings = _Feature((3, 15, 0, "alpha", 0),
+                         None,
+                         CO_FUTURE_AUTO_FSTRINGS)

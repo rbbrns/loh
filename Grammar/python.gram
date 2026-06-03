@@ -355,6 +355,9 @@ class_def[stmt_ty]:
     | a=decorators b=class_def_raw { _PyPegen_class_def_decorators(p, a, b) }
     | class_def_raw
 
+lookahead_for_colon:
+    | !'class' { _PyPegen_lookahead_for_colon(p) ? _PyPegen_dummy_name(p) : NULL }
+
 class_def_raw[stmt_ty]:
     | invalid_class_def_raw
     | 'class' a=NAME t=[type_params] b=['(' z=[arguments] ')' { z }] ':' c=block {
@@ -367,7 +370,7 @@ class_def_raw[stmt_ty]:
                      (b) ? ((expr_ty) b)->v.Call.args : NULL,
                      (b) ? ((expr_ty) b)->v.Call.keywords : NULL,
                      c, NULL, t, EXTRA) }
-    | a=NAME t=[type_params] ':' b=[ z=[arguments_no_paren] { z }] ':' c=block {
+    | a=NAME t=[type_params] ':' &lookahead_for_colon b=[ z=[arguments_no_paren] { z }] ':' c=block {
         _PyAST_ClassDef(a->v.Name.id,
                      (b) ? ((expr_ty) b)->v.Call.args : NULL,
                      (b) ? ((expr_ty) b)->v.Call.keywords : NULL,
@@ -994,6 +997,9 @@ factor[expr_ty] (memo):
     | '+' a=factor { _PyAST_UnaryOp(UAdd, a, EXTRA) }
     | '-' a=factor { _PyAST_UnaryOp(USub, a, EXTRA) }
     | '~' a=factor { _PyAST_UnaryOp(Invert, a, EXTRA) }
+    | '++' a=factor { _PyAST_UnaryOp(UAdd, _PyAST_UnaryOp(UAdd, a, EXTRA), EXTRA) }
+    | '--' a=factor { _PyAST_UnaryOp(USub, _PyAST_UnaryOp(USub, a, EXTRA), EXTRA) }
+    | '~~' a=factor { _PyAST_UnaryOp(Invert, _PyAST_UnaryOp(Invert, a, EXTRA), EXTRA) }
     | power
 
 power[expr_ty]:
@@ -1251,7 +1257,6 @@ dictcomp[expr_ty]:
 
 arguments_no_paren[expr_ty] (memo):
     | a=args [','] { a }
-    | invalid_arguments
 
 arguments[expr_ty] (memo):
     | a=args [','] &')' { a }

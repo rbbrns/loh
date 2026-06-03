@@ -153,6 +153,7 @@ struct PyCodeObject _PyCode_DEF(1);
 #define CO_METHOD  0x8000000
 
 #define CO_FUTURE_EMPTY_NONE_STR 0x10000000
+#define CO_FUTURE_AUTO_FSTRINGS 0x20000000
 
 /* This should be defined if a future statement modifies the syntax.
    For example, when a keyword is added.

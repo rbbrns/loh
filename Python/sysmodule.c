@@ -3871,6 +3871,10 @@ _PySys_InitCore(PyThreadState *tstate, PyObject *sysdict)
     version_info = make_version_info(tstate);
     SET_SYS("version_info", version_info);
 
+    /* loh versioning */
+    SET_SYS_FROM_STRING("loh_version", "0.2.0");
+    SET_SYS("loh_version_info", Py_BuildValue("(iii)", 0, 2, 0));
+
     /* implementation */
     SET_SYS("implementation", make_impl_info(version_info));
 

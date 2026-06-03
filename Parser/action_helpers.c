@@ -1474,10 +1474,17 @@ expr_ty _PyPegen_constant_from_string(Parser* p, Token* tok) {
         return NULL;
     }
     PyObject *kind = NULL;
-    if (the_str && the_str[0] == 'u') {
-        kind = _PyPegen_new_identifier(p, "u");
-        if (kind == NULL) {
-            return NULL;
+    if (the_str) {
+        if (the_str[0] == 'u' || the_str[0] == 'U') {
+            kind = _PyPegen_new_identifier(p, "u");
+            if (kind == NULL) {
+                return NULL;
+            }
+        } else if (the_str[0] == 'r' || the_str[0] == 'R') {
+            kind = _PyPegen_new_identifier(p, "r");
+            if (kind == NULL) {
+                return NULL;
+            }
         }
     }
     return _PyAST_Constant(s, kind, tok->lineno, tok->col_offset, tok->end_lineno, tok->end_col_offset, p->arena);
@@ -2465,5 +2472,31 @@ _PyPegen_make_initializer_block(Parser *p, expr_ty primary, asdl_stmt_seq *block
     
     return _PyAST_Subscript(list_expr, index_const, Load, primary->lineno, primary->col_offset, primary->end_lineno, primary->end_col_offset, p->arena);
 }
+
+int
+_PyPegen_lookahead_for_colon(Parser *p)
+{
+    int mark = p->mark;
+    while (1) {
+        if (mark == p->fill) {
+            if (_PyPegen_fill_token(p) < 0) {
+                return 0;
+            }
+        }
+        Token *t = p->tokens[mark];
+        if (t == NULL) {
+            break;
+        }
+        if (t->type == ENDMARKER || t->type == NEWLINE || t->type == SEMI) {
+            break;
+        }
+        if (t->type == COLON) {
+            return 1;
+        }
+        mark++;
+    }
+    return 0;
+}
+
 
 

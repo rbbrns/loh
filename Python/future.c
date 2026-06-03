@@ -40,6 +40,8 @@ future_check_features(_PyFutureFeatures *ff, stmt_ty s, PyObject *filename)
             ff->ff_features |= CO_FUTURE_ANNOTATIONS;
         } else if (strcmp(feature, FUTURE_EMPTY_NONE_STR) == 0) {
             ff->ff_features |= CO_FUTURE_EMPTY_NONE_STR;
+        } else if (strcmp(feature, FUTURE_AUTO_FSTRINGS) == 0) {
+            ff->ff_features |= CO_FUTURE_AUTO_FSTRINGS;
         } else if (strcmp(feature, "braces") == 0) {
             PyErr_SetString(PyExc_SyntaxError,
                             "not a chance");
@@ -90,7 +92,8 @@ future_parse(_PyFutureFeatures *ff, mod_ty mod, PyObject *filename)
         if (s->kind == ImportFrom_kind && s->v.ImportFrom.level == 0) {
             identifier modname = s->v.ImportFrom.module;
             if (modname &&
-                _PyUnicode_EqualToASCIIString(modname, "__future__")) {
+                (_PyUnicode_EqualToASCIIString(modname, "__future__") ||
+                 _PyUnicode_EqualToASCIIString(modname, "__loh__"))) {
                 if (!future_check_features(ff, s, filename)) {
                     return 0;
                 }

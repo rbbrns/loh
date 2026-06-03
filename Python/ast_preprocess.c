@@ -5,6 +5,7 @@
 #include "pycore_format.h"        // F_LJUST
 #include "pycore_runtime.h"       // _Py_STR()
 #include "pycore_unicodeobject.h" // _PyUnicode_EqualToASCIIString()
+#include "pycore_parser.h"        // _PyParser_ASTFromString()
 
 
 /* See PEP 765 */
@@ -19,6 +20,7 @@ typedef struct {
     int optimize;
     int ff_features;
     int syntax_check_only;
+    int in_docstring;
 
     _Py_c_array_t cf_finally;       /* context for PEP 765 check */
     int cf_finally_used;
@@ -471,7 +473,22 @@ astfold_body(asdl_stmt_seq *stmts, PyArena *ctx_, _PyASTPreprocessState *state)
         }
         docstring = 0;
     }
-    CALL_SEQ(astfold_stmt, stmt, stmts);
+    Py_ssize_t i;
+    for (i = 0; i < asdl_seq_LEN(stmts); i++) {
+        stmt_ty elt = (stmt_ty)asdl_seq_GET(stmts, i);
+        if (elt != NULL) {
+            int old_in_docstring = state->in_docstring;
+            if (i == 0 && docstring) {
+                state->in_docstring = 1;
+            } else {
+                state->in_docstring = 0;
+            }
+            if (!astfold_stmt(elt, ctx_, state)) {
+                return 0;
+            }
+            state->in_docstring = old_in_docstring;
+        }
+    }
     if (!docstring && _PyAST_GetDocString(stmts) != NULL) {
         stmt_ty st = (stmt_ty)asdl_seq_GET(stmts, 0);
         asdl_expr_seq *values = _Py_asdl_expr_seq_new(1, ctx_);
@@ -510,6 +527,270 @@ astfold_mod(mod_ty node_, PyArena *ctx_, _PyASTPreprocessState *state)
     // compilation nodes are added without being handled here
     }
     return 1;
+}
+
+static int
+has_braces(PyObject *unicode_obj)
+{
+    Py_ssize_t size = PyUnicode_GET_LENGTH(unicode_obj);
+    for (Py_ssize_t i = 0; i < size; i++) {
+        Py_UCS4 ch = PyUnicode_READ_CHAR(unicode_obj, i);
+        if (ch == '{' || ch == '}') {
+            return 1;
+        }
+    }
+    return 0;
+}
+
+static void update_expr_locations(expr_ty node, int original_lineno, int original_col_offset);
+static void update_keyword_locations(keyword_ty node, int original_lineno, int original_col_offset);
+static void update_comprehension_locations(comprehension_ty node, int original_lineno, int original_col_offset);
+static void update_arguments_locations(arguments_ty node, int original_lineno, int original_col_offset);
+static void update_arg_locations(arg_ty node, int original_lineno, int original_col_offset);
+
+static void
+update_location(int *lineno, int *col_offset, int *end_lineno, int *end_col_offset,
+                int original_lineno, int original_col_offset)
+{
+    if (*lineno == 1) {
+        *col_offset = original_col_offset + *col_offset - 1;
+    }
+    *lineno = original_lineno + *lineno - 1;
+
+    if (*end_lineno == 1) {
+        *end_col_offset = original_col_offset + *end_col_offset - 1;
+    }
+    *end_lineno = original_lineno + *end_lineno - 1;
+}
+
+static void
+update_expr_locations(expr_ty node, int original_lineno, int original_col_offset)
+{
+    if (!node) return;
+
+    update_location(&node->lineno, &node->col_offset, &node->end_lineno, &node->end_col_offset,
+                    original_lineno, original_col_offset);
+
+    switch (node->kind) {
+        case BoolOp_kind:
+            for (Py_ssize_t i = 0; i < asdl_seq_LEN(node->v.BoolOp.values); i++) {
+                update_expr_locations((expr_ty)asdl_seq_GET(node->v.BoolOp.values, i), original_lineno, original_col_offset);
+            }
+            break;
+        case NamedExpr_kind:
+            update_expr_locations(node->v.NamedExpr.target, original_lineno, original_col_offset);
+            update_expr_locations(node->v.NamedExpr.value, original_lineno, original_col_offset);
+            break;
+        case BinOp_kind:
+            update_expr_locations(node->v.BinOp.left, original_lineno, original_col_offset);
+            update_expr_locations(node->v.BinOp.right, original_lineno, original_col_offset);
+            break;
+        case UnaryOp_kind:
+            update_expr_locations(node->v.UnaryOp.operand, original_lineno, original_col_offset);
+            break;
+        case Lambda_kind:
+            update_arguments_locations(node->v.Lambda.args, original_lineno, original_col_offset);
+            update_expr_locations(node->v.Lambda.body, original_lineno, original_col_offset);
+            break;
+        case IfExp_kind:
+            update_expr_locations(node->v.IfExp.test, original_lineno, original_col_offset);
+            update_expr_locations(node->v.IfExp.body, original_lineno, original_col_offset);
+            update_expr_locations(node->v.IfExp.orelse, original_lineno, original_col_offset);
+            break;
+        case Dict_kind:
+            for (Py_ssize_t i = 0; i < asdl_seq_LEN(node->v.Dict.keys); i++) {
+                update_expr_locations((expr_ty)asdl_seq_GET(node->v.Dict.keys, i), original_lineno, original_col_offset);
+            }
+            for (Py_ssize_t i = 0; i < asdl_seq_LEN(node->v.Dict.values); i++) {
+                update_expr_locations((expr_ty)asdl_seq_GET(node->v.Dict.values, i), original_lineno, original_col_offset);
+            }
+            break;
+        case Set_kind:
+            for (Py_ssize_t i = 0; i < asdl_seq_LEN(node->v.Set.elts); i++) {
+                update_expr_locations((expr_ty)asdl_seq_GET(node->v.Set.elts, i), original_lineno, original_col_offset);
+            }
+            break;
+        case ListComp_kind:
+            update_expr_locations(node->v.ListComp.elt, original_lineno, original_col_offset);
+            for (Py_ssize_t i = 0; i < asdl_seq_LEN(node->v.ListComp.generators); i++) {
+                update_comprehension_locations((comprehension_ty)asdl_seq_GET(node->v.ListComp.generators, i), original_lineno, original_col_offset);
+            }
+            break;
+        case SetComp_kind:
+            update_expr_locations(node->v.SetComp.elt, original_lineno, original_col_offset);
+            for (Py_ssize_t i = 0; i < asdl_seq_LEN(node->v.SetComp.generators); i++) {
+                update_comprehension_locations((comprehension_ty)asdl_seq_GET(node->v.SetComp.generators, i), original_lineno, original_col_offset);
+            }
+            break;
+        case DictComp_kind:
+            update_expr_locations(node->v.DictComp.key, original_lineno, original_col_offset);
+            update_expr_locations(node->v.DictComp.value, original_lineno, original_col_offset);
+            for (Py_ssize_t i = 0; i < asdl_seq_LEN(node->v.DictComp.generators); i++) {
+                update_comprehension_locations((comprehension_ty)asdl_seq_GET(node->v.DictComp.generators, i), original_lineno, original_col_offset);
+            }
+            break;
+        case GeneratorExp_kind:
+            update_expr_locations(node->v.GeneratorExp.elt, original_lineno, original_col_offset);
+            for (Py_ssize_t i = 0; i < asdl_seq_LEN(node->v.GeneratorExp.generators); i++) {
+                update_comprehension_locations((comprehension_ty)asdl_seq_GET(node->v.GeneratorExp.generators, i), original_lineno, original_col_offset);
+            }
+            break;
+        case Await_kind:
+            update_expr_locations(node->v.Await.value, original_lineno, original_col_offset);
+            break;
+        case Yield_kind:
+            if (node->v.Yield.value) {
+                update_expr_locations(node->v.Yield.value, original_lineno, original_col_offset);
+            }
+            break;
+        case YieldFrom_kind:
+            update_expr_locations(node->v.YieldFrom.value, original_lineno, original_col_offset);
+            break;
+        case Compare_kind:
+            update_expr_locations(node->v.Compare.left, original_lineno, original_col_offset);
+            for (Py_ssize_t i = 0; i < asdl_seq_LEN(node->v.Compare.comparators); i++) {
+                update_expr_locations((expr_ty)asdl_seq_GET(node->v.Compare.comparators, i), original_lineno, original_col_offset);
+            }
+            break;
+        case Call_kind:
+            update_expr_locations(node->v.Call.func, original_lineno, original_col_offset);
+            for (Py_ssize_t i = 0; i < asdl_seq_LEN(node->v.Call.args); i++) {
+                update_expr_locations((expr_ty)asdl_seq_GET(node->v.Call.args, i), original_lineno, original_col_offset);
+            }
+            for (Py_ssize_t i = 0; i < asdl_seq_LEN(node->v.Call.keywords); i++) {
+                update_keyword_locations((keyword_ty)asdl_seq_GET(node->v.Call.keywords, i), original_lineno, original_col_offset);
+            }
+            break;
+        case FormattedValue_kind:
+            update_expr_locations(node->v.FormattedValue.value, original_lineno, original_col_offset);
+            if (node->v.FormattedValue.format_spec) {
+                update_expr_locations(node->v.FormattedValue.format_spec, original_lineno, original_col_offset);
+            }
+            break;
+        case Interpolation_kind:
+            update_expr_locations(node->v.Interpolation.value, original_lineno, original_col_offset);
+            if (node->v.Interpolation.format_spec) {
+                update_expr_locations(node->v.Interpolation.format_spec, original_lineno, original_col_offset);
+            }
+            break;
+        case JoinedStr_kind:
+            for (Py_ssize_t i = 0; i < asdl_seq_LEN(node->v.JoinedStr.values); i++) {
+                update_expr_locations((expr_ty)asdl_seq_GET(node->v.JoinedStr.values, i), original_lineno, original_col_offset);
+            }
+            break;
+        case TemplateStr_kind:
+            for (Py_ssize_t i = 0; i < asdl_seq_LEN(node->v.TemplateStr.values); i++) {
+                update_expr_locations((expr_ty)asdl_seq_GET(node->v.TemplateStr.values, i), original_lineno, original_col_offset);
+            }
+            break;
+        case Constant_kind:
+            break;
+        case Pipe_kind:
+            update_expr_locations(node->v.Pipe.left, original_lineno, original_col_offset);
+            update_expr_locations(node->v.Pipe.right, original_lineno, original_col_offset);
+            break;
+        case Attribute_kind:
+            update_expr_locations(node->v.Attribute.value, original_lineno, original_col_offset);
+            break;
+        case Subscript_kind:
+            update_expr_locations(node->v.Subscript.value, original_lineno, original_col_offset);
+            update_expr_locations(node->v.Subscript.slice, original_lineno, original_col_offset);
+            break;
+        case Starred_kind:
+            update_expr_locations(node->v.Starred.value, original_lineno, original_col_offset);
+            break;
+        case Name_kind:
+            break;
+        case List_kind:
+            for (Py_ssize_t i = 0; i < asdl_seq_LEN(node->v.List.elts); i++) {
+                update_expr_locations((expr_ty)asdl_seq_GET(node->v.List.elts, i), original_lineno, original_col_offset);
+            }
+            break;
+        case Tuple_kind:
+            for (Py_ssize_t i = 0; i < asdl_seq_LEN(node->v.Tuple.elts); i++) {
+                update_expr_locations((expr_ty)asdl_seq_GET(node->v.Tuple.elts, i), original_lineno, original_col_offset);
+            }
+            break;
+        case Slice_kind:
+            if (node->v.Slice.lower) {
+                update_expr_locations(node->v.Slice.lower, original_lineno, original_col_offset);
+            }
+            if (node->v.Slice.upper) {
+                update_expr_locations(node->v.Slice.upper, original_lineno, original_col_offset);
+            }
+            if (node->v.Slice.step) {
+                update_expr_locations(node->v.Slice.step, original_lineno, original_col_offset);
+            }
+            break;
+    }
+}
+
+static void
+update_keyword_locations(keyword_ty node, int original_lineno, int original_col_offset)
+{
+    if (!node) return;
+    update_location(&node->lineno, &node->col_offset, &node->end_lineno, &node->end_col_offset,
+                    original_lineno, original_col_offset);
+    update_expr_locations(node->value, original_lineno, original_col_offset);
+}
+
+static void
+update_comprehension_locations(comprehension_ty node, int original_lineno, int original_col_offset)
+{
+    if (!node) return;
+    update_expr_locations(node->target, original_lineno, original_col_offset);
+    update_expr_locations(node->iter, original_lineno, original_col_offset);
+    for (Py_ssize_t i = 0; i < asdl_seq_LEN(node->ifs); i++) {
+        update_expr_locations((expr_ty)asdl_seq_GET(node->ifs, i), original_lineno, original_col_offset);
+    }
+}
+
+static void
+update_arg_locations(arg_ty node, int original_lineno, int original_col_offset)
+{
+    if (!node) return;
+    update_location(&node->lineno, &node->col_offset, &node->end_lineno, &node->end_col_offset,
+                    original_lineno, original_col_offset);
+    if (node->annotation) {
+        update_expr_locations(node->annotation, original_lineno, original_col_offset);
+    }
+}
+
+static void
+update_arguments_locations(arguments_ty node, int original_lineno, int original_col_offset)
+{
+    if (!node) return;
+    if (node->posonlyargs) {
+        for (Py_ssize_t i = 0; i < asdl_seq_LEN(node->posonlyargs); i++) {
+            update_arg_locations((arg_ty)asdl_seq_GET(node->posonlyargs, i), original_lineno, original_col_offset);
+        }
+    }
+    if (node->args) {
+        for (Py_ssize_t i = 0; i < asdl_seq_LEN(node->args); i++) {
+            update_arg_locations((arg_ty)asdl_seq_GET(node->args, i), original_lineno, original_col_offset);
+        }
+    }
+    if (node->vararg) {
+        update_arg_locations(node->vararg, original_lineno, original_col_offset);
+    }
+    if (node->kwonlyargs) {
+        for (Py_ssize_t i = 0; i < asdl_seq_LEN(node->kwonlyargs); i++) {
+            update_arg_locations((arg_ty)asdl_seq_GET(node->kwonlyargs, i), original_lineno, original_col_offset);
+        }
+    }
+    if (node->kw_defaults) {
+        for (Py_ssize_t i = 0; i < asdl_seq_LEN(node->kw_defaults); i++) {
+            update_expr_locations((expr_ty)asdl_seq_GET(node->kw_defaults, i), original_lineno, original_col_offset);
+        }
+    }
+    if (node->kwarg) {
+        update_arg_locations(node->kwarg, original_lineno, original_col_offset);
+    }
+    if (node->defaults) {
+        for (Py_ssize_t i = 0; i < asdl_seq_LEN(node->defaults); i++) {
+            update_expr_locations((expr_ty)asdl_seq_GET(node->defaults, i), original_lineno, original_col_offset);
+        }
+    }
 }
 
 static int
@@ -588,10 +869,32 @@ astfold_expr(expr_ty node_, PyArena *ctx_, _PyASTPreprocessState *state)
         CALL_OPT(astfold_expr, expr_ty, node_->v.Interpolation.format_spec);
         break;
     case JoinedStr_kind:
-        CALL_SEQ(astfold_expr, expr, node_->v.JoinedStr.values);
+        {
+            Py_ssize_t i;
+            asdl_expr_seq *seq = node_->v.JoinedStr.values;
+            for (i = 0; i < asdl_seq_LEN(seq); i++) {
+                expr_ty elt = (expr_ty)asdl_seq_GET(seq, i);
+                if (elt != NULL && elt->kind != Constant_kind) {
+                    if (!astfold_expr(elt, ctx_, state)) {
+                        return 0;
+                    }
+                }
+            }
+        }
         break;
     case TemplateStr_kind:
-        CALL_SEQ(astfold_expr, expr, node_->v.TemplateStr.values);
+        {
+            Py_ssize_t i;
+            asdl_expr_seq *seq = node_->v.TemplateStr.values;
+            for (i = 0; i < asdl_seq_LEN(seq); i++) {
+                expr_ty elt = (expr_ty)asdl_seq_GET(seq, i);
+                if (elt != NULL && elt->kind != Constant_kind) {
+                    if (!astfold_expr(elt, ctx_, state)) {
+                        return 0;
+                    }
+                }
+            }
+        }
         break;
     case Attribute_kind:
         CALL(astfold_expr, expr_ty, node_->v.Attribute.value);
@@ -628,8 +931,65 @@ astfold_expr(expr_ty node_, PyArena *ctx_, _PyASTPreprocessState *state)
         CALL(astfold_expr, expr_ty, node_->v.NamedExpr.value);
         break;
     case Constant_kind:
-        // Already a constant, nothing further to do
+        if (node_->v.Constant.kind != NULL &&
+            _PyUnicode_EqualToASCIIString(node_->v.Constant.kind, "r"))
+        {
+            node_->v.Constant.kind = NULL;
+        }
+        else {
+            if ((state->ff_features & CO_FUTURE_AUTO_FSTRINGS) &&
+                !state->in_docstring &&
+                PyUnicode_Check(node_->v.Constant.value) &&
+                has_braces(node_->v.Constant.value))
+            {
+                PyObject *repr = PyObject_Repr(node_->v.Constant.value);
+                if (!repr) {
+                    LEAVE_RECURSIVE();
+                    return 0;
+                }
+                PyObject *f_prefix = PyUnicode_FromString("f");
+                if (!f_prefix) {
+                    Py_DECREF(repr);
+                    LEAVE_RECURSIVE();
+                    return 0;
+                }
+                PyObject *f_repr = PyUnicode_Concat(f_prefix, repr);
+                Py_DECREF(f_prefix);
+                Py_DECREF(repr);
+                if (!f_repr) {
+                    LEAVE_RECURSIVE();
+                    return 0;
+                }
+                const char *f_src = PyUnicode_AsUTF8(f_repr);
+                if (!f_src) {
+                    Py_DECREF(f_repr);
+                    LEAVE_RECURSIVE();
+                    return 0;
+                }
+                PyCompilerFlags flags = {
+                    .cf_flags = state->ff_features,
+                    .cf_feature_version = PY_MINOR_VERSION
+                };
+                mod_ty parsed_mod = _PyParser_ASTFromString(f_src, state->filename, Py_eval_input, &flags, ctx_);
+                Py_DECREF(f_repr);
+                if (!parsed_mod) {
+                    LEAVE_RECURSIVE();
+                    return 0;
+                }
+                if (parsed_mod->kind == Expression_kind) {
+                    expr_ty f_expr = parsed_mod->v.Expression.body;
+                    update_expr_locations(f_expr, node_->lineno, node_->col_offset);
+                    *node_ = *f_expr;
+                    // Recursively preprocess the newly formed JoinedStr node
+                    if (!astfold_expr(node_, ctx_, state)) {
+                        LEAVE_RECURSIVE();
+                        return 0;
+                    }
+                }
+            }
+        }
         break;
+
     // No default case, so the compiler will emit a warning if new expression
     // kinds are added without being handled here
     }

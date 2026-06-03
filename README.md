@@ -89,6 +89,7 @@ Loh maps Python's verbose keywords and structures to elegant, symbol-based alter
 | `match` | `?==` | Structural pattern matching subject |
 | `case` | *(omit)* | Pattern case declaration |
 | Inline initializer | `obj { .prop = val }` | Scope initializer block |
+| Implicit f-strings | `from __loh__ import auto_fstrings` | Future import defaulting strings with braces to f-strings |
 
 ---
 
@@ -735,5 +736,60 @@ send_email(user {
     .update_status("active")
 })
 ```
+
+---
+
+### **23. Runtime Versioning (`sys.loh_version`, `sys.loh_version_info`)**
+
+> **Motivation:** As Loh evolves and introduces breaking changes, downstream tooling, compilers, and consumers need a reliable way to query the language version at runtime to adjust behavior or assert compatibility.
+
+Loh exposes version metadata attributes via the standard `sys` module, allowing dynamic version checking and feature detection:
+
+- **`sys.loh_version`**: A string representing the semantic version of Loh (e.g., `"0.2.0"`).
+- **`sys.loh_version_info`**: A tuple of `(major, minor, micro)` integers representing the Loh version components (e.g., `(0, 2, 0)`).
+
+#### **Example**
+```python
+import sys
+
+if sys.loh_version_info >= (0, 2, 0):
+    # Use unified +, -, ~ syntax
+    active = +
+else:
+    # Use legacy ++ / -- syntax
+    active = True
+```
+
+---
+
+### **24. The `auto_fstrings` Future Import**
+
+> **Motivation:** Writing `f"..."` for every string interpolation is verbose and can lead to bugs when developers forget the `f` prefix. The `auto_fstrings` future import in Loh allows standard string literals containing braces `{}` to automatically compile as f-strings.
+
+By importing `auto_fstrings` from the `__loh__` (or standard `__future__`) module, standard string literals containing any braces `{` or `}` are processed as f-strings at compile-time.
+
+- **Explicit raw string bypass**: Standard raw string literals (`r"..."` / `R"..."`) containing braces remain literal plain strings and are never converted.
+- **Docstring protection**: The first string literal of a module, class, or function body is protected and remains a static string constant.
+- **Brace escaping**: Doubled braces `{{` and `}}` are correctly recognized as escaped braces and evaluate to single literal braces `{` and `}`.
+
+#### **Example**
+```python
+from __loh__ import auto_fstrings
+
+name = "Loh"
+version = "0.2.0"
+
+# Automatically treated as an f-string:
+message = "Welcome to {name} version {version}!"
+print(message)  # Outputs: "Welcome to Loh version 0.2.0!"
+
+# Raw strings are bypassed and remain plain:
+regex = r"^\d{3}-\d{4}$"
+
+# Escaped braces evaluate to literal braces:
+css = "div {{ color: red; }}"  # Evaluates to: "div { color: red; }"
+```
+
+
 
 

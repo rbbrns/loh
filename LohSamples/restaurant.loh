@@ -120,7 +120,7 @@ Order::
     .(.order_id: int, .table_num: int, .waiter_id: EmployeeId):
         .items = []
         .status = "pending" # pending, preparing, ready, served, paid
-        .chef_id = ~
+        .chef_id~
 
     .add_item(item: MenuItem):
         .items.append(item)
@@ -333,14 +333,9 @@ RestaurantManager::
     item_missing = manager.menu.get(999)  # Safe dictionary lookup returning None
 
     # Add items safely checking for None identity
-    ? item_app !== ~:
-        order.add_item(item_app)
-    ? item_main1 !== ~:
-        order.add_item(item_main1)
-    ? item_main2 !== ~:
-        order.add_item(item_main2)
-    ? item_missing !== ~:
-        order.add_item(item_missing)  # Won't run since item_missing is None
+    $ item <~ [item_app, item_main1, item_main2, item_missing]:
+        ? item !== ~:
+            order.add_item(item)
 
     # Verify assertions on order items list and total
     # 10.99 (Bruschetta) + 34.99 (Ribeye) + 26.50 (Salmon) = 72.48
@@ -409,6 +404,6 @@ RestaurantManager::
     # Demonstrate None-safe subscripting (~[]) on a None object
     none_menu = ~
     item_from_none = none_menu~[1]
-    ^?! item_from_none === ~, "None-safe subscripting failed"
+    ^?! item_from_none~~~, "None-safe subscripting failed"
 
     print("\nAll assertions passed! The Loh Restaurant simulation ran successfully.")

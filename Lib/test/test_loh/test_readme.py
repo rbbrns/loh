@@ -343,5 +343,30 @@ class TestReadmeExamples(unittest.TestCase):
         self.assertEqual(user.name, "Alice")
         self.assertEqual(user.status, "active")
 
+    def test_runtime_versioning(self):
+        import sys
+        self.assertEqual(sys.loh_version, "0.2.0")
+        self.assertEqual(sys.loh_version_info, (0, 2, 0))
+
+        if sys.loh_version_info >= (0, 2, 0):
+            active = +
+        else:
+            active = True
+        self.assertTrue(active)
+
+    def test_auto_fstrings(self):
+        code = r"""from __loh__ import auto_fstrings
+name = "Loh"
+version = "0.2.0"
+message = "Welcome to {name} version {version}!"
+regex = r"^\d{3}-\d{4}$"
+css = "div {{ color: red; }}"
+"""
+        scope = {}
+        exec(code, {}, scope)
+        self.assertEqual(scope["message"], "Welcome to Loh version 0.2.0!")
+        self.assertEqual(scope["regex"], r"^\d{3}-\d{4}$")
+        self.assertEqual(scope["css"], "div { color: red; }")
+
 if __name__ == "__main__":
     unittest.main()

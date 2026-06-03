@@ -7,7 +7,7 @@
                    CO_FUTURE_WITH_STATEMENT | CO_FUTURE_PRINT_FUNCTION | \
                    CO_FUTURE_UNICODE_LITERALS | CO_FUTURE_BARRY_AS_BDFL | \
                    CO_FUTURE_GENERATOR_STOP | CO_FUTURE_ANNOTATIONS | \
-                   CO_FUTURE_EMPTY_NONE_STR)
+                   CO_FUTURE_EMPTY_NONE_STR | CO_FUTURE_AUTO_FSTRINGS)
 #define PyCF_MASK_OBSOLETE (CO_NESTED)
 
 /* bpo-39562: CO_FUTURE_ and PyCF_ constants must be kept unique.
@@ -46,6 +46,7 @@ typedef struct {
 #define FUTURE_GENERATOR_STOP "generator_stop"
 #define FUTURE_ANNOTATIONS "annotations"
 #define FUTURE_EMPTY_NONE_STR "empty_none_str"
+#define FUTURE_AUTO_FSTRINGS "auto_fstrings"
 
 #define PY_INVALID_STACK_EFFECT INT_MAX
 PyAPI_FUNC(int) PyCompile_OpcodeStackEffect(int opcode, int oparg);
