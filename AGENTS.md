@@ -38,6 +38,10 @@ See samples, tests and git history for even deeper context.
      ```bash
      ./python.exe -m test test_grammar test_syntax test_compile test_ast test_dis
      ```
+   - Run the full Python test suite in parallel to catch any regressions across the rest of the codebase:
+     ```bash
+     ./python.exe -m test -j8
+     ```
    
 6. **Documentation**:
    - Add the new syntax to the mapping cheat sheet table and write a dedicated features section in [README.md](file:///Users/robbarnes/Development/loh/README.md).
