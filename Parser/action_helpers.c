@@ -2503,5 +2503,162 @@ _PyPegen_lookahead_for_colon(Parser *p)
     return 0;
 }
 
+static int
+is_safe_navigation_expr(expr_ty e) {
+    if (!e || e->kind != IfExp_kind) {
+        return 0;
+    }
+    expr_ty test = e->v.IfExp.test;
+    expr_ty orelse = e->v.IfExp.orelse;
+    if (!test || !orelse) {
+        return 0;
+    }
+    if (orelse->kind != Constant_kind || orelse->v.Constant.value != Py_None) {
+        return 0;
+    }
+    if (test->kind != Compare_kind) {
+        return 0;
+    }
+    if (asdl_seq_LEN(test->v.Compare.ops) != 1 || asdl_seq_LEN(test->v.Compare.comparators) != 1) {
+        return 0;
+    }
+    int op = asdl_seq_GET(test->v.Compare.ops, 0);
+    if (op != IsNot) {
+        return 0;
+    }
+    expr_ty left = test->v.Compare.left;
+    if (left->kind != NamedExpr_kind) {
+        return 0;
+    }
+    expr_ty target = left->v.NamedExpr.target;
+    if (target->kind != Name_kind) {
+        return 0;
+    }
+    if (!_PyUnicode_EqualToASCIIString(target->v.Name.id, "_loh_safe_val")) {
+        return 0;
+    }
+    return 1;
+}
+
+stmt_ty
+_PyPegen_make_assign(Parser *p, asdl_expr_seq *targets, expr_ty value, Token *tc) {
+    int has_safe = 0;
+    for (int i = 0; i < asdl_seq_LEN(targets); i++) {
+        expr_ty t = asdl_seq_GET(targets, i);
+        if (is_safe_navigation_expr(t)) {
+            has_safe = 1;
+            break;
+        }
+    }
+    
+    expr_ty first_target = asdl_seq_GET(targets, 0);
+    int lineno = first_target->lineno;
+    int col_offset = first_target->col_offset;
+    int end_lineno = value->end_lineno;
+    int end_col_offset = value->end_col_offset;
+    
+    if (!has_safe) {
+        return _PyAST_Assign(targets, value, tc ? NEW_TYPE_COMMENT(p, tc) : NULL, lineno, col_offset, end_lineno, end_col_offset, p->arena);
+    }
+    
+    if (asdl_seq_LEN(targets) == 1) {
+        expr_ty t = asdl_seq_GET(targets, 0);
+        if (is_safe_navigation_expr(t)) {
+            expr_ty test = t->v.IfExp.test;
+            expr_ty body = t->v.IfExp.body;
+            if (body->kind == Attribute_kind) {
+                body->v.Attribute.ctx = Store;
+            } else if (body->kind == Subscript_kind) {
+                body->v.Subscript.ctx = Store;
+            }
+            asdl_expr_seq *b_targets = _PyPegen_singleton_seq(p, body);
+            stmt_ty assign = _PyAST_Assign(b_targets, value, NULL, lineno, col_offset, end_lineno, end_col_offset, p->arena);
+            if (!assign) return NULL;
+            
+            asdl_stmt_seq *if_body = _Py_asdl_stmt_seq_new(1, p->arena);
+            if (!if_body) return NULL;
+            asdl_seq_SET(if_body, 0, assign);
+            return _PyAST_If(test, if_body, NULL, lineno, col_offset, end_lineno, end_col_offset, p->arena);
+        }
+    }
+    
+    PyObject *tmp_id = _PyPegen_new_identifier(p, "_loh_assign_tmp");
+    if (!tmp_id) return NULL;
+    
+    expr_ty tmp_store = _PyAST_Name(tmp_id, Store, lineno, col_offset, end_lineno, end_col_offset, p->arena);
+    if (!tmp_store) return NULL;
+    asdl_expr_seq *tmp_targets = _PyPegen_singleton_seq(p, tmp_store);
+    if (!tmp_targets) return NULL;
+    stmt_ty init_tmp = _PyAST_Assign(tmp_targets, value, NULL, lineno, col_offset, end_lineno, end_col_offset, p->arena);
+    if (!init_tmp) return NULL;
+    
+    asdl_stmt_seq *stmts = _Py_asdl_stmt_seq_new(asdl_seq_LEN(targets) + 1, p->arena);
+    if (!stmts) return NULL;
+    asdl_seq_SET(stmts, 0, init_tmp);
+    
+    expr_ty tmp_load = _PyAST_Name(tmp_id, Load, lineno, col_offset, end_lineno, end_col_offset, p->arena);
+    if (!tmp_load) return NULL;
+    
+    for (int i = 0; i < asdl_seq_LEN(targets); i++) {
+        expr_ty t = asdl_seq_GET(targets, i);
+        if (is_safe_navigation_expr(t)) {
+            expr_ty test = t->v.IfExp.test;
+            expr_ty body = t->v.IfExp.body;
+            if (body->kind == Attribute_kind) {
+                body->v.Attribute.ctx = Store;
+            } else if (body->kind == Subscript_kind) {
+                body->v.Subscript.ctx = Store;
+            }
+            asdl_expr_seq *b_targets = _PyPegen_singleton_seq(p, body);
+            if (!b_targets) return NULL;
+            stmt_ty assign = _PyAST_Assign(b_targets, tmp_load, NULL, lineno, col_offset, end_lineno, end_col_offset, p->arena);
+            if (!assign) return NULL;
+            
+            asdl_stmt_seq *if_body = _Py_asdl_stmt_seq_new(1, p->arena);
+            if (!if_body) return NULL;
+            asdl_seq_SET(if_body, 0, assign);
+            stmt_ty if_stmt = _PyAST_If(test, if_body, NULL, lineno, col_offset, end_lineno, end_col_offset, p->arena);
+            if (!if_stmt) return NULL;
+            asdl_seq_SET(stmts, i + 1, if_stmt);
+        } else {
+            asdl_expr_seq *b_targets = _PyPegen_singleton_seq(p, t);
+            if (!b_targets) return NULL;
+            stmt_ty assign = _PyAST_Assign(b_targets, tmp_load, NULL, lineno, col_offset, end_lineno, end_col_offset, p->arena);
+            if (!assign) return NULL;
+            asdl_seq_SET(stmts, i + 1, assign);
+        }
+    }
+    
+    expr_ty one_const = _PyAST_Constant(Py_True, NULL, lineno, col_offset, end_lineno, end_col_offset, p->arena);
+    if (!one_const) return NULL;
+    return _PyAST_If(one_const, stmts, NULL, lineno, col_offset, end_lineno, end_col_offset, p->arena);
+}
+
+stmt_ty
+_PyPegen_make_augassign(Parser *p, expr_ty target, operator_ty op, expr_ty value) {
+    int lineno = target->lineno;
+    int col_offset = target->col_offset;
+    int end_lineno = value->end_lineno;
+    int end_col_offset = value->end_col_offset;
+    
+    if (is_safe_navigation_expr(target)) {
+        expr_ty test = target->v.IfExp.test;
+        expr_ty body = target->v.IfExp.body;
+        if (body->kind == Attribute_kind) {
+            body->v.Attribute.ctx = Store;
+        } else if (body->kind == Subscript_kind) {
+            body->v.Subscript.ctx = Store;
+        }
+        stmt_ty augassign = _PyAST_AugAssign(body, op, value, lineno, col_offset, end_lineno, end_col_offset, p->arena);
+        if (!augassign) return NULL;
+        
+        asdl_stmt_seq *if_body = _Py_asdl_stmt_seq_new(1, p->arena);
+        if (!if_body) return NULL;
+        asdl_seq_SET(if_body, 0, augassign);
+        return _PyAST_If(test, if_body, NULL, lineno, col_offset, end_lineno, end_col_offset, p->arena);
+    }
+    return _PyAST_AugAssign(target, op, value, lineno, col_offset, end_lineno, end_col_offset, p->arena);
+}
+
 
 

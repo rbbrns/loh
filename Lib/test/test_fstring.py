@@ -13,6 +13,7 @@ import dis
 import os
 import re
 import types
+import sys
 import decimal
 import unittest
 import warnings
@@ -1095,7 +1096,12 @@ x = (
             compile("lambda name_3=f'{name_4}': {name_3}\n1 $ 1", "<string>", "exec")
 
         # but don't emit the paren warning in general cases
-        with self.assertRaisesRegex(SyntaxError, "f-string: expecting a valid expression after '{'"):
+        expected_msg = (
+            "f-string: expecting '=', or '!', or ':', or '}'"
+            if hasattr(sys, "loh_version") else
+            "f-string: expecting a valid expression after '{'"
+        )
+        with self.assertRaisesRegex(SyntaxError, expected_msg):
             eval("f'{+ lambda:None}'")
 
     def test_valid_prefixes(self):
@@ -1744,18 +1750,21 @@ sdfsdfs{1+
             self.assertEqual(e.text, 'z = f"""')
             self.assertEqual(e.lineno, 3)
     def test_syntax_error_after_debug(self):
-        self.assertAllRaise(SyntaxError, "f-string: expecting a valid expression after '{'",
-                            [
-                                "f'{1=}{;'",
-                                "f'{1=}{+;'",
-                                "f'{1=}{2}{;'",
-                                "f'{1=}{3}{;'",
-                            ])
-        self.assertAllRaise(SyntaxError, "f-string: expecting '=', or '!', or ':', or '}'",
-                            [
-                                "f'{1=}{1;'",
-                                "f'{1=}{1;}'",
-                            ])
+        first_group = [
+            "f'{1=}{;'",
+            "f'{1=}{2}{;'",
+            "f'{1=}{3}{;'",
+        ]
+        second_group = [
+            "f'{1=}{1;'",
+            "f'{1=}{1;}'",
+        ]
+        if hasattr(sys, 'loh_version'):
+            second_group.append("f'{1=}{+;'")
+        else:
+            first_group.append("f'{1=}{+;'")
+        self.assertAllRaise(SyntaxError, "f-string: expecting a valid expression after '{'", first_group)
+        self.assertAllRaise(SyntaxError, "f-string: expecting '=', or '!', or ':', or '}'", second_group)
 
     def test_debug_in_file(self):
         with temp_cwd():

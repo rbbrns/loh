@@ -370,5 +370,44 @@ css = "div {{ color: red; }}"
         self.assertEqual(scope["normal"], "Normal string with {braces} and \n escape")
         self.assertEqual(scope["css"], "div { color: red; }")
 
+    def test_safe_attribute_assignment(self):
+        code = """
+class Profile:
+    def __init__(self):
+        self.address = "Old"
+class User:
+    def __init__(self):
+        self.profile = Profile()
+        self.score = 0
+
+user = User()
+user~.profile~.address = "NYC"
+user~.score += 10
+
+arr = [10]
+arr~[0] = 42
+
+none_user = None
+none_user~.profile~.address = "LA"
+"""
+        scope = {}
+        exec(code, scope)
+        self.assertEqual(scope["user"].profile.address, "NYC")
+        self.assertEqual(scope["user"].score, 10)
+        self.assertEqual(scope["arr"][0], 42)
+        self.assertIsNone(scope["none_user"])
+
+    def test_infinite_loop_shorthand(self):
+        code = """
+x = 0
+$:
+    x += 1
+    if x == 5:
+        break
+"""
+        scope = {}
+        exec(code, {}, scope)
+        self.assertEqual(scope["x"], 5)
+
 if __name__ == "__main__":
     unittest.main()

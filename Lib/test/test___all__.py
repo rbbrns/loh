@@ -102,6 +102,7 @@ class AllTest(unittest.TestCase):
         denylist = set([
             # Will raise a SyntaxError when compiling the exec statement
             '__future__',
+            '__loh__',
         ])
 
         # In case _socket fails to build, make this test fail more gracefully

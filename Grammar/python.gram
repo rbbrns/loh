@@ -242,9 +242,9 @@ assignment[stmt_ty]:
          | single_subscript_attribute_target) ':' b=expression c=['=' d=annotated_rhs { d }] {
         CHECK_VERSION(stmt_ty, 6, "Variable annotations syntax is", _PyAST_AnnAssign(a, b, c, 0, EXTRA)) }
     | a[asdl_expr_seq*]=(z=star_targets '=' { z })+ b=annotated_rhs !'=' tc=[TYPE_COMMENT] {
-         _PyAST_Assign(a, b, NEW_TYPE_COMMENT(p, tc), EXTRA) }
+         _PyPegen_make_assign(p, a, b, tc) }
     | a=single_target b=augassign ~ c=annotated_rhs {
-         _PyAST_AugAssign(a, b->kind, c, EXTRA) }
+         _PyPegen_make_augassign(p, a, b->kind, c) }
     | invalid_assignment
 
 annotated_rhs[expr_ty]: yield_expr | star_expressions
@@ -544,6 +544,8 @@ while_stmt[stmt_ty]:
 
 for_stmt[stmt_ty]:
     | invalid_for_stmt
+    | '$' ':' b=block el=[loop_else_block] {
+        _PyAST_While(_PyAST_Constant(Py_True, NULL, EXTRA), b, el, EXTRA) }
     | for t=star_targets ':=' ~ ex=star_expressions ':' tc=[TYPE_COMMENT] b=block el=[loop_else_block] {
         _PyAST_For(t, ex, b, el, NEW_TYPE_COMMENT(p, tc), EXTRA) }
     | for t=star_targets in ~ ex=star_expressions ':' tc=[TYPE_COMMENT] b=block el=[loop_else_block] {
@@ -1328,8 +1330,10 @@ star_target[expr_ty] (memo):
 
 target_with_star_atom[expr_ty] (memo):
     | a=t_primary '.' b=NAME !t_lookahead { _PyAST_Attribute(a, b->v.Name.id, Store, EXTRA) }
+    | a=t_primary '~.' b=NAME !t_lookahead { _PyPegen_safe_navigation(p, a, b) }
     | a=dot b=NAME !t_lookahead { _PyAST_Attribute(a, b->v.Name.id, Store, EXTRA) }
     | a=t_primary '[' b=slices ']' !t_lookahead { _PyAST_Subscript(a, b, Store, EXTRA) }
+    | a=t_primary '~' '[' b=slices ']' !t_lookahead { _PyPegen_safe_subscript(p, a, b) }
     | star_atom
 
 star_atom[expr_ty]:
@@ -1345,12 +1349,16 @@ single_target[expr_ty]:
 
 single_subscript_attribute_target[expr_ty]:
     | a=t_primary '.' b=NAME !t_lookahead { _PyAST_Attribute(a, b->v.Name.id, Store, EXTRA) }
+    | a=t_primary '~.' b=NAME !t_lookahead { _PyPegen_safe_navigation(p, a, b) }
     | a=dot b=NAME !t_lookahead { _PyAST_Attribute(a, b->v.Name.id, Store, EXTRA) }
     | a=t_primary '[' b=slices ']' !t_lookahead { _PyAST_Subscript(a, b, Store, EXTRA) }
+    | a=t_primary '~' '[' b=slices ']' !t_lookahead { _PyPegen_safe_subscript(p, a, b) }
 
 t_primary[expr_ty]:
     | a=t_primary '.' b=NAME &t_lookahead { _PyAST_Attribute(a, b->v.Name.id, Load, EXTRA) }
+    | a=t_primary '~.' b=NAME &t_lookahead { _PyPegen_safe_navigation(p, a, b) }
     | a=t_primary '[' b=slices ']' &t_lookahead { _PyAST_Subscript(a, b, Load, EXTRA) }
+    | a=t_primary '~' '[' b=slices ']' &t_lookahead { _PyPegen_safe_subscript(p, a, b) }
     | a=t_primary b=genexp &t_lookahead {
         _PyAST_Call(a, CHECK(asdl_expr_seq*, (asdl_expr_seq*)_PyPegen_singleton_seq(p, b)), NULL, EXTRA) }
     | a=t_primary '(' b=[arguments] ')' &t_lookahead {
@@ -1360,7 +1368,7 @@ t_primary[expr_ty]:
                  EXTRA) }
     | a=atom &t_lookahead { a }
 
-t_lookahead: '(' | '[' | '.'
+t_lookahead: '(' | '[' | '.' | '~.' | '~'
 
 # Targets for del statements
 # --------------------------

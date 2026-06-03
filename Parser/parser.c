@@ -5167,16 +5167,7 @@ assignment_rule(Parser *p)
         )
         {
             D(fprintf(stderr, "%*c+ assignment[%d-%d]: %s succeeded!\n", p->level, ' ', _mark, p->mark, "((star_targets '='))+ annotated_rhs !'=' TYPE_COMMENT?"));
-            Token *_token = _PyPegen_get_last_nonnwhitespace_token(p);
-            if (_token == NULL) {
-                p->level--;
-                return NULL;
-            }
-            int _end_lineno = _token->end_lineno;
-            UNUSED(_end_lineno); // Only used by EXTRA macro
-            int _end_col_offset = _token->end_col_offset;
-            UNUSED(_end_col_offset); // Only used by EXTRA macro
-            _res = _PyAST_Assign ( a , b , NEW_TYPE_COMMENT ( p , tc ) , EXTRA );
+            _res = _PyPegen_make_assign ( p , a , b , tc );
             if (_res == NULL && PyErr_Occurred()) {
                 p->error_indicator = 1;
                 p->level--;
@@ -5209,16 +5200,7 @@ assignment_rule(Parser *p)
         )
         {
             D(fprintf(stderr, "%*c+ assignment[%d-%d]: %s succeeded!\n", p->level, ' ', _mark, p->mark, "single_target augassign ~ annotated_rhs"));
-            Token *_token = _PyPegen_get_last_nonnwhitespace_token(p);
-            if (_token == NULL) {
-                p->level--;
-                return NULL;
-            }
-            int _end_lineno = _token->end_lineno;
-            UNUSED(_end_lineno); // Only used by EXTRA macro
-            int _end_col_offset = _token->end_col_offset;
-            UNUSED(_end_col_offset); // Only used by EXTRA macro
-            _res = _PyAST_AugAssign ( a , b -> kind , c , EXTRA );
+            _res = _PyPegen_make_augassign ( p , a , b -> kind , c );
             if (_res == NULL && PyErr_Occurred()) {
                 p->error_indicator = 1;
                 p->level--;
@@ -10694,6 +10676,7 @@ while_stmt_rule(Parser *p)
 
 // for_stmt:
 //     | invalid_for_stmt
+//     | '$' ':' block loop_else_block?
 //     | for star_targets ':=' ~ star_expressions ':' TYPE_COMMENT? block loop_else_block?
 //     | for star_targets in ~ star_expressions ':' TYPE_COMMENT? block loop_else_block?
 //     | async for star_targets in ~ star_expressions ':' TYPE_COMMENT? block loop_else_block?
@@ -10737,6 +10720,48 @@ for_stmt_rule(Parser *p)
         p->mark = _mark;
         D(fprintf(stderr, "%*c%s for_stmt[%d-%d]: %s failed!\n", p->level, ' ',
                   p->error_indicator ? "ERROR!" : "-", _mark, p->mark, "invalid_for_stmt"));
+    }
+    { // '$' ':' block loop_else_block?
+        if (p->error_indicator) {
+            p->level--;
+            return NULL;
+        }
+        D(fprintf(stderr, "%*c> for_stmt[%d-%d]: %s\n", p->level, ' ', _mark, p->mark, "'$' ':' block loop_else_block?"));
+        Token * _literal;
+        Token * _literal_1;
+        asdl_stmt_seq* b;
+        void *el;
+        if (
+            (_literal = _PyPegen_expect_token(p, 65))  // token='$'
+            &&
+            (_literal_1 = _PyPegen_expect_token(p, 11))  // token=':'
+            &&
+            (b = block_rule(p))  // block
+            &&
+            (el = loop_else_block_rule(p), !p->error_indicator)  // loop_else_block?
+        )
+        {
+            D(fprintf(stderr, "%*c+ for_stmt[%d-%d]: %s succeeded!\n", p->level, ' ', _mark, p->mark, "'$' ':' block loop_else_block?"));
+            Token *_token = _PyPegen_get_last_nonnwhitespace_token(p);
+            if (_token == NULL) {
+                p->level--;
+                return NULL;
+            }
+            int _end_lineno = _token->end_lineno;
+            UNUSED(_end_lineno); // Only used by EXTRA macro
+            int _end_col_offset = _token->end_col_offset;
+            UNUSED(_end_col_offset); // Only used by EXTRA macro
+            _res = _PyAST_While ( _PyAST_Constant ( Py_True , NULL , EXTRA ) , b , el , EXTRA );
+            if (_res == NULL && PyErr_Occurred()) {
+                p->error_indicator = 1;
+                p->level--;
+                return NULL;
+            }
+            goto done;
+        }
+        p->mark = _mark;
+        D(fprintf(stderr, "%*c%s for_stmt[%d-%d]: %s failed!\n", p->level, ' ',
+                  p->error_indicator ? "ERROR!" : "-", _mark, p->mark, "'$' ':' block loop_else_block?"));
     }
     { // for star_targets ':=' ~ star_expressions ':' TYPE_COMMENT? block loop_else_block?
         if (p->error_indicator) {
@@ -25432,8 +25457,10 @@ star_target_rule(Parser *p)
 
 // target_with_star_atom:
 //     | t_primary '.' NAME !t_lookahead
+//     | t_primary '~.' NAME !t_lookahead
 //     | dot NAME !t_lookahead
 //     | t_primary '[' slices ']' !t_lookahead
+//     | t_primary '~' '[' slices ']' !t_lookahead
 //     | star_atom
 static expr_ty
 target_with_star_atom_rule(Parser *p)
@@ -25500,6 +25527,38 @@ target_with_star_atom_rule(Parser *p)
         p->mark = _mark;
         D(fprintf(stderr, "%*c%s target_with_star_atom[%d-%d]: %s failed!\n", p->level, ' ',
                   p->error_indicator ? "ERROR!" : "-", _mark, p->mark, "t_primary '.' NAME !t_lookahead"));
+    }
+    { // t_primary '~.' NAME !t_lookahead
+        if (p->error_indicator) {
+            p->level--;
+            return NULL;
+        }
+        D(fprintf(stderr, "%*c> target_with_star_atom[%d-%d]: %s\n", p->level, ' ', _mark, p->mark, "t_primary '~.' NAME !t_lookahead"));
+        Token * _literal;
+        expr_ty a;
+        expr_ty b;
+        if (
+            (a = t_primary_rule(p))  // t_primary
+            &&
+            (_literal = _PyPegen_expect_token(p, 84))  // token='~.'
+            &&
+            (b = _PyPegen_name_token(p))  // NAME
+            &&
+            _PyPegen_lookahead(0, t_lookahead_rule, p)
+        )
+        {
+            D(fprintf(stderr, "%*c+ target_with_star_atom[%d-%d]: %s succeeded!\n", p->level, ' ', _mark, p->mark, "t_primary '~.' NAME !t_lookahead"));
+            _res = _PyPegen_safe_navigation ( p , a , b );
+            if (_res == NULL && PyErr_Occurred()) {
+                p->error_indicator = 1;
+                p->level--;
+                return NULL;
+            }
+            goto done;
+        }
+        p->mark = _mark;
+        D(fprintf(stderr, "%*c%s target_with_star_atom[%d-%d]: %s failed!\n", p->level, ' ',
+                  p->error_indicator ? "ERROR!" : "-", _mark, p->mark, "t_primary '~.' NAME !t_lookahead"));
     }
     { // dot NAME !t_lookahead
         if (p->error_indicator) {
@@ -25582,6 +25641,44 @@ target_with_star_atom_rule(Parser *p)
         p->mark = _mark;
         D(fprintf(stderr, "%*c%s target_with_star_atom[%d-%d]: %s failed!\n", p->level, ' ',
                   p->error_indicator ? "ERROR!" : "-", _mark, p->mark, "t_primary '[' slices ']' !t_lookahead"));
+    }
+    { // t_primary '~' '[' slices ']' !t_lookahead
+        if (p->error_indicator) {
+            p->level--;
+            return NULL;
+        }
+        D(fprintf(stderr, "%*c> target_with_star_atom[%d-%d]: %s\n", p->level, ' ', _mark, p->mark, "t_primary '~' '[' slices ']' !t_lookahead"));
+        Token * _literal;
+        Token * _literal_1;
+        Token * _literal_2;
+        expr_ty a;
+        expr_ty b;
+        if (
+            (a = t_primary_rule(p))  // t_primary
+            &&
+            (_literal = _PyPegen_expect_token(p, 31))  // token='~'
+            &&
+            (_literal_1 = _PyPegen_expect_token(p, 9))  // token='['
+            &&
+            (b = slices_rule(p))  // slices
+            &&
+            (_literal_2 = _PyPegen_expect_token(p, 10))  // token=']'
+            &&
+            _PyPegen_lookahead(0, t_lookahead_rule, p)
+        )
+        {
+            D(fprintf(stderr, "%*c+ target_with_star_atom[%d-%d]: %s succeeded!\n", p->level, ' ', _mark, p->mark, "t_primary '~' '[' slices ']' !t_lookahead"));
+            _res = _PyPegen_safe_subscript ( p , a , b );
+            if (_res == NULL && PyErr_Occurred()) {
+                p->error_indicator = 1;
+                p->level--;
+                return NULL;
+            }
+            goto done;
+        }
+        p->mark = _mark;
+        D(fprintf(stderr, "%*c%s target_with_star_atom[%d-%d]: %s failed!\n", p->level, ' ',
+                  p->error_indicator ? "ERROR!" : "-", _mark, p->mark, "t_primary '~' '[' slices ']' !t_lookahead"));
     }
     { // star_atom
         if (p->error_indicator) {
@@ -25870,8 +25967,10 @@ single_target_rule(Parser *p)
 
 // single_subscript_attribute_target:
 //     | t_primary '.' NAME !t_lookahead
+//     | t_primary '~.' NAME !t_lookahead
 //     | dot NAME !t_lookahead
 //     | t_primary '[' slices ']' !t_lookahead
+//     | t_primary '~' '[' slices ']' !t_lookahead
 static expr_ty
 single_subscript_attribute_target_rule(Parser *p)
 {
@@ -25933,6 +26032,38 @@ single_subscript_attribute_target_rule(Parser *p)
         p->mark = _mark;
         D(fprintf(stderr, "%*c%s single_subscript_attribute_target[%d-%d]: %s failed!\n", p->level, ' ',
                   p->error_indicator ? "ERROR!" : "-", _mark, p->mark, "t_primary '.' NAME !t_lookahead"));
+    }
+    { // t_primary '~.' NAME !t_lookahead
+        if (p->error_indicator) {
+            p->level--;
+            return NULL;
+        }
+        D(fprintf(stderr, "%*c> single_subscript_attribute_target[%d-%d]: %s\n", p->level, ' ', _mark, p->mark, "t_primary '~.' NAME !t_lookahead"));
+        Token * _literal;
+        expr_ty a;
+        expr_ty b;
+        if (
+            (a = t_primary_rule(p))  // t_primary
+            &&
+            (_literal = _PyPegen_expect_token(p, 84))  // token='~.'
+            &&
+            (b = _PyPegen_name_token(p))  // NAME
+            &&
+            _PyPegen_lookahead(0, t_lookahead_rule, p)
+        )
+        {
+            D(fprintf(stderr, "%*c+ single_subscript_attribute_target[%d-%d]: %s succeeded!\n", p->level, ' ', _mark, p->mark, "t_primary '~.' NAME !t_lookahead"));
+            _res = _PyPegen_safe_navigation ( p , a , b );
+            if (_res == NULL && PyErr_Occurred()) {
+                p->error_indicator = 1;
+                p->level--;
+                return NULL;
+            }
+            goto done;
+        }
+        p->mark = _mark;
+        D(fprintf(stderr, "%*c%s single_subscript_attribute_target[%d-%d]: %s failed!\n", p->level, ' ',
+                  p->error_indicator ? "ERROR!" : "-", _mark, p->mark, "t_primary '~.' NAME !t_lookahead"));
     }
     { // dot NAME !t_lookahead
         if (p->error_indicator) {
@@ -26016,6 +26147,44 @@ single_subscript_attribute_target_rule(Parser *p)
         D(fprintf(stderr, "%*c%s single_subscript_attribute_target[%d-%d]: %s failed!\n", p->level, ' ',
                   p->error_indicator ? "ERROR!" : "-", _mark, p->mark, "t_primary '[' slices ']' !t_lookahead"));
     }
+    { // t_primary '~' '[' slices ']' !t_lookahead
+        if (p->error_indicator) {
+            p->level--;
+            return NULL;
+        }
+        D(fprintf(stderr, "%*c> single_subscript_attribute_target[%d-%d]: %s\n", p->level, ' ', _mark, p->mark, "t_primary '~' '[' slices ']' !t_lookahead"));
+        Token * _literal;
+        Token * _literal_1;
+        Token * _literal_2;
+        expr_ty a;
+        expr_ty b;
+        if (
+            (a = t_primary_rule(p))  // t_primary
+            &&
+            (_literal = _PyPegen_expect_token(p, 31))  // token='~'
+            &&
+            (_literal_1 = _PyPegen_expect_token(p, 9))  // token='['
+            &&
+            (b = slices_rule(p))  // slices
+            &&
+            (_literal_2 = _PyPegen_expect_token(p, 10))  // token=']'
+            &&
+            _PyPegen_lookahead(0, t_lookahead_rule, p)
+        )
+        {
+            D(fprintf(stderr, "%*c+ single_subscript_attribute_target[%d-%d]: %s succeeded!\n", p->level, ' ', _mark, p->mark, "t_primary '~' '[' slices ']' !t_lookahead"));
+            _res = _PyPegen_safe_subscript ( p , a , b );
+            if (_res == NULL && PyErr_Occurred()) {
+                p->error_indicator = 1;
+                p->level--;
+                return NULL;
+            }
+            goto done;
+        }
+        p->mark = _mark;
+        D(fprintf(stderr, "%*c%s single_subscript_attribute_target[%d-%d]: %s failed!\n", p->level, ' ',
+                  p->error_indicator ? "ERROR!" : "-", _mark, p->mark, "t_primary '~' '[' slices ']' !t_lookahead"));
+    }
     _res = NULL;
   done:
     p->level--;
@@ -26025,7 +26194,9 @@ single_subscript_attribute_target_rule(Parser *p)
 // Left-recursive
 // t_primary:
 //     | t_primary '.' NAME &t_lookahead
+//     | t_primary '~.' NAME &t_lookahead
 //     | t_primary '[' slices ']' &t_lookahead
+//     | t_primary '~' '[' slices ']' &t_lookahead
 //     | t_primary genexp &t_lookahead
 //     | t_primary '(' arguments? ')' &t_lookahead
 //     | atom &t_lookahead
@@ -26126,6 +26297,38 @@ t_primary_raw(Parser *p)
         D(fprintf(stderr, "%*c%s t_primary[%d-%d]: %s failed!\n", p->level, ' ',
                   p->error_indicator ? "ERROR!" : "-", _mark, p->mark, "t_primary '.' NAME &t_lookahead"));
     }
+    { // t_primary '~.' NAME &t_lookahead
+        if (p->error_indicator) {
+            p->level--;
+            return NULL;
+        }
+        D(fprintf(stderr, "%*c> t_primary[%d-%d]: %s\n", p->level, ' ', _mark, p->mark, "t_primary '~.' NAME &t_lookahead"));
+        Token * _literal;
+        expr_ty a;
+        expr_ty b;
+        if (
+            (a = t_primary_rule(p))  // t_primary
+            &&
+            (_literal = _PyPegen_expect_token(p, 84))  // token='~.'
+            &&
+            (b = _PyPegen_name_token(p))  // NAME
+            &&
+            _PyPegen_lookahead(1, t_lookahead_rule, p)
+        )
+        {
+            D(fprintf(stderr, "%*c+ t_primary[%d-%d]: %s succeeded!\n", p->level, ' ', _mark, p->mark, "t_primary '~.' NAME &t_lookahead"));
+            _res = _PyPegen_safe_navigation ( p , a , b );
+            if (_res == NULL && PyErr_Occurred()) {
+                p->error_indicator = 1;
+                p->level--;
+                return NULL;
+            }
+            goto done;
+        }
+        p->mark = _mark;
+        D(fprintf(stderr, "%*c%s t_primary[%d-%d]: %s failed!\n", p->level, ' ',
+                  p->error_indicator ? "ERROR!" : "-", _mark, p->mark, "t_primary '~.' NAME &t_lookahead"));
+    }
     { // t_primary '[' slices ']' &t_lookahead
         if (p->error_indicator) {
             p->level--;
@@ -26169,6 +26372,44 @@ t_primary_raw(Parser *p)
         p->mark = _mark;
         D(fprintf(stderr, "%*c%s t_primary[%d-%d]: %s failed!\n", p->level, ' ',
                   p->error_indicator ? "ERROR!" : "-", _mark, p->mark, "t_primary '[' slices ']' &t_lookahead"));
+    }
+    { // t_primary '~' '[' slices ']' &t_lookahead
+        if (p->error_indicator) {
+            p->level--;
+            return NULL;
+        }
+        D(fprintf(stderr, "%*c> t_primary[%d-%d]: %s\n", p->level, ' ', _mark, p->mark, "t_primary '~' '[' slices ']' &t_lookahead"));
+        Token * _literal;
+        Token * _literal_1;
+        Token * _literal_2;
+        expr_ty a;
+        expr_ty b;
+        if (
+            (a = t_primary_rule(p))  // t_primary
+            &&
+            (_literal = _PyPegen_expect_token(p, 31))  // token='~'
+            &&
+            (_literal_1 = _PyPegen_expect_token(p, 9))  // token='['
+            &&
+            (b = slices_rule(p))  // slices
+            &&
+            (_literal_2 = _PyPegen_expect_token(p, 10))  // token=']'
+            &&
+            _PyPegen_lookahead(1, t_lookahead_rule, p)
+        )
+        {
+            D(fprintf(stderr, "%*c+ t_primary[%d-%d]: %s succeeded!\n", p->level, ' ', _mark, p->mark, "t_primary '~' '[' slices ']' &t_lookahead"));
+            _res = _PyPegen_safe_subscript ( p , a , b );
+            if (_res == NULL && PyErr_Occurred()) {
+                p->error_indicator = 1;
+                p->level--;
+                return NULL;
+            }
+            goto done;
+        }
+        p->mark = _mark;
+        D(fprintf(stderr, "%*c%s t_primary[%d-%d]: %s failed!\n", p->level, ' ',
+                  p->error_indicator ? "ERROR!" : "-", _mark, p->mark, "t_primary '~' '[' slices ']' &t_lookahead"));
     }
     { // t_primary genexp &t_lookahead
         if (p->error_indicator) {
@@ -26284,7 +26525,7 @@ t_primary_raw(Parser *p)
     return _res;
 }
 
-// t_lookahead: '(' | '[' | '.'
+// t_lookahead: '(' | '[' | '.' | '~.' | '~'
 static void *
 t_lookahead_rule(Parser *p)
 {
@@ -26353,6 +26594,44 @@ t_lookahead_rule(Parser *p)
         p->mark = _mark;
         D(fprintf(stderr, "%*c%s t_lookahead[%d-%d]: %s failed!\n", p->level, ' ',
                   p->error_indicator ? "ERROR!" : "-", _mark, p->mark, "'.'"));
+    }
+    { // '~.'
+        if (p->error_indicator) {
+            p->level--;
+            return NULL;
+        }
+        D(fprintf(stderr, "%*c> t_lookahead[%d-%d]: %s\n", p->level, ' ', _mark, p->mark, "'~.'"));
+        Token * _literal;
+        if (
+            (_literal = _PyPegen_expect_token(p, 84))  // token='~.'
+        )
+        {
+            D(fprintf(stderr, "%*c+ t_lookahead[%d-%d]: %s succeeded!\n", p->level, ' ', _mark, p->mark, "'~.'"));
+            _res = _literal;
+            goto done;
+        }
+        p->mark = _mark;
+        D(fprintf(stderr, "%*c%s t_lookahead[%d-%d]: %s failed!\n", p->level, ' ',
+                  p->error_indicator ? "ERROR!" : "-", _mark, p->mark, "'~.'"));
+    }
+    { // '~'
+        if (p->error_indicator) {
+            p->level--;
+            return NULL;
+        }
+        D(fprintf(stderr, "%*c> t_lookahead[%d-%d]: %s\n", p->level, ' ', _mark, p->mark, "'~'"));
+        Token * _literal;
+        if (
+            (_literal = _PyPegen_expect_token(p, 31))  // token='~'
+        )
+        {
+            D(fprintf(stderr, "%*c+ t_lookahead[%d-%d]: %s succeeded!\n", p->level, ' ', _mark, p->mark, "'~'"));
+            _res = _literal;
+            goto done;
+        }
+        p->mark = _mark;
+        D(fprintf(stderr, "%*c%s t_lookahead[%d-%d]: %s failed!\n", p->level, ' ',
+                  p->error_indicator ? "ERROR!" : "-", _mark, p->mark, "'~'"));
     }
     _res = NULL;
   done:

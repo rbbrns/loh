@@ -90,6 +90,8 @@ Loh maps Python's verbose keywords and structures to elegant, symbol-based alter
 | `case` | *(omit)* | Pattern case declaration |
 | Inline initializer | `obj { .prop = val }` | Scope initializer block |
 | Implicit f-strings | `from __loh__ import auto_fstrings` | Future import defaulting strings with braces to f-strings |
+| None-safe assignment | `obj~.prop = value` | None-safe attribute/subscript assignment |
+| Infinite loop | `$:` | Infinite loop shorthand (while True) |
 
 ---
 
@@ -792,6 +794,43 @@ normal = n"Normal string with {braces} and \n escape"
 
 # Escaped braces evaluate to literal braces:
 css = "div {{ color: red; }}"  # Evaluates to: "div { color: red; }"
+```
+
+---
+
+### **25. None-Safe Attribute Assignment**
+
+> **Motivation:** Safe navigation `user~.profile~.address` protects against attribute reads crashing on `None` values. However, trying to assign to a nested property where a parent might be `None` still results in a traceback. Applying safe navigation to assignment allows writing values safely to nested properties, silently short-circuiting and doing nothing if any parent object in the chain is `None`.
+
+Loh extends the safe navigation operators `~.` and `~[]` to target assignment. When used on the left-hand side of an assignment or augmented assignment statement, it will evaluate the chain and execute the assignment only if all intermediate objects are not `None`.
+
+#### **Example**
+```python
+# Silently does nothing if user or profile is None
+user~.profile~.address = "NYC"
+
+# Safe subscript assignment
+arr~[0] = 42
+
+# Safe augmented assignment
+user~.score += 10
+```
+
+---
+
+### **26. Infinite Loops Shorthand**
+
+> **Motivation:** Python lacks a dedicated infinite loop construct, requiring `while True:`. Loh uses the loop sigil `$` alone followed by `:` to represent an infinite loop.
+
+Loh compiles `$` followed directly by `:` into a standard `while True:` loop.
+
+#### **Example**
+```python
+$:
+    # Loop runs forever until broken
+    print("Processing...")
+    if should_stop:
+        break
 ```
 
 

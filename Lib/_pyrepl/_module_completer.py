@@ -285,8 +285,9 @@ class ImportParser:
 
     def parse_dotted_name(self) -> str:
         name = []
-        if self.tokens.peek_string('.'):
-            name.append('.')
+        tok = self.tokens.peek()
+        if tok and tok.string in {'.', '..', '...'}:
+            name.append(tok.string)
             self.tokens.pop()
         if (self.tokens.peek_name()
             and (tok := self.tokens.peek())
@@ -294,19 +295,27 @@ class ImportParser:
             name.append(self.tokens.pop_name())
         if not name:
             raise ParseError('parse_dotted_name')
-        while self.tokens.peek_string('.'):
-            name.append('.')
-            self.tokens.pop()
-            if (self.tokens.peek_name()
-                and (tok := self.tokens.peek())
-                and tok.string not in self._keywords):
-                name.append(self.tokens.pop_name())
+        while True:
+            tok = self.tokens.peek()
+            if tok and tok.string in {'.', '..', '...'}:
+                name.append(tok.string)
+                self.tokens.pop()
+                if (self.tokens.peek_name()
+                    and (tok := self.tokens.peek())
+                    and tok.string not in self._keywords):
+                    name.append(self.tokens.pop_name())
+                else:
+                    break
             else:
                 break
 
-        while self.tokens.peek_string('.'):
-            name.append('.')
-            self.tokens.pop()
+        while True:
+            tok = self.tokens.peek()
+            if tok and tok.string in {'.', '..', '...'}:
+                name.append(tok.string)
+                self.tokens.pop()
+            else:
+                break
         return ''.join(name[::-1])
 
     def parse_as_names(self) -> None:

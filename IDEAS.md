@@ -255,53 +255,7 @@ Translates `a..b` inside subscript brackets to standard Python slice AST nodes: 
 
 ---
 
----
-
-## 11. None-Safe Attribute Assignment (`obj~.prop = value`)
-
-### Motivation
-Safe navigation `user~.profile~.address` protects against attribute reads crashing on `None` values. However, trying to assign to a nested property where a parent might be `None` still results in a traceback. 
-
-Applying safe navigation to assignment allows writing values safely to nested properties, silently short-circuiting and doing nothing if any parent object in the chain is `None`.
-
-### Proposed Syntax
-```python
-# Silently does nothing if user or profile is None
-user~.profile~.address = new_address
-```
-
-### Compile-Time Desugaring
-Desugars into nested conditional statement blocks checking each segment:
-```python
-_val1 = user
-if _val1 is not None:
-    _val2 = _val1.profile
-    if _val2 is not None:
-        _val2.address = new_address
-```
-
----
-
-## 12. Infinite Loops Shorthand (`$:`)
-
-### Motivation
-Python lacks a dedicated infinite loop construct, requiring `while True:`. Loh can use the loop sigil alone to represent an infinite loop.
-
-### Proposed Syntax
-```python
-$:
-    # Loop runs forever until broken
-    print("Processing...")
-    ? should_stop:
-        $>>
-```
-
-### Compile-Time Desugaring
-Translates directly to `while True:`.
-
----
-
-## 13. Parenthesized Expression Blocks (`(expr; expr; expr)`)
+## 11. Parenthesized Expression Blocks (`(expr; expr; expr)`)
 
 ### Motivation
 Standard Python lacks support for multi-line or chained expression blocks, forcing developers to write helper functions or Immediately Invoked Function Expressions (IIFEs) for inline calculations. 
@@ -337,7 +291,7 @@ Because Python's tokenizer ignores newlines inside parentheses to support implic
 
 ---
 
-## 14. Lazy Evaluation & Late-Bound Expressions (`` `expr` ``)
+## 12. Lazy Evaluation & Late-Bound Expressions (`` `expr` ``)
 
 ### Motivation
 Eager evaluation in Python forces all variables, function arguments, and default parameters to be evaluated immediately. This is inefficient for optional computations and leads to major issues like mutable default arguments (`x=[]`) or static definitions (`now=datetime.now()`).
@@ -413,7 +367,7 @@ def method(self, x=_MISSING):
 ```
 This requires zero caller-side changes and remains fully compatible with standard CPython signature inspection.
 
-## 15. Expression & Statement Decorators (`@decorator`)
+## 13. Expression & Statement Decorators (`@decorator`)
 
 ### Motivation
 In standard Python, decorators (`@decorator`) are strictly limited to preceding function, method, or class definitions. However, developers often need to wrap individual expressions or statement blocks in timing, logging, error-handling, or threading wrappers. 
@@ -481,6 +435,79 @@ retry(3)(_loop_block)
 ```
 
 Because standard Python syntax does not allow `@decorator` lines before general statements or assignments (only before `def` and `class`), this vertically stacked syntax has zero grammatical conflicts in the PEG parser.
+
+---
+
+## 14. Object Attribute Destructuring (`{prop1, prop2} = obj`)
+
+### Motivation
+Standard Python requires writing explicit attribute lookups `name = user.name; role = user.role` for each property, which is verbose and repetitive when extracting multiple properties from an object. Bringing JavaScript-style object destructuring to Loh makes variable extraction extremely clean.
+
+### Proposed Syntax
+Using brace syntax on the left-hand side of an assignment to extract attributes from the right-hand side object:
+```python
+# Extracts name, role, and active from the user object
+{name, role, active} = user
+```
+
+### Compile-Time Desugaring
+The parser desugars this assignment into a sequence of standard attribute lookups, using a temporary variable to evaluate the RHS expression exactly once:
+```python
+_destruct_target = user
+name = _destruct_target.name
+role = _destruct_target.role
+active = _destruct_target.active
+```
+
+---
+
+## 15. Pattern Matching Loop Filters (`$ pattern <~ collection`)
+
+### Motivation
+When iterating over collections containing heterogeneous structured data (like list of dicts, tuples, or API responses), developers often need to filter items that match a certain pattern and extract sub-values. In standard Python, this requires a nested `match` block with a conditional `continue`/pass, adding significant indentation and boilerplate.
+
+### Proposed Syntax
+Loh can allow a pattern to be placed directly in the loop header instead of a simple target name/tuple. The loop body will execute only for items that match the pattern, with pattern variables bound in the loop body scope:
+```python
+# Loops only over active admins and prints their username
+$ {"role": "admin", "active": +, "username": name} <~ users:
+    print(name)
+```
+
+### Compile-Time Desugaring
+Translates directly into a standard loop containing a structural pattern match check:
+```python
+for _item in users:
+    match _item:
+        case {"role": "admin", "active": True, "username": name}:
+            print(name)
+```
+
+---
+
+## 16. Margin-Controlled Multiline Strings (Margin Stripping)
+
+### Motivation
+Multiline string literals in Python preserve all leading whitespace and indentation of the source file. To keep code indentation consistent, developers are forced to write multi-line strings flush-left (which breaks the visual structure of the enclosing block) or call helper functions like `textwrap.dedent` at runtime.
+
+Loh can solve this at compile-time by introducing margin controls using the pipe symbol `|`.
+
+### Proposed Syntax
+A leading `|` character at the start of each line in a multiline string indicates the margin boundary. The compiler automatically strips the margin character and all preceding whitespace from each line of the string literal at compile-time:
+```python
+query = """
+    |SELECT name, role
+    |FROM users
+    |WHERE active = +
+"""
+```
+
+### Compile-Time Desugaring
+The parser strips the leading whitespace and `|` markers from the string token value during AST generation, compiling to a clean static string:
+```python
+query = "SELECT name, role\nFROM users\nWHERE active = True\n"
+```
+
 
 
 
