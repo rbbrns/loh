@@ -360,12 +360,14 @@ name = "Loh"
 version = "0.2.0"
 message = "Welcome to {name} version {version}!"
 regex = r"^\d{3}-\d{4}$"
+normal = n"Normal string with {braces} and \n escape"
 css = "div {{ color: red; }}"
 """
         scope = {}
         exec(code, {}, scope)
         self.assertEqual(scope["message"], "Welcome to Loh version 0.2.0!")
         self.assertEqual(scope["regex"], r"^\d{3}-\d{4}$")
+        self.assertEqual(scope["normal"], "Normal string with {braces} and \n escape")
         self.assertEqual(scope["css"], "div { color: red; }")
 
 if __name__ == "__main__":

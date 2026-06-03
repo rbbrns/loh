@@ -83,5 +83,23 @@ s = "no braces here"
         exec(code, {}, scope)
         self.assertEqual(scope["s"], "no braces here")
 
+    def test_auto_fstrings_normal_strings(self):
+        code = r"""from __loh__ import auto_fstrings
+x = 42
+s = n"normal string {x}\nnewline"
+s2 = N"another {x}"
+"""
+        scope = {}
+        exec(code, {}, scope)
+        self.assertEqual(scope["s"], "normal string {x}\nnewline")
+        self.assertEqual(scope["s2"], "another {x}")
+
+    def test_auto_fstrings_normal_string_error(self):
+        # n-prefix cannot be combined with other prefixes
+        with self.assertRaises(SyntaxError):
+            exec('s = nr"hello"', {}, {})
+        with self.assertRaises(SyntaxError):
+            exec('s = rn"hello"', {}, {})
+
 if __name__ == "__main__":
     unittest.main()

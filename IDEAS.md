@@ -255,24 +255,9 @@ Translates `a..b` inside subscript brackets to standard Python slice AST nodes: 
 
 ---
 
-## 11. Automatic f-Strings (Implicit Interpolation)
-
-### Motivation
-Python requires prefixing string literals with `f` (e.g., `f"Hello {name}"`) for interpolation. Forgetting the `f` prefix is a very common bug.
-
-### Proposed Syntax
-Any double-quoted or single-quoted string containing unescaped `{expression}` brackets is automatically compiled as an f-string without requiring the prefix:
-```python
-name = "Alice"
-msg = "Hello {name}!"  # Auto f-string
-```
-
-### Compile-Time Desugaring
-The parser checks string token content; if it contains braces `{}` and is not a raw string (`r""`), it tokenizes and parses it as a `JoinedStr` (f-string) AST node.
-
 ---
 
-## 12. None-Safe Attribute Assignment (`obj~.prop = value`)
+## 11. None-Safe Attribute Assignment (`obj~.prop = value`)
 
 ### Motivation
 Safe navigation `user~.profile~.address` protects against attribute reads crashing on `None` values. However, trying to assign to a nested property where a parent might be `None` still results in a traceback. 
@@ -297,7 +282,7 @@ if _val1 is not None:
 
 ---
 
-## 13. Infinite Loops Shorthand (`$:`)
+## 12. Infinite Loops Shorthand (`$:`)
 
 ### Motivation
 Python lacks a dedicated infinite loop construct, requiring `while True:`. Loh can use the loop sigil alone to represent an infinite loop.
@@ -316,7 +301,7 @@ Translates directly to `while True:`.
 
 ---
 
-## 14. Parenthesized Expression Blocks (`(expr; expr; expr)`)
+## 13. Parenthesized Expression Blocks (`(expr; expr; expr)`)
 
 ### Motivation
 Standard Python lacks support for multi-line or chained expression blocks, forcing developers to write helper functions or Immediately Invoked Function Expressions (IIFEs) for inline calculations. 
@@ -352,7 +337,7 @@ Because Python's tokenizer ignores newlines inside parentheses to support implic
 
 ---
 
-## 15. Lazy Evaluation & Late-Bound Expressions (`` `expr` ``)
+## 14. Lazy Evaluation & Late-Bound Expressions (`` `expr` ``)
 
 ### Motivation
 Eager evaluation in Python forces all variables, function arguments, and default parameters to be evaluated immediately. This is inefficient for optional computations and leads to major issues like mutable default arguments (`x=[]`) or static definitions (`now=datetime.now()`).
@@ -428,7 +413,7 @@ def method(self, x=_MISSING):
 ```
 This requires zero caller-side changes and remains fully compatible with standard CPython signature inspection.
 
-## 16. Expression & Statement Decorators (`@decorator`)
+## 15. Expression & Statement Decorators (`@decorator`)
 
 ### Motivation
 In standard Python, decorators (`@decorator`) are strictly limited to preceding function, method, or class definitions. However, developers often need to wrap individual expressions or statement blocks in timing, logging, error-handling, or threading wrappers. 

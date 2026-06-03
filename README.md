@@ -769,6 +769,7 @@ else:
 By importing `auto_fstrings` from the `__loh__` (or standard `__future__`) module, standard string literals containing any braces `{` or `}` are processed as f-strings at compile-time.
 
 - **Explicit raw string bypass**: Standard raw string literals (`r"..."` / `R"..."`) containing braces remain literal plain strings and are never converted.
+- **Explicit normal string prefix**: Standard normal string literals (`n"..."` / `N"..."`) bypass automatic f-string conversion while preserving standard backslash escape processing.
 - **Docstring protection**: The first string literal of a module, class, or function body is protected and remains a static string constant.
 - **Brace escaping**: Doubled braces `{{` and `}}` are correctly recognized as escaped braces and evaluate to single literal braces `{` and `}`.
 
@@ -785,6 +786,9 @@ print(message)  # Outputs: "Welcome to Loh version 0.2.0!"
 
 # Raw strings are bypassed and remain plain:
 regex = r"^\d{3}-\d{4}$"
+
+# Normal strings bypass conversion but preserve escapes:
+normal = n"Normal string with {braces} and \n escape"
 
 # Escaped braces evaluate to literal braces:
 css = "div {{ color: red; }}"  # Evaluates to: "div { color: red; }"

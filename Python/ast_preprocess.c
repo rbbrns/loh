@@ -932,7 +932,8 @@ astfold_expr(expr_ty node_, PyArena *ctx_, _PyASTPreprocessState *state)
         break;
     case Constant_kind:
         if (node_->v.Constant.kind != NULL &&
-            _PyUnicode_EqualToASCIIString(node_->v.Constant.kind, "r"))
+            (_PyUnicode_EqualToASCIIString(node_->v.Constant.kind, "r") ||
+             _PyUnicode_EqualToASCIIString(node_->v.Constant.kind, "n")))
         {
             node_->v.Constant.kind = NULL;
         }

@@ -276,6 +276,9 @@ _PyPegen_parse_string(Parser *p, Token *t)
                 quote = (unsigned char)*++s;
                 rawmode = 1;
             }
+            else if (quote == 'n' || quote == 'N') {
+                quote = (unsigned char)*++s;
+            }
             else {
                 break;
             }

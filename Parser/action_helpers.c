@@ -1485,6 +1485,11 @@ expr_ty _PyPegen_constant_from_string(Parser* p, Token* tok) {
             if (kind == NULL) {
                 return NULL;
             }
+        } else if (the_str[0] == 'n' || the_str[0] == 'N') {
+            kind = _PyPegen_new_identifier(p, "n");
+            if (kind == NULL) {
+                return NULL;
+            }
         }
     }
     return _PyAST_Constant(s, kind, tok->lineno, tok->col_offset, tok->end_lineno, tok->end_col_offset, p->arena);

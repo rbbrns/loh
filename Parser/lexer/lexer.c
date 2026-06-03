@@ -457,7 +457,7 @@ tok_continuation_line(struct tok_state *tok) {
 static int
 maybe_raise_syntax_error_for_string_prefixes(struct tok_state *tok,
                                              int saw_b, int saw_r, int saw_u,
-                                             int saw_f, int saw_t) {
+                                             int saw_f, int saw_t, int saw_n) {
     // Supported: rb, rf, rt (in any order)
     // Unsupported: ub, ur, uf, ut, bf, bt, ft (in any order)
 
@@ -469,6 +469,14 @@ maybe_raise_syntax_error_for_string_prefixes(struct tok_state *tok,
             "'" PREFIX1 "' and '" PREFIX2 "' prefixes are incompatible"); \
         return -1;                                                        \
     } while (0)
+
+    if (saw_n && (saw_b || saw_r || saw_u || saw_f || saw_t)) {
+        if (saw_b) RETURN_SYNTAX_ERROR("n", "b");
+        if (saw_r) RETURN_SYNTAX_ERROR("n", "r");
+        if (saw_u) RETURN_SYNTAX_ERROR("n", "u");
+        if (saw_f) RETURN_SYNTAX_ERROR("n", "f");
+        if (saw_t) RETURN_SYNTAX_ERROR("n", "t");
+    }
 
     if (saw_u && saw_b) {
         RETURN_SYNTAX_ERROR("u", "b");
@@ -741,7 +749,7 @@ tok_get_normal_mode(struct tok_state *tok, tokenizer_mode* current_tok, struct t
     nonascii = 0;
     if (is_potential_identifier_start(c)) {
         /* Process the various legal combinations of b"", r"", u"", and f"". */
-        int saw_b = 0, saw_r = 0, saw_u = 0, saw_f = 0, saw_t = 0;
+        int saw_b = 0, saw_r = 0, saw_u = 0, saw_f = 0, saw_t = 0, saw_n = 0;
         while (1) {
             if (!saw_b && (c == 'b' || c == 'B')) {
                 saw_b = 1;
@@ -761,6 +769,9 @@ tok_get_normal_mode(struct tok_state *tok, tokenizer_mode* current_tok, struct t
             else if (!saw_t && (c == 't' || c == 'T')) {
                 saw_t = 1;
             }
+            else if (!saw_n && (c == 'n' || c == 'N')) {
+                saw_n = 1;
+            }
             else {
                 break;
             }
@@ -768,7 +779,7 @@ tok_get_normal_mode(struct tok_state *tok, tokenizer_mode* current_tok, struct t
             if (c == '"' || c == '\'') {
                 // Raise error on incompatible string prefixes:
                 int status = maybe_raise_syntax_error_for_string_prefixes(
-                    tok, saw_b, saw_r, saw_u, saw_f, saw_t);
+                    tok, saw_b, saw_r, saw_u, saw_f, saw_t, saw_n);
                 if (status < 0) {
                     return MAKE_TOKEN(ERRORTOKEN);
                 }
