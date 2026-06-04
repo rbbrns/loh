@@ -19321,7 +19321,7 @@ initializer_block_rule(Parser *p)
         )
         {
             D(fprintf(stderr, "%*c+ initializer_block[%d-%d]: %s succeeded!\n", p->level, ' ', _mark, p->mark, "'{' initializer_stmt_entry* '}'"));
-            _res = a;
+            _res = CHECK ( asdl_stmt_seq* , a );
             if (_res == NULL && PyErr_Occurred()) {
                 p->error_indicator = 1;
                 p->level--;

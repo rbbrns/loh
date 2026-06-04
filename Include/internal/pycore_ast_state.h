@@ -123,6 +123,7 @@ struct ast_state {
     PyObject *Or_type;
     PyObject *ParamSpec_type;
     PyObject *Pass_type;
+    PyObject *Pipe_type;
     PyObject *Pow_singleton;
     PyObject *Pow_type;
     PyObject *RShift_singleton;

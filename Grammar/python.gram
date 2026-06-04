@@ -1023,7 +1023,7 @@ initializer_stmt_entry[stmt_ty]:
     | a=initializer_stmt ';'? { a }
 
 initializer_block[asdl_stmt_seq*]:
-    | '{' a=initializer_stmt_entry* '}' { a }
+    | '{' a=initializer_stmt_entry* '}' { CHECK(asdl_stmt_seq*, a) }
 
 slices[expr_ty]:
     | a=slice !',' { a }
