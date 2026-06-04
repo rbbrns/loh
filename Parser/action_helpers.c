@@ -2571,7 +2571,7 @@ _PyPegen_make_assign(Parser *p, asdl_expr_seq *targets, expr_ty value, Token *tc
             } else if (body->kind == Subscript_kind) {
                 body->v.Subscript.ctx = Store;
             }
-            asdl_expr_seq *b_targets = _PyPegen_singleton_seq(p, body);
+            asdl_expr_seq *b_targets = (asdl_expr_seq *)_PyPegen_singleton_seq(p, body);
             stmt_ty assign = _PyAST_Assign(b_targets, value, NULL, lineno, col_offset, end_lineno, end_col_offset, p->arena);
             if (!assign) return NULL;
             
@@ -2587,7 +2587,7 @@ _PyPegen_make_assign(Parser *p, asdl_expr_seq *targets, expr_ty value, Token *tc
     
     expr_ty tmp_store = _PyAST_Name(tmp_id, Store, lineno, col_offset, end_lineno, end_col_offset, p->arena);
     if (!tmp_store) return NULL;
-    asdl_expr_seq *tmp_targets = _PyPegen_singleton_seq(p, tmp_store);
+    asdl_expr_seq *tmp_targets = (asdl_expr_seq *)_PyPegen_singleton_seq(p, tmp_store);
     if (!tmp_targets) return NULL;
     stmt_ty init_tmp = _PyAST_Assign(tmp_targets, value, NULL, lineno, col_offset, end_lineno, end_col_offset, p->arena);
     if (!init_tmp) return NULL;
@@ -2609,7 +2609,7 @@ _PyPegen_make_assign(Parser *p, asdl_expr_seq *targets, expr_ty value, Token *tc
             } else if (body->kind == Subscript_kind) {
                 body->v.Subscript.ctx = Store;
             }
-            asdl_expr_seq *b_targets = _PyPegen_singleton_seq(p, body);
+            asdl_expr_seq *b_targets = (asdl_expr_seq *)_PyPegen_singleton_seq(p, body);
             if (!b_targets) return NULL;
             stmt_ty assign = _PyAST_Assign(b_targets, tmp_load, NULL, lineno, col_offset, end_lineno, end_col_offset, p->arena);
             if (!assign) return NULL;
@@ -2621,7 +2621,7 @@ _PyPegen_make_assign(Parser *p, asdl_expr_seq *targets, expr_ty value, Token *tc
             if (!if_stmt) return NULL;
             asdl_seq_SET(stmts, i + 1, if_stmt);
         } else {
-            asdl_expr_seq *b_targets = _PyPegen_singleton_seq(p, t);
+            asdl_expr_seq *b_targets = (asdl_expr_seq *)_PyPegen_singleton_seq(p, t);
             if (!b_targets) return NULL;
             stmt_ty assign = _PyAST_Assign(b_targets, tmp_load, NULL, lineno, col_offset, end_lineno, end_col_offset, p->arena);
             if (!assign) return NULL;

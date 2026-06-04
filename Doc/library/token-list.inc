@@ -102,3 +102,67 @@
      - ``":="``
    * - .. data:: EXCLAMATION
      - ``"!"``
+   * - .. data:: DOUBLEAMPERS
+     - ``"&&"``
+   * - .. data:: DOUBLEVBAR
+     - ``"||"``
+   * - .. data:: QUESTION
+     - ``"?"``
+   * - .. data:: QUESTIONQUESTION
+     - ``"??"``
+   * - .. data:: CIRCUMFLEXQUESTION
+     - ``"^?"``
+   * - .. data:: CIRCUMFLEXQUESTIONEXCLAMATION
+     - ``"^?!"``
+   * - .. data:: DOUBLECIRCUMFLEX
+     - ``"^^"``
+   * - .. data:: TRIPLECIRCUMFLEX
+     - ``"^^^"``
+   * - .. data:: TILDECIRCUMFLEX
+     - ``"~^"``
+   * - .. data:: EQUALRARROW
+     - ``"=>"``
+   * - .. data:: DOLLAR
+     - ``"$"``
+   * - .. data:: DOLLARQUESTION
+     - ``"$?"``
+   * - .. data:: DOLLARGREATER
+     - ``"$>"``
+   * - .. data:: DOLLARGREATERGREATER
+     - ``"$>>"``
+   * - .. data:: GREATERDOLLAR
+     - ``"$<"``
+   * - .. data:: GREATERGREATERDOLLAR
+     - ``"$<<"``
+   * - .. data:: TRIPLEEQUAL
+     - ``"==="``
+   * - .. data:: DOUBLEPLUS
+     - ``"++"``
+   * - .. data:: DOUBLEMINUS
+     - ``"--"``
+   * - .. data:: LARROW
+     - ``"<-"``
+   * - .. data:: TILDEGREATER
+     - ``"~>"``
+   * - .. data:: LESSTILDE
+     - ``"<~"``
+   * - .. data:: DOTGREATER
+     - ``".>"``
+   * - .. data:: LESSDOT
+     - ``"<."``
+   * - .. data:: QUESTIONEQUAL
+     - ``"?="``
+   * - .. data:: QUESTIONDOUBLEEQUAL
+     - ``"?=="``
+   * - .. data:: VBARGREATER
+     - ``"|>"``
+   * - .. data:: NOTEQUALEQUAL
+     - ``"!=="``
+   * - .. data:: LESSGREATER
+     - ``"<>"``
+   * - .. data:: TILDEDOT
+     - ``"~."``
+   * - .. data:: DOUBLETILDE
+     - ``"~~"``
+   * - .. data:: DOTDOT
+     - ``".."``

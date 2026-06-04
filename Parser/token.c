@@ -61,6 +61,38 @@ const char * const _PyParser_TokenNames[] = {
     "ELLIPSIS",
     "COLONEQUAL",
     "EXCLAMATION",
+    "DOUBLEAMPERS",
+    "DOUBLEVBAR",
+    "QUESTION",
+    "QUESTIONQUESTION",
+    "CIRCUMFLEXQUESTION",
+    "CIRCUMFLEXQUESTIONEXCLAMATION",
+    "DOUBLECIRCUMFLEX",
+    "TRIPLECIRCUMFLEX",
+    "TILDECIRCUMFLEX",
+    "EQUALRARROW",
+    "DOLLAR",
+    "DOLLARQUESTION",
+    "DOLLARGREATER",
+    "DOLLARGREATERGREATER",
+    "GREATERDOLLAR",
+    "GREATERGREATERDOLLAR",
+    "TRIPLEEQUAL",
+    "DOUBLEPLUS",
+    "DOUBLEMINUS",
+    "LARROW",
+    "TILDEGREATER",
+    "LESSTILDE",
+    "DOTGREATER",
+    "LESSDOT",
+    "QUESTIONEQUAL",
+    "QUESTIONDOUBLEEQUAL",
+    "VBARGREATER",
+    "NOTEQUALEQUAL",
+    "LESSGREATER",
+    "TILDEDOT",
+    "DOUBLETILDE",
+    "DOTDOT",
     "OP",
     "TYPE_IGNORE",
     "TYPE_COMMENT",
@@ -85,6 +117,7 @@ _PyToken_OneChar(int c1)
 {
     switch (c1) {
     case '!': return EXCLAMATION;
+    case '$': return DOLLAR;
     case '%': return PERCENT;
     case '&': return AMPER;
     case '(': return LPAR;
@@ -100,6 +133,7 @@ _PyToken_OneChar(int c1)
     case '<': return LESS;
     case '=': return EQUAL;
     case '>': return GREATER;
+    case '?': return QUESTION;
     case '@': return AT;
     case '[': return LSQB;
     case ']': return RSQB;
@@ -121,6 +155,13 @@ _PyToken_TwoChars(int c1, int c2)
         case '=': return NOTEQUAL;
         }
         break;
+    case '$':
+        switch (c2) {
+        case '<': return GREATERDOLLAR;
+        case '>': return DOLLARGREATER;
+        case '?': return DOLLARQUESTION;
+        }
+        break;
     case '%':
         switch (c2) {
         case '=': return PERCENTEQUAL;
@@ -128,6 +169,7 @@ _PyToken_TwoChars(int c1, int c2)
         break;
     case '&':
         switch (c2) {
+        case '&': return DOUBLEAMPERS;
         case '=': return AMPEREQUAL;
         }
         break;
@@ -139,13 +181,21 @@ _PyToken_TwoChars(int c1, int c2)
         break;
     case '+':
         switch (c2) {
+        case '+': return DOUBLEPLUS;
         case '=': return PLUSEQUAL;
         }
         break;
     case '-':
         switch (c2) {
+        case '-': return DOUBLEMINUS;
         case '=': return MINEQUAL;
         case '>': return RARROW;
+        }
+        break;
+    case '.':
+        switch (c2) {
+        case '.': return DOTDOT;
+        case '>': return DOTGREATER;
         }
         break;
     case '/':
@@ -161,20 +211,30 @@ _PyToken_TwoChars(int c1, int c2)
         break;
     case '<':
         switch (c2) {
+        case '-': return LARROW;
+        case '.': return LESSDOT;
         case '<': return LEFTSHIFT;
         case '=': return LESSEQUAL;
-        case '>': return NOTEQUAL;
+        case '>': return LESSGREATER;
+        case '~': return LESSTILDE;
         }
         break;
     case '=':
         switch (c2) {
         case '=': return EQEQUAL;
+        case '>': return EQUALRARROW;
         }
         break;
     case '>':
         switch (c2) {
         case '=': return GREATEREQUAL;
         case '>': return RIGHTSHIFT;
+        }
+        break;
+    case '?':
+        switch (c2) {
+        case '=': return QUESTIONEQUAL;
+        case '?': return QUESTIONQUESTION;
         }
         break;
     case '@':
@@ -185,11 +245,23 @@ _PyToken_TwoChars(int c1, int c2)
     case '^':
         switch (c2) {
         case '=': return CIRCUMFLEXEQUAL;
+        case '?': return CIRCUMFLEXQUESTION;
+        case '^': return DOUBLECIRCUMFLEX;
         }
         break;
     case '|':
         switch (c2) {
         case '=': return VBAREQUAL;
+        case '>': return VBARGREATER;
+        case '|': return DOUBLEVBAR;
+        }
+        break;
+    case '~':
+        switch (c2) {
+        case '.': return TILDEDOT;
+        case '>': return TILDEGREATER;
+        case '^': return TILDECIRCUMFLEX;
+        case '~': return DOUBLETILDE;
         }
         break;
     }
@@ -200,6 +272,29 @@ int
 _PyToken_ThreeChars(int c1, int c2, int c3)
 {
     switch (c1) {
+    case '!':
+        switch (c2) {
+        case '=':
+            switch (c3) {
+            case '=': return NOTEQUALEQUAL;
+            }
+            break;
+        }
+        break;
+    case '$':
+        switch (c2) {
+        case '<':
+            switch (c3) {
+            case '<': return GREATERGREATERDOLLAR;
+            }
+            break;
+        case '>':
+            switch (c3) {
+            case '>': return DOLLARGREATERGREATER;
+            }
+            break;
+        }
+        break;
     case '*':
         switch (c2) {
         case '*':
@@ -236,11 +331,43 @@ _PyToken_ThreeChars(int c1, int c2, int c3)
             break;
         }
         break;
+    case '=':
+        switch (c2) {
+        case '=':
+            switch (c3) {
+            case '=': return TRIPLEEQUAL;
+            }
+            break;
+        }
+        break;
     case '>':
         switch (c2) {
         case '>':
             switch (c3) {
             case '=': return RIGHTSHIFTEQUAL;
+            }
+            break;
+        }
+        break;
+    case '?':
+        switch (c2) {
+        case '=':
+            switch (c3) {
+            case '=': return QUESTIONDOUBLEEQUAL;
+            }
+            break;
+        }
+        break;
+    case '^':
+        switch (c2) {
+        case '?':
+            switch (c3) {
+            case '!': return CIRCUMFLEXQUESTIONEXCLAMATION;
+            }
+            break;
+        case '^':
+            switch (c3) {
+            case '^': return TRIPLECIRCUMFLEX;
             }
             break;
         }
