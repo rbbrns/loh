@@ -3340,7 +3340,52 @@ PyTypeObject PyZip_Type = {
 };
 
 
+static PyObject *
+builtin__loh_rescue(PyObject *self, PyObject *const *args, Py_ssize_t nargs)
+{
+    if (nargs != 3) {
+        PyErr_SetString(PyExc_TypeError, "_loh_rescue requires exactly 3 arguments");
+        return NULL;
+    }
+    PyObject *body_fn = args[0];
+    PyObject *exc_type = args[1];
+    PyObject *fallback_fn = args[2];
+
+    PyObject *result = PyObject_CallNoArgs(body_fn);
+    if (result == NULL) {
+        PyObject *exc = PyErr_GetRaisedException();
+        if (exc == NULL) {
+            return NULL;
+        }
+        int matches = 0;
+        PyObject *args_tuple = NULL;
+        if (strcmp(Py_TYPE(exc_type)->tp_name, "Union") == 0 ||
+            strcmp(Py_TYPE(exc_type)->tp_name, "UnionType") == 0 ||
+            strcmp(Py_TYPE(exc_type)->tp_name, "types.UnionType") == 0 ||
+            strcmp(Py_TYPE(exc_type)->tp_name, "typing.Union") == 0) {
+            args_tuple = PyObject_GetAttrString(exc_type, "__args__");
+        }
+        if (args_tuple != NULL) {
+            matches = PyErr_GivenExceptionMatches(exc, args_tuple);
+            Py_DECREF(args_tuple);
+        } else {
+            matches = PyErr_GivenExceptionMatches(exc, exc_type);
+        }
+        if (matches) {
+            PyObject *fallback_result = PyObject_CallOneArg(fallback_fn, exc);
+            Py_DECREF(exc);
+            return fallback_result;
+        } else {
+            PyErr_SetRaisedException(exc);
+            return NULL;
+        }
+    }
+    return result;
+}
+
+
 static PyMethodDef builtin_methods[] = {
+    {"_loh_rescue", _PyCFunction_CAST(builtin__loh_rescue), METH_FASTCALL, NULL},
     {"__build_class__", _PyCFunction_CAST(builtin___build_class__),
      METH_FASTCALL | METH_KEYWORDS, build_class_doc},
     BUILTIN___IMPORT___METHODDEF

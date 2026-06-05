@@ -75,6 +75,7 @@ Loh maps Python's verbose keywords and structures to elegant, symbol-based alter
 | `raise` | `^^^` | Raise exception |
 | `assert` | `^?!` | Assert statement |
 | `assert not` | `^?` | Negated assert statement |
+| Inline exception rescue | `expr ^? fallback` / `expr ^? exc -> fallback` | Inline exception rescue expression |
 | `with` | `&` | Context manager |
 | `import` / `from` | `/` | Import symbol |
 | `return` | `->` | Return statement |
@@ -385,6 +386,44 @@ raise Exception("Failed") from error
 ^^^ ValueError("Invalid code")
 ^^^ "Something went wrong"
 ^^^ "Failed" from error
+```
+
+#### **Inline Exception Rescue Expressions**
+
+Loh provides a concise, inline syntax for exception handling. This allows developers to catch standard or specific exceptions and supply a fallback value directly in expression contexts:
+
+##### **Python**
+```python
+# Rescue any exception (standard except Exception)
+try:
+    value = int(x)
+except Exception:
+    value = 0
+
+# Rescue specific exceptions
+try:
+    value = int(x)
+except ValueError:
+    value = -1
+
+# Rescue with exception binding
+try:
+    value = int(x)
+except ValueError as e:
+    value = len(e.args)
+```
+
+##### **Loh**
+```python
+# Rescue any exception (defaults to catching Exception)
+value = int(x) ^? 0
+
+# Rescue specific exception(s)
+value = int(x) ^? ValueError -> -1
+value = int(x) ^? (ValueError | TypeError) -> -1
+
+# Rescue with variable binding
+value = int(x) ^? (ValueError => e) -> len(e.args)
 ```
 
 ---

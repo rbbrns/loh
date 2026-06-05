@@ -2660,5 +2660,67 @@ _PyPegen_make_augassign(Parser *p, expr_ty target, operator_ty op, expr_ty value
     return _PyAST_AugAssign(target, op, value, lineno, col_offset, end_lineno, end_col_offset, p->arena);
 }
 
-
-
+expr_ty
+_PyPegen_rescue_expr(Parser *p, expr_ty expr, expr_ty exc_type, expr_ty exc_name, expr_ty fallback) {
+    PyObject *rescue_id = _PyPegen_new_identifier(p, "_loh_rescue");
+    if (!rescue_id) return NULL;
+    
+    expr_ty func = _PyAST_Name(rescue_id, Load, expr->lineno, expr->col_offset, fallback->end_lineno, fallback->end_col_offset, p->arena);
+    if (!func) return NULL;
+    
+    // Construct body_lambda: lambda: expr
+    arguments_ty body_args = _PyPegen_empty_arguments(p);
+    if (!body_args) return NULL;
+    expr_ty body_lambda = _PyAST_Lambda(body_args, expr, expr->lineno, expr->col_offset, expr->end_lineno, expr->end_col_offset, p->arena);
+    if (!body_lambda) return NULL;
+    
+    // Construct exc_val
+    expr_ty exc_val;
+    if (exc_type == NULL) {
+        PyObject *exc_id = _PyPegen_new_identifier(p, "Exception");
+        if (!exc_id) return NULL;
+        exc_val = _PyAST_Name(exc_id, Load, expr->lineno, expr->col_offset, expr->end_lineno, expr->end_col_offset, p->arena);
+    } else {
+        exc_val = exc_type;
+    }
+    if (!exc_val) return NULL;
+    
+    // Construct fallback_lambda: lambda exc_name: fallback
+    PyObject *exc_name_id = NULL;
+    if (exc_name != NULL) {
+        exc_name_id = exc_name->v.Name.id;
+    } else {
+        exc_name_id = _PyPegen_new_identifier(p, "_");
+        if (!exc_name_id) return NULL;
+    }
+    arg_ty arg = _PyAST_arg(exc_name_id, NULL, NULL, fallback->lineno, fallback->col_offset, fallback->end_lineno, fallback->end_col_offset, p->arena);
+    if (!arg) return NULL;
+    
+    asdl_arg_seq *posargs = _Py_asdl_arg_seq_new(1, p->arena);
+    if (!posargs) return NULL;
+    asdl_seq_SET(posargs, 0, arg);
+    
+    asdl_arg_seq *posonlyargs = _Py_asdl_arg_seq_new(0, p->arena);
+    if (!posonlyargs) return NULL;
+    asdl_expr_seq *posdefaults = _Py_asdl_expr_seq_new(0, p->arena);
+    if (!posdefaults) return NULL;
+    asdl_arg_seq *kwonlyargs = _Py_asdl_arg_seq_new(0, p->arena);
+    if (!kwonlyargs) return NULL;
+    asdl_expr_seq *kwdefaults = _Py_asdl_expr_seq_new(0, p->arena);
+    if (!kwdefaults) return NULL;
+    
+    arguments_ty fallback_args = _PyAST_arguments(posonlyargs, posargs, NULL, kwonlyargs, kwdefaults, NULL, posdefaults, p->arena);
+    if (!fallback_args) return NULL;
+    
+    expr_ty fallback_lambda = _PyAST_Lambda(fallback_args, fallback, fallback->lineno, fallback->col_offset, fallback->end_lineno, fallback->end_col_offset, p->arena);
+    if (!fallback_lambda) return NULL;
+    
+    // Call _loh_rescue(body_lambda, exc_val, fallback_lambda)
+    asdl_expr_seq *args = _Py_asdl_expr_seq_new(3, p->arena);
+    if (!args) return NULL;
+    asdl_seq_SET(args, 0, body_lambda);
+    asdl_seq_SET(args, 1, exc_val);
+    asdl_seq_SET(args, 2, fallback_lambda);
+    
+    return _PyAST_Call(func, args, NULL, expr->lineno, expr->col_offset, fallback->end_lineno, fallback->end_col_offset, p->arena);
+}
