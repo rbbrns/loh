@@ -1,0 +1,67 @@
+# life.loh - A Life Manager built in Loh
+
+Task::
+    .(.name: str, .energy_cost: int):
+        # Using the boolean flag assignments
+        .is_completed-- 
+        # Using the new "Assign None" flag
+        .notes~~ 
+
+LifeManager::
+    .(.name: str):
+        .energy = 100
+        .tasks = []
+        .current_mood~~
+
+    add_task(name: str, energy_cost: int):
+        # Implicit parameter mapping binds variables to parameters of the same name
+        new_task = Task(=name, =energy_cost)
+        .tasks.append(new_task)
+
+    set_mood(mood: str):
+        .current_mood = mood
+
+    run_day() -> str:
+        # Pipe operator feeding string to print
+        "--- Good morning, " + .name + "! ---" |> print
+        
+        # Check for None using the new `?~` shorthand
+        ?~ .current_mood:
+            "Mood: Neutral" |> print
+        ??:
+            "Mood: " + .current_mood |> print
+
+        # Loop over tasks using the $ sigil and <~ membership
+        $ t <~ .tasks:
+            ? .energy < t.energy_cost:
+                "Not enough energy for: " + t.name |> print
+                $>> # Break out of the loop
+            
+            # Execute task
+            .energy -= t.energy_cost
+            t.is_completed++ # Set boolean True flag
+            "Completed: " + t.name + " | Energy left: " + str(.energy) |> print
+        
+        # Loop-else block (executes if the loop didn't break)
+        ?!$>>:
+            "All tasks completed! You crushed it today." |> print
+            
+        -> "Day finished with " + str(.energy) + " energy."
+
+# --- Testing the Life Manager ---
+
+my_life = LifeManager("Loh Developer")
+
+# Setup the day
+my_life.add_task("Drink Coffee", 5)
+my_life.add_task("Write Loh Compiler", 40)
+my_life.add_task("Go to the Gym", 35)
+my_life.add_task("Read a Book", 30) # This will exceed the 100 energy limit
+
+my_life.set_mood("Focused")
+
+# Execute
+summary = my_life.run_day()
+
+print("\n--- Summary ---")
+print(summary)

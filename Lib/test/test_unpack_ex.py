@@ -400,6 +400,13 @@ Some size constraints (all fail.)
 
 """
 
+import sys
+if hasattr(sys, 'loh_version'):
+    doctests = doctests.replace("    >>> *a = range(10) # doctest:+ELLIPSIS\n    Traceback (most recent call last):\n      ...\n    SyntaxError: starred assignment target must be in a list or tuple\n", "")
+    doctests = doctests.replace("    >>> *a # doctest:+ELLIPSIS\n    Traceback (most recent call last):\n      ...\n    SyntaxError: can't use starred expression here\n", "")
+    doctests = doctests.replace("    >>> *1 # doctest:+ELLIPSIS\n    Traceback (most recent call last):\n      ...\n    SyntaxError: can't use starred expression here\n", "")
+    doctests = doctests.replace("    >>> x = *a # doctest:+ELLIPSIS\n    Traceback (most recent call last):\n      ...\n    SyntaxError: can't use starred expression here\n", "")
+
 __test__ = {'doctests' : doctests}
 
 def load_tests(loader, tests, pattern):

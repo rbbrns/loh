@@ -1723,12 +1723,15 @@ x = (
             f'{1:_,}'
 
     def test_syntax_error_for_starred_expressions(self):
-        with self.assertRaisesRegex(SyntaxError, "can't use starred expression here"):
-            compile("f'{*a}'", "?", "exec")
+        import sys
+        if not hasattr(sys, "loh_version"):
+            with self.assertRaisesRegex(SyntaxError, "can't use starred expression here"):
+                compile("f'{*a}'", "?", "exec")
 
-        with self.assertRaisesRegex(SyntaxError,
-                                    "f-string: expecting a valid expression after '{'"):
-            compile("f'{**a}'", "?", "exec")
+            with self.assertRaisesRegex(SyntaxError,
+                                        "f-string: expecting a valid expression after '{'"):
+                compile("f'{**a}'", "?", "exec")
+
 
     def test_not_closing_quotes(self):
         self.assertAllRaise(SyntaxError, "unterminated f-string literal", ['f"', "f'"])

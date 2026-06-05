@@ -285,8 +285,12 @@ class ExceptionTests(unittest.TestCase):
             def baz():
                 '''quux'''
             """, 9, 24)
-        check("pass\npass\npass\n(1+)\npass\npass\npass", 4, 4)
-        check("(1+)", 1, 4)
+        if hasattr(sys, 'loh_version'):
+            check("pass\npass\npass\n(1+)\npass\npass\npass", 4, 5)
+            check("(1+)", 1, 5)
+        else:
+            check("pass\npass\npass\n(1+)\npass\npass\npass", 4, 4)
+            check("(1+)", 1, 4)
         check("[interesting\nfoo()\n", 1, 1)
         check(b"\xef\xbb\xbf#coding: utf8\nprint('\xe6\x88\x91')\n", 0, -1)
         check("""f'''

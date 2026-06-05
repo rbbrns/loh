@@ -409,5 +409,29 @@ $:
         exec(code, {}, scope)
         self.assertEqual(scope["x"], 5)
 
+    def test_multi_key_subscript_slicing_and_unpacking(self):
+        code = """
+d = {x=1, y=2}
+
+# Standalone RHS unpacking
+keys = *d        # ['x', 'y']
+copy = **d       # {'x': 1, 'y': 2}
+
+# Subscripted RHS unpacking
+values = *d['x', 'y']  # [1, 2]
+subdict = **d['x']      # {'x': 1}
+
+# LHS assignments
+*d['x', 'y'] = [10, 20]  # d becomes {'x': 10, 'y': 20}
+"""
+        scope = {}
+        exec(code, {}, scope)
+        self.assertEqual(scope["keys"], ['x', 'y'])
+        self.assertEqual(scope["copy"], {'x': 1, 'y': 2})
+        self.assertEqual(scope["values"], [1, 2])
+        self.assertEqual(scope["subdict"], {'x': 1})
+        self.assertEqual(scope["d"], {'x': 10, 'y': 20})
+
 if __name__ == "__main__":
     unittest.main()
+

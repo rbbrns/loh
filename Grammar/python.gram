@@ -227,6 +227,7 @@ assignment_implicit[stmt_ty]:
 
 # NOTE: annotated_rhs may start with 'yield'; yield_expr must start with 'yield'
 assignment[stmt_ty]:
+    | starred_assign
     | assignment_none
     | assignment_true
     | assignment_false
@@ -247,7 +248,14 @@ assignment[stmt_ty]:
          _PyPegen_make_augassign(p, a, b->kind, c) }
     | invalid_assignment
 
-annotated_rhs[expr_ty]: yield_expr | star_expressions
+starred_assign[stmt_ty]:
+    | '*' a=single_target '=' b=annotated_rhs { _PyPegen_make_starred_assign(p, a, b) }
+    | '**' a=single_target '=' b=annotated_rhs { _PyPegen_make_double_starred_assign(p, a, b) }
+
+annotated_rhs[expr_ty]:
+    | yield_expr
+    | starred_or_double_starred_expr
+    | star_expressions
 
 augassign[AugOperator*]:
     | '+=' { _PyPegen_augoperator(p, Add) }
@@ -865,6 +873,10 @@ expression[expr_ty] (memo):
     | lambdef
     | disjunction
 
+starred_or_double_starred_expr[expr_ty]:
+    | '*' a=expression { _PyPegen_make_star_expr(p, a) }
+    | '**' a=expression { _PyPegen_make_double_star_expr(p, a) }
+
 rescue_expression[expr_ty]:
     | a=disjunction '^?' '(' b=disjunction as c=NAME ')' '->' d=expression { _PyPegen_rescue_expr(p, a, b, c, d) }
     | a=disjunction '^?' b=disjunction '->' c=expression { _PyPegen_rescue_expr(p, a, b, NULL, c) }
@@ -1041,6 +1053,7 @@ primary[expr_ty]:
                  EXTRA) }
     | a=primary '~' '[' b=slices ']' { _PyPegen_safe_subscript(p, a, b) }
     | a=primary '[' b=slices ']' { _PyAST_Subscript(a, b, Load, EXTRA) }
+    | a=primary '[' ']' { _PyPegen_empty_subscript(p, a) }
     | atom
 
 initializer_stmt[stmt_ty]:
@@ -1085,8 +1098,12 @@ group[expr_ty]:
 lambdef[expr_ty]:
     | 'lambda' a=[lambda_params] ':' b=expression {
         _PyAST_Lambda((a) ? a : CHECK(arguments_ty, _PyPegen_empty_arguments(p)), b, EXTRA) }
-    | '(' a=[lambda_params] ')' lambda_postfix b=expression {
+    | &('(' lambda_params_lookahead ')' lambda_postfix) '(' a=[lambda_params] ')' lambda_postfix b=expression {
         _PyAST_Lambda((a) ? a : CHECK(arguments_ty, _PyPegen_empty_arguments(p)), b, EXTRA) }
+
+lambda_params_lookahead:
+    | ( !')' (NAME | NUMBER | STRING | '[' | '{' | '}' | ']' | '=' | '*' | '**' | ',' | '/' | '+' | '-' | '~' | '.' | '|' | '&' | '^' | ':' | '?' | '<' | '>' | '!' | TYPE_COMMENT) | '(' lambda_params_lookahead ')' )*
+
 
 lambda_params[arguments_ty]:
     | invalid_lambda_parameters

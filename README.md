@@ -93,6 +93,7 @@ Loh maps Python's verbose keywords and structures to elegant, symbol-based alter
 | Implicit f-strings | `from __loh__ import auto_fstrings` | Future import defaulting strings with braces to f-strings |
 | None-safe assignment | `obj~.prop = value` | None-safe attribute/subscript assignment |
 | Infinite loop | `$:` | Infinite loop shorthand (while True) |
+| Multi-key slicing & unpacking | `*obj` / `**obj` / `*obj[keys]` / `**obj[keys]` | Multi-key subscript slicing, unpacking, and assignments |
 
 ---
 
@@ -871,6 +872,62 @@ $:
     if should_stop:
         break
 ```
+
+---
+
+### **27. Multi-Key Subscript Slicing and Unpacking (`*` / `**`)**
+
+> **Motivation:** Extracting subsets of dictionary keys, converting lists to index-value mappings, and retrieving values/keys as lists are common but verbose tasks. By using the `*` (sequence/list) and `**` (mapping/dictionary) prefix operators in combination with subscripts or standalone targets, Loh provides a clean and powerful syntax that is 100% backward compatible with standard Python's tuple-subscript conflicts.
+
+Loh defines the following behaviors for `*` and `**` on the RHS (evaluating) and LHS (assigning), both with subscripts (`d[keys]`) and without brackets:
+
+#### **Dictionary Targets**
+* **Bracketless / Standalone**:
+  - `*d` (RHS) $\rightarrow$ Returns a list of all dictionary keys (equivalent to `list(d.keys())`).
+  - `*d = [10, 20]` (LHS) $\rightarrow$ Assigns sequence values to existing keys positionally in-place.
+  - `**d` (RHS) $\rightarrow$ Returns a shallow copy of the dictionary (equivalent to `dict(d)`).
+  - `**d = {"a": 10, "b": 20}` (LHS) $\rightarrow$ Merges/updates the dictionary in-place (equivalent to `d.update(...)`).
+* **Subscripted (`d[keys]`)**:
+  - `*d['a', 'b']` (RHS) $\rightarrow$ Extracts specified values into a list: `[d['a'], d['b']]`.
+  - `*d['a', 'b'] = [10, 20]` (LHS) $\rightarrow$ Assigns values to specified keys positionally in-place: `d['a'] = 10; d['b'] = 20`.
+  - `**d['a', 'b']` (RHS) $\rightarrow$ Extracts specified key-value pairs: `{"a": d['a'], "b": d['b']}`.
+  - `**d['a', 'b'] = {"a": 10, "b": 20}` (LHS) $\rightarrow$ Copies matching key-value pairs in-place: `d['a'] = 10; d['b'] = 20`.
+* **Empty Subscript (`d[]`)**:
+  - `d[]` (RHS) $\rightarrow$ Returns the dynamic values view: `d.values()`.
+  - `*d[]` (RHS) $\rightarrow$ Extracts all values into a list: `list(d.values())`.
+
+#### **List / Tuple Targets**
+* **Bracketless / Standalone**:
+  - `*lst` (RHS) $\rightarrow$ Returns a shallow copy of the list (equivalent to `list(lst)`).
+  - `*lst = [10, 20]` (LHS) $\rightarrow$ Overwrites the entire list content in-place (equivalent to `lst[:] = [10, 20]`).
+  - `**lst` (RHS) $\rightarrow$ Converts the list to an index-to-value dictionary: `{i: v for i, v in enumerate(lst)}`.
+  - `**lst = {0: 10, 2: 30}` (LHS) $\rightarrow$ Updates elements at specified index keys in-place: `lst[0] = 10; lst[2] = 30`.
+* **Subscripted (`lst[indices]` / `lst[slice]`)**:
+  - `*lst[0, 1]` (RHS) $\rightarrow$ Extracts values at specified indices: `[lst[0], lst[1]]`.
+  - `*lst[0, 1] = [10, 20]` (LHS) $\rightarrow$ Assigns values to specified indices positionally: `lst[0] = 10; lst[1] = 20`.
+  - `**lst[0, 1]` (RHS) $\rightarrow$ Extracts indices and values: `{0: lst[0], 1: lst[1]}`.
+  - `**lst[0, 1] = {0: 10, 1: 20}` (LHS) $\rightarrow$ Assigns values to specified indices: `lst[0] = 10; lst[2] = 20`.
+  - `**lst[0:2]` (RHS) $\rightarrow$ Converts a list slice to an index-to-value dictionary.
+* **Empty Subscript (`lst[]`)**:
+  - `lst[]` (RHS) $\rightarrow$ Returns a shallow copy of the list (equivalent to `lst[:]`).
+  - `*lst[]` (RHS) $\rightarrow$ Returns a shallow copy of the list.
+
+#### **Example**
+```python
+d = {x=1, y=2}
+
+# Standalone RHS unpacking
+keys = *d        # ['x', 'y']
+copy = **d       # {'x': 1, 'y': 2}
+
+# Subscripted RHS unpacking
+values = *d['x', 'y']  # [1, 2]
+subdict = **d['x']      # {'x': 1}
+
+# LHS assignments
+*d['x', 'y'] = [10, 20]  # d becomes {'x': 10, 'y': 20}
+```
+
 
 
 

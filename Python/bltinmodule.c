@@ -3384,8 +3384,463 @@ builtin__loh_rescue(PyObject *self, PyObject *const *args, Py_ssize_t nargs)
 }
 
 
+static PyObject *
+builtin__loh_star(PyObject *self, PyObject *obj)
+{
+    if (PyDict_Check(obj)) {
+        return PyDict_Keys(obj);
+    }
+    return PySequence_List(obj);
+}
+
+
+static PyObject *
+builtin__loh_double_star(PyObject *self, PyObject *obj)
+{
+    if (PyDict_Check(obj)) {
+        return PyDict_Copy(obj);
+    }
+    if (PyList_Check(obj) || PyTuple_Check(obj)) {
+        PyObject *res = PyDict_New();
+        if (res == NULL) {
+            return NULL;
+        }
+        PyObject *fast = PySequence_Fast(obj, "expected list or tuple");
+        if (fast == NULL) {
+            Py_DECREF(res);
+            return NULL;
+        }
+        Py_ssize_t size = PySequence_Fast_GET_SIZE(fast);
+        PyObject **items = PySequence_Fast_ITEMS(fast);
+        for (Py_ssize_t i = 0; i < size; i++) {
+            PyObject *key = PyLong_FromSsize_t(i);
+            if (key == NULL) {
+                Py_DECREF(fast);
+                Py_DECREF(res);
+                return NULL;
+            }
+            if (PyDict_SetItem(res, key, items[i]) < 0) {
+                Py_DECREF(key);
+                Py_DECREF(fast);
+                Py_DECREF(res);
+                return NULL;
+            }
+            Py_DECREF(key);
+        }
+        Py_DECREF(fast);
+        return res;
+    }
+    PyErr_SetString(PyExc_TypeError, "** expects a dict, list, or tuple");
+    return NULL;
+}
+
+
+static PyObject *
+builtin__loh_star_subscript(PyObject *self, PyObject *const *args, Py_ssize_t nargs)
+{
+    if (nargs != 2) {
+        PyErr_SetString(PyExc_TypeError, "_loh_star_subscript requires exactly 2 arguments");
+        return NULL;
+    }
+    PyObject *obj = args[0];
+    PyObject *keys = args[1];
+
+    if (PyTuple_Check(keys)) {
+        Py_ssize_t size = PyTuple_GET_SIZE(keys);
+        PyObject *res = PyList_New(size);
+        if (res == NULL) {
+            return NULL;
+        }
+        for (Py_ssize_t i = 0; i < size; i++) {
+            PyObject *k = PyTuple_GET_ITEM(keys, i);
+            PyObject *item = PyObject_GetItem(obj, k);
+            if (item == NULL) {
+                Py_DECREF(res);
+                return NULL;
+            }
+            PyList_SET_ITEM(res, i, item);
+        }
+        return res;
+    } else if (PySlice_Check(keys)) {
+        PyObject *sliced = PyObject_GetItem(obj, keys);
+        if (sliced == NULL) {
+            return NULL;
+        }
+        PyObject *res = PySequence_List(sliced);
+        Py_DECREF(sliced);
+        return res;
+    } else {
+        PyObject *item = PyObject_GetItem(obj, keys);
+        if (item == NULL) {
+            return NULL;
+        }
+        PyObject *res = PyList_New(1);
+        if (res == NULL) {
+            Py_DECREF(item);
+            return NULL;
+        }
+        PyList_SET_ITEM(res, 0, item);
+        return res;
+    }
+}
+
+
+static PyObject *
+builtin__loh_double_star_subscript(PyObject *self, PyObject *const *args, Py_ssize_t nargs)
+{
+    if (nargs != 2) {
+        PyErr_SetString(PyExc_TypeError, "_loh_double_star_subscript requires exactly 2 arguments");
+        return NULL;
+    }
+    PyObject *obj = args[0];
+    PyObject *keys = args[1];
+
+    if (PyTuple_Check(keys)) {
+        Py_ssize_t size = PyTuple_GET_SIZE(keys);
+        PyObject *res = PyDict_New();
+        if (res == NULL) {
+            return NULL;
+        }
+        for (Py_ssize_t i = 0; i < size; i++) {
+            PyObject *k = PyTuple_GET_ITEM(keys, i);
+            PyObject *item = PyObject_GetItem(obj, k);
+            if (item == NULL) {
+                Py_DECREF(res);
+                return NULL;
+            }
+            if (PyDict_SetItem(res, k, item) < 0) {
+                Py_DECREF(item);
+                Py_DECREF(res);
+                return NULL;
+            }
+            Py_DECREF(item);
+        }
+        return res;
+    } else if (PySlice_Check(keys)) {
+        Py_ssize_t len = PySequence_Size(obj);
+        if (len < 0) {
+            return NULL;
+        }
+        Py_ssize_t start, stop, step;
+        if (PySlice_Unpack(keys, &start, &stop, &step) < 0) {
+            return NULL;
+        }
+        Py_ssize_t slicelength = PySlice_AdjustIndices(len, &start, &stop, step);
+        PyObject *res = PyDict_New();
+        if (res == NULL) {
+            return NULL;
+        }
+        Py_ssize_t cur = start;
+        for (Py_ssize_t i = 0; i < slicelength; i++) {
+            PyObject *key_obj = PyLong_FromSsize_t(cur);
+            if (key_obj == NULL) {
+                Py_DECREF(res);
+                return NULL;
+            }
+            PyObject *item = PySequence_GetItem(obj, cur);
+            if (item == NULL) {
+                Py_DECREF(key_obj);
+                Py_DECREF(res);
+                return NULL;
+            }
+            if (PyDict_SetItem(res, key_obj, item) < 0) {
+                Py_DECREF(key_obj);
+                Py_DECREF(item);
+                Py_DECREF(res);
+                return NULL;
+            }
+            Py_DECREF(key_obj);
+            Py_DECREF(item);
+            cur += step;
+        }
+        return res;
+    } else {
+        PyObject *item = PyObject_GetItem(obj, keys);
+        if (item == NULL) {
+            return NULL;
+        }
+        PyObject *res = PyDict_New();
+        if (res == NULL) {
+            Py_DECREF(item);
+            return NULL;
+        }
+        if (PyDict_SetItem(res, keys, item) < 0) {
+            Py_DECREF(item);
+            Py_DECREF(res);
+            return NULL;
+        }
+        Py_DECREF(item);
+        return res;
+    }
+}
+
+
+static PyObject *
+builtin__loh_empty_subscript(PyObject *self, PyObject *obj)
+{
+    if (PyDict_Check(obj)) {
+        return PyObject_CallMethod(obj, "values", NULL);
+    }
+    PyObject *empty_slice = PySlice_New(NULL, NULL, NULL);
+    if (empty_slice == NULL) {
+        return NULL;
+    }
+    PyObject *res = PyObject_GetItem(obj, empty_slice);
+    Py_DECREF(empty_slice);
+    return res;
+}
+
+
+static PyObject *
+builtin__loh_assign_star(PyObject *self, PyObject *const *args, Py_ssize_t nargs)
+{
+    if (nargs != 2) {
+        PyErr_SetString(PyExc_TypeError, "_loh_assign_star requires exactly 2 arguments");
+        return NULL;
+    }
+    PyObject *obj = args[0];
+    PyObject *value = args[1];
+
+    if (PyDict_Check(obj)) {
+        PyObject *keys = PyDict_Keys(obj);
+        if (keys == NULL) {
+            return NULL;
+        }
+        PyObject *val_seq = PySequence_Fast(value, "value must be iterable");
+        if (val_seq == NULL) {
+            Py_DECREF(keys);
+            return NULL;
+        }
+        Py_ssize_t keys_len = PyList_GET_SIZE(keys);
+        Py_ssize_t val_len = PySequence_Fast_GET_SIZE(val_seq);
+        if (keys_len != val_len) {
+            PyErr_Format(PyExc_ValueError,
+                         "cannot unpack %zd values into dict of size %zd",
+                         val_len, keys_len);
+            Py_DECREF(keys);
+            Py_DECREF(val_seq);
+            return NULL;
+        }
+        PyObject **val_items = PySequence_Fast_ITEMS(val_seq);
+        for (Py_ssize_t i = 0; i < keys_len; i++) {
+            PyObject *k = PyList_GET_ITEM(keys, i);
+            if (PyObject_SetItem(obj, k, val_items[i]) < 0) {
+                Py_DECREF(keys);
+                Py_DECREF(val_seq);
+                return NULL;
+            }
+        }
+        Py_DECREF(keys);
+        Py_DECREF(val_seq);
+        Py_RETURN_NONE;
+    } else if (PyList_Check(obj)) {
+        PyObject *empty_slice = PySlice_New(NULL, NULL, NULL);
+        if (empty_slice == NULL) {
+            return NULL;
+        }
+        int err = PyObject_SetItem(obj, empty_slice, value);
+        Py_DECREF(empty_slice);
+        if (err < 0) {
+            return NULL;
+        }
+        Py_RETURN_NONE;
+    } else {
+        PyErr_SetString(PyExc_TypeError, "* assignment target must be a dict or list");
+        return NULL;
+    }
+}
+
+
+static PyObject *
+builtin__loh_assign_double_star(PyObject *self, PyObject *const *args, Py_ssize_t nargs)
+{
+    if (nargs != 2) {
+        PyErr_SetString(PyExc_TypeError, "_loh_assign_double_star requires exactly 2 arguments");
+        return NULL;
+    }
+    PyObject *obj = args[0];
+    PyObject *value = args[1];
+
+    if (PyDict_Check(obj)) {
+        if (PyDict_Update(obj, value) < 0) {
+            return NULL;
+        }
+        Py_RETURN_NONE;
+    } else if (PyList_Check(obj)) {
+        PyObject *temp_dict = NULL;
+        if (PyDict_Check(value)) {
+            temp_dict = Py_NewRef(value);
+        } else {
+            temp_dict = PyObject_CallOneArg((PyObject *)&PyDict_Type, value);
+            if (temp_dict == NULL) {
+                return NULL;
+            }
+        }
+
+        Py_ssize_t pos = 0;
+        PyObject *key, *val;
+        while (PyDict_Next(temp_dict, &pos, &key, &val)) {
+            if (PyObject_SetItem(obj, key, val) < 0) {
+                Py_DECREF(temp_dict);
+                return NULL;
+            }
+        }
+        Py_DECREF(temp_dict);
+        Py_RETURN_NONE;
+    } else {
+        PyErr_SetString(PyExc_TypeError, "** assignment target must be a dict or list");
+        return NULL;
+    }
+}
+
+
+static PyObject *
+builtin__loh_assign_star_subscript(PyObject *self, PyObject *const *args, Py_ssize_t nargs)
+{
+    if (nargs != 3) {
+        PyErr_SetString(PyExc_TypeError, "_loh_assign_star_subscript requires exactly 3 arguments");
+        return NULL;
+    }
+    PyObject *obj = args[0];
+    PyObject *keys = args[1];
+    PyObject *value = args[2];
+
+    if (PyTuple_Check(keys)) {
+        PyObject *val_seq = PySequence_Fast(value, "value must be iterable");
+        if (val_seq == NULL) {
+            return NULL;
+        }
+        Py_ssize_t keys_len = PyTuple_GET_SIZE(keys);
+        Py_ssize_t val_len = PySequence_Fast_GET_SIZE(val_seq);
+        if (keys_len != val_len) {
+            PyErr_Format(PyExc_ValueError,
+                         "cannot unpack %zd values into subscript of size %zd",
+                         val_len, keys_len);
+            Py_DECREF(val_seq);
+            return NULL;
+        }
+        PyObject **val_items = PySequence_Fast_ITEMS(val_seq);
+        for (Py_ssize_t i = 0; i < keys_len; i++) {
+            PyObject *k = PyTuple_GET_ITEM(keys, i);
+            if (PyObject_SetItem(obj, k, val_items[i]) < 0) {
+                Py_DECREF(val_seq);
+                return NULL;
+            }
+        }
+        Py_DECREF(val_seq);
+        Py_RETURN_NONE;
+    } else if (PySlice_Check(keys)) {
+        if (PyObject_SetItem(obj, keys, value) < 0) {
+            return NULL;
+        }
+        Py_RETURN_NONE;
+    } else {
+        PyObject *val_seq = PySequence_Fast(value, "value must be iterable");
+        if (val_seq == NULL) {
+            return NULL;
+        }
+        Py_ssize_t val_len = PySequence_Fast_GET_SIZE(val_seq);
+        if (val_len != 1) {
+            PyErr_Format(PyExc_ValueError,
+                         "cannot unpack %zd values into single subscript key",
+                         val_len);
+            Py_DECREF(val_seq);
+            return NULL;
+        }
+        PyObject **val_items = PySequence_Fast_ITEMS(val_seq);
+        if (PyObject_SetItem(obj, keys, val_items[0]) < 0) {
+            Py_DECREF(val_seq);
+            return NULL;
+        }
+        Py_DECREF(val_seq);
+        Py_RETURN_NONE;
+    }
+}
+
+
+static PyObject *
+builtin__loh_assign_double_star_subscript(PyObject *self, PyObject *const *args, Py_ssize_t nargs)
+{
+    if (nargs != 3) {
+        PyErr_SetString(PyExc_TypeError, "_loh_assign_double_star_subscript requires exactly 3 arguments");
+        return NULL;
+    }
+    PyObject *obj = args[0];
+    PyObject *keys = args[1];
+    PyObject *value = args[2];
+
+    if (PyTuple_Check(keys)) {
+        Py_ssize_t size = PyTuple_GET_SIZE(keys);
+        for (Py_ssize_t i = 0; i < size; i++) {
+            PyObject *k = PyTuple_GET_ITEM(keys, i);
+            PyObject *val_item = PyObject_GetItem(value, k);
+            if (val_item == NULL) {
+                return NULL;
+            }
+            if (PyObject_SetItem(obj, k, val_item) < 0) {
+                Py_DECREF(val_item);
+                return NULL;
+            }
+            Py_DECREF(val_item);
+        }
+        Py_RETURN_NONE;
+    } else if (PySlice_Check(keys)) {
+        Py_ssize_t len = PySequence_Size(obj);
+        if (len < 0) {
+            return NULL;
+        }
+        Py_ssize_t start, stop, step;
+        if (PySlice_Unpack(keys, &start, &stop, &step) < 0) {
+            return NULL;
+        }
+        Py_ssize_t slicelength = PySlice_AdjustIndices(len, &start, &stop, step);
+        Py_ssize_t cur = start;
+        for (Py_ssize_t i = 0; i < slicelength; i++) {
+            PyObject *key_obj = PyLong_FromSsize_t(cur);
+            if (key_obj == NULL) {
+                return NULL;
+            }
+            PyObject *val_item = PyObject_GetItem(value, key_obj);
+            if (val_item == NULL) {
+                Py_DECREF(key_obj);
+                return NULL;
+            }
+            if (PyObject_SetItem(obj, key_obj, val_item) < 0) {
+                Py_DECREF(key_obj);
+                Py_DECREF(val_item);
+                return NULL;
+            }
+            Py_DECREF(key_obj);
+            Py_DECREF(val_item);
+            cur += step;
+        }
+        Py_RETURN_NONE;
+    } else {
+        PyObject *val_item = PyObject_GetItem(value, keys);
+        if (val_item == NULL) {
+            return NULL;
+        }
+        if (PyObject_SetItem(obj, keys, val_item) < 0) {
+            Py_DECREF(val_item);
+            return NULL;
+        }
+        Py_DECREF(val_item);
+        Py_RETURN_NONE;
+    }
+}
+
+
 static PyMethodDef builtin_methods[] = {
     {"_loh_rescue", _PyCFunction_CAST(builtin__loh_rescue), METH_FASTCALL, NULL},
+    {"_loh_star", (PyCFunction)builtin__loh_star, METH_O, NULL},
+    {"_loh_double_star", (PyCFunction)builtin__loh_double_star, METH_O, NULL},
+    {"_loh_star_subscript", _PyCFunction_CAST(builtin__loh_star_subscript), METH_FASTCALL, NULL},
+    {"_loh_double_star_subscript", _PyCFunction_CAST(builtin__loh_double_star_subscript), METH_FASTCALL, NULL},
+    {"_loh_empty_subscript", (PyCFunction)builtin__loh_empty_subscript, METH_O, NULL},
+    {"_loh_assign_star", _PyCFunction_CAST(builtin__loh_assign_star), METH_FASTCALL, NULL},
+    {"_loh_assign_double_star", _PyCFunction_CAST(builtin__loh_assign_double_star), METH_FASTCALL, NULL},
+    {"_loh_assign_star_subscript", _PyCFunction_CAST(builtin__loh_assign_star_subscript), METH_FASTCALL, NULL},
+    {"_loh_assign_double_star_subscript", _PyCFunction_CAST(builtin__loh_assign_double_star_subscript), METH_FASTCALL, NULL},
     {"__build_class__", _PyCFunction_CAST(builtin___build_class__),
      METH_FASTCALL | METH_KEYWORDS, build_class_doc},
     BUILTIN___IMPORT___METHODDEF

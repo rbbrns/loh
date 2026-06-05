@@ -5,7 +5,9 @@
 #
 # Demonstrates a wide range of modern, concise Loh syntax features.
 
-from __future__ import empty_none_str
+/ __loh__ / empty_none_str
+/ __loh__ / auto_fstrings
+
 /datetime/datetime => dt
 /datetime/timedelta => td
 /sys
@@ -334,7 +336,7 @@ RestaurantManager::
 
     # Add items safely checking for None identity
     $ item <~ [item_app, item_main1, item_main2, item_missing]:
-        ? item !== ~:
+        ?! item~~~:
             order.add_item(item)
 
     # Verify assertions on order items list and total

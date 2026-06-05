@@ -438,25 +438,40 @@ Because standard Python syntax does not allow `@decorator` lines before general 
 
 ---
 
-## 14. Object Attribute Destructuring (`{prop1, prop2} = obj`)
+## 14. Object & Dictionary Destructuring (`{prop1, prop2, **rest} = target`)
 
 ### Motivation
-Standard Python requires writing explicit attribute lookups `name = user.name; role = user.role` for each property, which is verbose and repetitive when extracting multiple properties from an object. Bringing JavaScript-style object destructuring to Loh makes variable extraction extremely clean.
+Standard Python requires writing explicit attribute or key lookups (`name = user.name; role = user.role`) for each property, which is verbose and repetitive when extracting multiple properties from an object or dictionary. Bringing JavaScript-style destructuring to Loh makes variable extraction extremely clean and DRY, supporting unified dict/object lookup, nested patterns, and rest captures.
 
 ### Proposed Syntax
-Using brace syntax on the left-hand side of an assignment to extract attributes from the right-hand side object:
+Using brace syntax on the left-hand side of an assignment to extract attributes (for objects) or keys (for dictionaries):
 ```python
-# Extracts name, role, and active from the user object
-{name, role, active} = user
+# Extracts name, role, and captures all remaining properties into rest
+{name, role, **rest} = user
+
+# Nested destructuring (extracts profile.address)
+{name, profile: {address}} = user
+
+# Explicit class type matching & extraction
+User{name, role} = user
 ```
 
 ### Compile-Time Desugaring
-The parser desugars this assignment into a sequence of standard attribute lookups, using a temporary variable to evaluate the RHS expression exactly once:
+To support nested destructuring, type validation, and fallback handling, the compiler borrows logic from CPython's structural pattern matching (`match` statement) and desugars the destructuring assignment into a single-case conditional block:
 ```python
-_destruct_target = user
-name = _destruct_target.name
-role = _destruct_target.role
-active = _destruct_target.active
+# For: {name, role, **rest} = target
+match target:
+    # 1. Match dictionary targets:
+    case {"name": name, "role": role, **rest} if isinstance(target, dict):
+        pass
+    # 2. Match general object targets:
+    case _obj if hasattr(_obj, "__dict__"):
+        name = _obj.name
+        role = _obj.role
+        rest = {k: v for k, v in _obj.__dict__.items() if k not in ("name", "role")}
+    # 3. Raise an error if target is invalid:
+    case _:
+        raise ValueError("Cannot destructure value: object structure does not match pattern")
 ```
 
 ---
@@ -507,6 +522,55 @@ The parser strips the leading whitespace and `|` markers from the string token v
 ```python
 query = "SELECT name, role\nFROM users\nWHERE active = True\n"
 ```
+
+---
+
+## 17. Implicit Receiver Context Blocks (`with obj:`)
+
+### Motivation
+When configuring an object or performing a sequence of method calls/attribute updates on a single target, standard Python forces you to repeat the object name (e.g., `plt.plot()`, `plt.title()`, `plt.xlabel()`). Repurposing the `with` statement to implicitly bind Loh's leading-dot receiver context `.` to the target object inside the block eliminates this repetition.
+
+### Proposed Syntax
+Using `with obj:` to run a block where any leading-dot reference resolves against `obj`:
+```python
+with matplotlib.pyplot:
+    .plot(x, y)
+    .title("Sales Over Time")
+    .xlabel("Month")
+    .show()
+```
+
+### Compile-Time Desugaring
+The parser creates a temporary variable referencing the target and prefix-rewrites any leading-dot attribute/method nodes inside the block:
+```python
+_receiver = matplotlib.pyplot
+_receiver.plot(x, y)
+_receiver.title("Sales Over Time")
+_receiver.xlabel("Month")
+_receiver.show()
+```
+
+---
+
+## 18. Function Pipeline Composition Operator (`f >> g`)
+
+### Motivation
+Loh's pipe operator `x |> f |> g` is excellent for feeding values through pipelines. However, sometimes developers need to compose functions into a new function without applying it to a value immediately. Using bitwise shift `>>` for composition aligns with functional programming paradigms.
+
+### Proposed Syntax
+```python
+# Composes standard functions: h(x) equivalent to g(f(x))
+process_text = str.strip >> str.upper >> (s) -> s.replace(" ", "_")
+
+result = process_text("  hello world  ")  # "HELLO_WORLD"
+```
+
+### Compile-Time Desugaring
+The parser translates `f >> g` into a nested lambda expression:
+```python
+process_text = lambda *args, **kwargs: (lambda s: s.replace(" ", "_"))(str.upper(str.strip(*args, **kwargs)))
+```
+
 
 
 

@@ -399,5 +399,10 @@ expr_ty _PyPegen_range_literal(Parser *p, expr_ty left, expr_ty right);
 stmt_ty _PyPegen_make_assign(Parser *p, asdl_expr_seq *targets, expr_ty value, Token *tc);
 stmt_ty _PyPegen_make_augassign(Parser *p, expr_ty target, operator_ty op, expr_ty value);
 expr_ty _PyPegen_rescue_expr(Parser *p, expr_ty expr, expr_ty exc_type, expr_ty exc_name, expr_ty fallback);
+expr_ty _PyPegen_make_star_expr(Parser *p, expr_ty a);
+expr_ty _PyPegen_make_double_star_expr(Parser *p, expr_ty a);
+expr_ty _PyPegen_empty_subscript(Parser *p, expr_ty a);
+stmt_ty _PyPegen_make_starred_assign(Parser *p, expr_ty target, expr_ty value);
+stmt_ty _PyPegen_make_double_starred_assign(Parser *p, expr_ty target, expr_ty value);
 
 #endif

@@ -2724,3 +2724,139 @@ _PyPegen_rescue_expr(Parser *p, expr_ty expr, expr_ty exc_type, expr_ty exc_name
     
     return _PyAST_Call(func, args, NULL, expr->lineno, expr->col_offset, fallback->end_lineno, fallback->end_col_offset, p->arena);
 }
+
+expr_ty
+_PyPegen_make_star_expr(Parser *p, expr_ty a) {
+    if (!a) return NULL;
+    if (a->kind == Subscript_kind) {
+        PyObject *func_id = _PyPegen_new_identifier(p, "_loh_star_subscript");
+        if (!func_id) return NULL;
+        expr_ty func = _PyAST_Name(func_id, Load, a->lineno, a->col_offset, a->end_lineno, a->end_col_offset, p->arena);
+        if (!func) return NULL;
+        asdl_expr_seq *args = _Py_asdl_expr_seq_new(2, p->arena);
+        if (!args) return NULL;
+        asdl_seq_SET(args, 0, a->v.Subscript.value);
+        asdl_seq_SET(args, 1, a->v.Subscript.slice);
+        return _PyAST_Call(func, args, NULL, a->lineno, a->col_offset, a->end_lineno, a->end_col_offset, p->arena);
+    } else {
+        PyObject *func_id = _PyPegen_new_identifier(p, "_loh_star");
+        if (!func_id) return NULL;
+        expr_ty func = _PyAST_Name(func_id, Load, a->lineno, a->col_offset, a->end_lineno, a->end_col_offset, p->arena);
+        if (!func) return NULL;
+        asdl_expr_seq *args = _Py_asdl_expr_seq_new(1, p->arena);
+        if (!args) return NULL;
+        asdl_seq_SET(args, 0, a);
+        return _PyAST_Call(func, args, NULL, a->lineno, a->col_offset, a->end_lineno, a->end_col_offset, p->arena);
+    }
+}
+
+expr_ty
+_PyPegen_make_double_star_expr(Parser *p, expr_ty a) {
+    if (!a) return NULL;
+    if (a->kind == Subscript_kind) {
+        PyObject *func_id = _PyPegen_new_identifier(p, "_loh_double_star_subscript");
+        if (!func_id) return NULL;
+        expr_ty func = _PyAST_Name(func_id, Load, a->lineno, a->col_offset, a->end_lineno, a->end_col_offset, p->arena);
+        if (!func) return NULL;
+        asdl_expr_seq *args = _Py_asdl_expr_seq_new(2, p->arena);
+        if (!args) return NULL;
+        asdl_seq_SET(args, 0, a->v.Subscript.value);
+        asdl_seq_SET(args, 1, a->v.Subscript.slice);
+        return _PyAST_Call(func, args, NULL, a->lineno, a->col_offset, a->end_lineno, a->end_col_offset, p->arena);
+    } else {
+        PyObject *func_id = _PyPegen_new_identifier(p, "_loh_double_star");
+        if (!func_id) return NULL;
+        expr_ty func = _PyAST_Name(func_id, Load, a->lineno, a->col_offset, a->end_lineno, a->end_col_offset, p->arena);
+        if (!func) return NULL;
+        asdl_expr_seq *args = _Py_asdl_expr_seq_new(1, p->arena);
+        if (!args) return NULL;
+        asdl_seq_SET(args, 0, a);
+        return _PyAST_Call(func, args, NULL, a->lineno, a->col_offset, a->end_lineno, a->end_col_offset, p->arena);
+    }
+}
+
+expr_ty
+_PyPegen_empty_subscript(Parser *p, expr_ty a) {
+    PyObject *func_id = _PyPegen_new_identifier(p, "_loh_empty_subscript");
+    if (!func_id) return NULL;
+    expr_ty func = _PyAST_Name(func_id, Load, a->lineno, a->col_offset, a->end_lineno, a->end_col_offset, p->arena);
+    if (!func) return NULL;
+    asdl_expr_seq *args = _Py_asdl_expr_seq_new(1, p->arena);
+    if (!args) return NULL;
+    asdl_seq_SET(args, 0, a);
+    return _PyAST_Call(func, args, NULL, a->lineno, a->col_offset, a->end_lineno, a->end_col_offset, p->arena);
+}
+
+stmt_ty
+_PyPegen_make_starred_assign(Parser *p, expr_ty target, expr_ty value) {
+    int lineno = target->lineno;
+    int col_offset = target->col_offset;
+    int end_lineno = value->end_lineno;
+    int end_col_offset = value->end_col_offset;
+
+    expr_ty load_target = _PyPegen_set_expr_context(p, target, Load);
+    if (!load_target) return NULL;
+
+    expr_ty call_expr = NULL;
+    if (load_target->kind == Subscript_kind) {
+        PyObject *func_id = _PyPegen_new_identifier(p, "_loh_assign_star_subscript");
+        if (!func_id) return NULL;
+        expr_ty func = _PyAST_Name(func_id, Load, lineno, col_offset, end_lineno, end_col_offset, p->arena);
+        if (!func) return NULL;
+        asdl_expr_seq *args = _Py_asdl_expr_seq_new(3, p->arena);
+        if (!args) return NULL;
+        asdl_seq_SET(args, 0, load_target->v.Subscript.value);
+        asdl_seq_SET(args, 1, load_target->v.Subscript.slice);
+        asdl_seq_SET(args, 2, value);
+        call_expr = _PyAST_Call(func, args, NULL, lineno, col_offset, end_lineno, end_col_offset, p->arena);
+    } else {
+        PyObject *func_id = _PyPegen_new_identifier(p, "_loh_assign_star");
+        if (!func_id) return NULL;
+        expr_ty func = _PyAST_Name(func_id, Load, lineno, col_offset, end_lineno, end_col_offset, p->arena);
+        if (!func) return NULL;
+        asdl_expr_seq *args = _Py_asdl_expr_seq_new(2, p->arena);
+        if (!args) return NULL;
+        asdl_seq_SET(args, 0, load_target);
+        asdl_seq_SET(args, 1, value);
+        call_expr = _PyAST_Call(func, args, NULL, lineno, col_offset, end_lineno, end_col_offset, p->arena);
+    }
+    if (!call_expr) return NULL;
+    return _PyAST_Expr(call_expr, lineno, col_offset, end_lineno, end_col_offset, p->arena);
+}
+
+stmt_ty
+_PyPegen_make_double_starred_assign(Parser *p, expr_ty target, expr_ty value) {
+    int lineno = target->lineno;
+    int col_offset = target->col_offset;
+    int end_lineno = value->end_lineno;
+    int end_col_offset = value->end_col_offset;
+
+    expr_ty load_target = _PyPegen_set_expr_context(p, target, Load);
+    if (!load_target) return NULL;
+
+    expr_ty call_expr = NULL;
+    if (load_target->kind == Subscript_kind) {
+        PyObject *func_id = _PyPegen_new_identifier(p, "_loh_assign_double_star_subscript");
+        if (!func_id) return NULL;
+        expr_ty func = _PyAST_Name(func_id, Load, lineno, col_offset, end_lineno, end_col_offset, p->arena);
+        if (!func) return NULL;
+        asdl_expr_seq *args = _Py_asdl_expr_seq_new(3, p->arena);
+        if (!args) return NULL;
+        asdl_seq_SET(args, 0, load_target->v.Subscript.value);
+        asdl_seq_SET(args, 1, load_target->v.Subscript.slice);
+        asdl_seq_SET(args, 2, value);
+        call_expr = _PyAST_Call(func, args, NULL, lineno, col_offset, end_lineno, end_col_offset, p->arena);
+    } else {
+        PyObject *func_id = _PyPegen_new_identifier(p, "_loh_assign_double_star");
+        if (!func_id) return NULL;
+        expr_ty func = _PyAST_Name(func_id, Load, lineno, col_offset, end_lineno, end_col_offset, p->arena);
+        if (!func) return NULL;
+        asdl_expr_seq *args = _Py_asdl_expr_seq_new(2, p->arena);
+        if (!args) return NULL;
+        asdl_seq_SET(args, 0, load_target);
+        asdl_seq_SET(args, 1, value);
+        call_expr = _PyAST_Call(func, args, NULL, lineno, col_offset, end_lineno, end_col_offset, p->arena);
+    }
+    if (!call_expr) return NULL;
+    return _PyAST_Expr(call_expr, lineno, col_offset, end_lineno, end_col_offset, p->arena);
+}

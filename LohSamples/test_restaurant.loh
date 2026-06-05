@@ -1,0 +1,153 @@
+# Unit tests for Loh Restaurant Management System
+# Demonstrates unit testing Loh code using the standard unittest library.
+
+/unittest
+/sys
+/os
+
+# Read and execute restaurant.loh to load its definitions without executing its simulation
+dir_path = os.path.dirname(__file__)
+restaurant_file = os.path.join(dir_path, "restaurant.loh")
+restaurant_ns = {__name__="restaurant"}
+
+with open(restaurant_file, "r") as f:
+    code_str = f.read()
+
+exec(compile(code_str, restaurant_file, "exec"), restaurant_ns)
+
+# Extract symbols from the executed namespace
+Employee = restaurant_ns["Employee"]
+Waiter = restaurant_ns["Waiter"]
+Chef = restaurant_ns["Chef"]
+Technician = restaurant_ns["Technician"]
+MenuItem = restaurant_ns["MenuItem"]
+Table = restaurant_ns["Table"]
+Reservation = restaurant_ns["Reservation"]
+Order = restaurant_ns["Order"]
+SystemConfig = restaurant_ns["SystemConfig"]
+RestaurantManager = restaurant_ns["RestaurantManager"]
+MenuItemNotFound = restaurant_ns["MenuItemNotFound"]
+TableUnavailable = restaurant_ns["TableUnavailable"]
+StaffNotAvailable = restaurant_ns["StaffNotAvailable"]
+
+TestRestaurantComponents:unittest.TestCase:
+    .test_employee_clocking():
+        emp = Employee(501, "Test Staff", "Role")
+        # Assert initial state
+        .assertFalse(emp.clocked_in)
+        
+        emp.clock_in()
+        .assertTrue(emp.clocked_in)
+        
+        emp.clock_out()
+        .assertFalse(emp.clocked_in)
+
+    .test_waiter_tips_and_tables():
+        waiter = Waiter(502, "Alice", "Dining Section A")
+        .assertEqual(waiter.tips, 0.0)
+        .assertEqual(len(waiter.assigned_tables), 0)
+        
+        waiter.assign_table(15)
+        .assertEqual(waiter.assigned_tables, [15])
+        
+        waiter.add_tips(12.50)
+        .assertEqual(waiter.tips, 12.50)
+
+    .test_menu_item_creation():
+        item = MenuItem(10, "Burger", 15.99, "main", 10)
+        .assertEqual(item.id, 10)
+        .assertEqual(item.name, "Burger")
+        .assertEqual(item.price, 15.99)
+        .assertEqual(item.category, "main")
+        .assertEqual(item.prep_time, 10)
+
+    .test_table_occupy_and_clean():
+        table = Table(12, 4)
+        .assertEqual(table.table_num, 12)
+        .assertEqual(table.capacity, 4)
+        .assertEqual(table.status, "Available")
+        .assertTrue(table.current_order_id === ~)
+
+        table.occupy(9001)
+        .assertEqual(table.status, "Occupied")
+        .assertEqual(table.current_order_id, 9001)
+
+        table.clean()
+        .assertEqual(table.status, "Available")
+        .assertTrue(table.current_order_id === ~)
+
+    .test_order_pricing_and_prep_time():
+        order = Order(7001, 12, 502)
+        .assertEqual(order.order_id, 7001)
+        .assertEqual(order.table_num, 12)
+        .assertEqual(order.waiter_id, 502)
+        .assertEqual(len(order.items), 0)
+        .assertEqual(order.get_total(), 0.0)
+        .assertEqual(order.get_prep_time(), 0)
+
+        item1 = MenuItem(1, "Appetizer", 8.50, "app", 5)
+        item2 = MenuItem(2, "Main Course", 22.00, "main", 15)
+        
+        order.add_item(item1)
+        order.add_item(item2)
+        
+        .assertEqual(len(order.items), 2)
+        .assertEqual(order.get_total(), 30.50)
+        .assertEqual(order.get_prep_time(), 15)
+
+    .test_manager_staff_assignment():
+        config = SystemConfig(debug_mode=-, tax_rate=0.08)
+        manager = RestaurantManager("Test Lounge", config)
+        
+        waiter = Waiter(101, "Alice", "Dining Section A") { .assign_table(10) }
+        chef = Chef(201, "Charlie", "Grill")
+        
+        manager.add_employee(waiter)
+        manager.add_employee(chef)
+        manager.add_table(10, 4)
+        
+        # Test get_waiter_for_table when waiter is NOT clocked in
+        assigned_waiter = manager.get_waiter_for_table(10)
+        .assertTrue(assigned_waiter === ~)
+        
+        # Clock in the waiter
+        waiter.clock_in()
+        assigned_waiter = manager.get_waiter_for_table(10)
+        .assertTrue(assigned_waiter === waiter)
+        
+        # Order placement constraints: exception raised because table is not occupied
+        ^:
+            manager.create_order(8001, 10)
+            .fail("Expected TableUnavailable error")
+        ^? TableUnavailable => e:
+            ...
+
+        # Occupy table and place order
+        manager.tables[10].status = "Occupied"
+        order = manager.create_order(8001, 10)
+        .assertTrue(order !== ~)
+        .assertEqual(order.waiter_id, 101)
+
+        # Assign order to chef when chef is not clocked in
+        best_chef = manager.assign_order_to_chef(order)
+        .assertTrue(best_chef === ~)
+
+        # Clock in chef
+        chef.clock_in()
+        best_chef = manager.assign_order_to_chef(order)
+        .assertTrue(best_chef === chef)
+        .assertEqual(chef.active_orders_count, 1)
+
+        # Test billing
+        item = MenuItem(1, "Water", 2.00, "drink", 1)
+        order.add_item(item)
+        
+        receipt = manager.process_billing(8001)
+        .assertIn("Subtotal: $2.00", receipt)
+        .assertIn("Tax: $0.16", receipt)
+        .assertIn("Grand Total: $2.16", receipt)
+        .assertEqual(chef.active_orders_count, 0)
+        .assertEqual(manager.tables[10].status, "NeedsCleaning")
+
+? __name__ == "__main__":
+    unittest.main()
