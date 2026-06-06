@@ -10,6 +10,7 @@ from __future__ import (
     annotations,
     empty_none_str,
     auto_fstrings,
+    implicit_returns,
 )
 
 all_feature_names = [
@@ -24,6 +25,7 @@ all_feature_names = [
     "annotations",
     "empty_none_str",
     "auto_fstrings",
+    "implicit_returns",
 ]
 
 __all__ = ["all_feature_names"] + all_feature_names

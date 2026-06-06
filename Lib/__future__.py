@@ -59,6 +59,7 @@ all_feature_names = [
     "annotations",
     "empty_none_str",
     "auto_fstrings",
+    "implicit_returns",
 ]
 
 __all__ = ["all_feature_names"] + all_feature_names
@@ -79,6 +80,7 @@ CO_FUTURE_GENERATOR_STOP = 0x800000     # StopIteration becomes RuntimeError in 
 CO_FUTURE_ANNOTATIONS = 0x1000000       # annotations become strings at runtime
 CO_FUTURE_EMPTY_NONE_STR = 0x10000000    # str(None) returns ""
 CO_FUTURE_AUTO_FSTRINGS = 0x20000000     # default strings to f-strings
+CO_FUTURE_IMPLICIT_RETURNS = 0x40000000  # wrap final expressions in return
 
 
 class _Feature:
@@ -152,3 +154,7 @@ empty_none_str = _Feature((3, 15, 0, "alpha", 0),
 auto_fstrings = _Feature((3, 15, 0, "alpha", 0),
                          None,
                          CO_FUTURE_AUTO_FSTRINGS)
+
+implicit_returns = _Feature((3, 15, 0, "alpha", 0),
+                            None,
+                            CO_FUTURE_IMPLICIT_RETURNS)

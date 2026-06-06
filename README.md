@@ -92,6 +92,7 @@ Loh maps Python's verbose keywords and structures to elegant, symbol-based alter
 | `case` | *(omit)* | Pattern case declaration |
 | Inline initializer | `obj { .prop = val }` | Scope initializer block |
 | Implicit f-strings | `from __loh__ import auto_fstrings` | Future import defaulting strings with braces to f-strings |
+| Implicit returns | `from __loh__ import implicit_returns` | Future import returning the final expression of a function |
 | None-safe assignment | `obj~.prop = value` | None-safe attribute/subscript assignment |
 | Infinite loop | `$:` | Infinite loop shorthand (while True) |
 | Multi-key slicing & unpacking | `*obj` / `**obj` / `*obj[keys]` / `**obj[keys]` | Multi-key subscript slicing, unpacking, and assignments |
@@ -958,6 +959,31 @@ subdict = **d['x']      # {'x': 1}
 
 # LHS assignments
 *d['x', 'y'] = [10, 20]  # d becomes {'x': 10, 'y': 20}
+```
+
+---
+
+### **28. The `implicit_returns` Future Import**
+
+> **Motivation:** Writing explicit return statements (`return` or `->` in Loh) in short helper functions or lambda-like standard methods adds visual noise. Expression-oriented languages like Rust and Ruby automatically return the last evaluated expression in a function body. Enabling this behavior via a future import makes Loh functions extremely clean and concise.
+
+By importing `implicit_returns` from the `__loh__` (or standard `__future__`) module, the compiler automatically desugars the final statement of a function body (both synchronous and asynchronous) into a `Return` statement if it is an expression statement (`Expr` node).
+
+* **Docstring protection**: A function containing only a docstring (a single string literal constant) is protected and will not wrap it in a return statement, preserving correct docstring semantics.
+* **Control flow and assignments**: Control flow keywords (like `pass`, `break`, `continue`, `raise`, etc.) and variable assignments (`x = y`) are not expressions and thus remain unaffected.
+
+#### **Example**
+```python
+from __loh__ import implicit_returns
+
+# Automatically returns base * (1 + tax)
+calculate_total(base, tax):
+    rate = 1 + tax
+    base * rate
+
+# Async functions are also supported
+async fetch_data(url):
+    await request(url)
 ```
 
 

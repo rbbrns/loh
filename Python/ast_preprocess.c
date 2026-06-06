@@ -1045,6 +1045,34 @@ astfold_stmt(stmt_ty node_, PyArena *ctx_, _PyASTPreprocessState *state)
         CALL_SEQ(astfold_type_param, type_param, node_->v.FunctionDef.type_params);
         CALL(astfold_arguments, arguments_ty, node_->v.FunctionDef.args);
         BEFORE_FUNC_BODY(state, node_);
+        if (state->ff_features & CO_FUTURE_IMPLICIT_RETURNS) {
+            asdl_stmt_seq *body = node_->v.FunctionDef.body;
+            Py_ssize_t len = asdl_seq_LEN(body);
+            if (len > 0) {
+                stmt_ty last_stmt = (stmt_ty)asdl_seq_GET(body, len - 1);
+                if (last_stmt->kind == Expr_kind) {
+                    int is_docstring = 0;
+                    if (len == 1) {
+                        expr_ty e = last_stmt->v.Expr.value;
+                        if (e->kind == Constant_kind && PyUnicode_CheckExact(e->v.Constant.value)) {
+                            is_docstring = 1;
+                        }
+                    }
+                    if (!is_docstring) {
+                        stmt_ty ret_stmt = _PyAST_Return(last_stmt->v.Expr.value,
+                                                        last_stmt->lineno,
+                                                        last_stmt->col_offset,
+                                                        last_stmt->end_lineno,
+                                                        last_stmt->end_col_offset,
+                                                        ctx_);
+                        if (ret_stmt == NULL) {
+                            return 0;
+                        }
+                        asdl_seq_SET(body, len - 1, ret_stmt);
+                    }
+                }
+            }
+        }
         CALL(astfold_body, asdl_seq, node_->v.FunctionDef.body);
         AFTER_FUNC_BODY(state);
         CALL_SEQ(astfold_expr, expr, node_->v.FunctionDef.decorator_list);
@@ -1057,6 +1085,34 @@ astfold_stmt(stmt_ty node_, PyArena *ctx_, _PyASTPreprocessState *state)
         CALL_SEQ(astfold_type_param, type_param, node_->v.AsyncFunctionDef.type_params);
         CALL(astfold_arguments, arguments_ty, node_->v.AsyncFunctionDef.args);
         BEFORE_FUNC_BODY(state, node_);
+        if (state->ff_features & CO_FUTURE_IMPLICIT_RETURNS) {
+            asdl_stmt_seq *body = node_->v.AsyncFunctionDef.body;
+            Py_ssize_t len = asdl_seq_LEN(body);
+            if (len > 0) {
+                stmt_ty last_stmt = (stmt_ty)asdl_seq_GET(body, len - 1);
+                if (last_stmt->kind == Expr_kind) {
+                    int is_docstring = 0;
+                    if (len == 1) {
+                        expr_ty e = last_stmt->v.Expr.value;
+                        if (e->kind == Constant_kind && PyUnicode_CheckExact(e->v.Constant.value)) {
+                            is_docstring = 1;
+                        }
+                    }
+                    if (!is_docstring) {
+                        stmt_ty ret_stmt = _PyAST_Return(last_stmt->v.Expr.value,
+                                                        last_stmt->lineno,
+                                                        last_stmt->col_offset,
+                                                        last_stmt->end_lineno,
+                                                        last_stmt->end_col_offset,
+                                                        ctx_);
+                        if (ret_stmt == NULL) {
+                            return 0;
+                        }
+                        asdl_seq_SET(body, len - 1, ret_stmt);
+                    }
+                }
+            }
+        }
         CALL(astfold_body, asdl_seq, node_->v.AsyncFunctionDef.body);
         AFTER_FUNC_BODY(state);
         CALL_SEQ(astfold_expr, expr, node_->v.AsyncFunctionDef.decorator_list);

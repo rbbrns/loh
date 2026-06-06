@@ -449,6 +449,17 @@ subdict = **d['x']      # {'x': 1}
         self.assertEqual(scope["subdict"], {'x': 1})
         self.assertEqual(scope["d"], {'x': 10, 'y': 20})
 
+    def test_implicit_returns(self):
+        code = """from __loh__ import implicit_returns
+
+calculate_total(base, tax):
+    rate = 1 + tax
+    base * rate
+"""
+        scope = {}
+        exec(code, {}, scope)
+        self.assertEqual(scope["calculate_total"](100, 0.05), 105.0)
+
 if __name__ == "__main__":
     unittest.main()
 
