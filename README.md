@@ -86,6 +86,7 @@ Loh maps Python's verbose keywords and structures to elegant, symbol-based alter
 | `def` | *(omit)* | Function definition |
 | `def __init__(self, ...)` | `.(...)` | Constructor shorthand |
 | `self.param = param` | `.param` in signature | Parameter property binding |
+| `super()` | `..` | Parent class reference shorthand |
 | `type` | `:` | Type alias declaration |
 | `match` | `?==` | Structural pattern matching subject |
 | `case` | *(omit)* | Pattern case declaration |
@@ -321,6 +322,37 @@ Account:BaseAccount:
         -> .balance
 ```
 *Note: A class with no base classes can be declared using `MyClass::`.*
+
+#### **Parent Class Shorthand (`..`)**
+
+Loh provides `..` as a prefix/standalone shorthand for referencing the parent class context (`super()`):
+- `..` (standalone) $\rightarrow$ `super()`
+- `..field` $\rightarrow$ `super().field`
+- `..method(args)` $\rightarrow$ `super().method(args)`
+- `..(args)` $\rightarrow$ `super().__init__(args)` (parent constructor call)
+
+##### **Python**
+```python
+class SavingsAccount(Account):
+    def __init__(self, owner, balance, interest_rate):
+        super().__init__(owner, balance)
+        self.interest_rate = interest_rate
+
+    def get_details(self):
+        base_details = super().get_details()
+        return f"{base_details}, Rate: {self.interest_rate}"
+```
+
+##### **Loh**
+```python
+SavingsAccount:Account:
+    .(owner, balance, .interest_rate):
+        ..(owner, balance)  # calls parent constructor
+
+    .get_details():
+        base_details = ..get_details()  # calls parent method
+        -> f"{base_details}, Rate: {.interest_rate}"
+```
 
 ---
 

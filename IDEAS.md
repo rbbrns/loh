@@ -571,12 +571,288 @@ The parser translates `f >> g` into a nested lambda expression:
 process_text = lambda *args, **kwargs: (lambda s: s.replace(" ", "_"))(str.upper(str.strip(*args, **kwargs)))
 ```
 
+---
 
+## 19. Parameter Internal Aliasing (`external_name => internal_name`)
 
+### Motivation
+Exposing long, descriptive argument names to API callers is best practice for readability (e.g. `principal_amount`), but repeating these verbose names inside the function body clutters the logic. By allowing parameters to specify an internal alias using Loh's `=>` arrow symbol (which maps to `as`), functions can expose clean external names while keeping their internal implementation extremely concise.
 
+### Proposed Syntax
+```python
+def calculate_interest(principal_amount => p, interest_rate => r, duration_years => t):
+    # Inside the function, we use the short, clean internal aliases:
+    return p * r * t
+```
 
+### Compile-Time Desugaring
+The compiler keeps the external names in the function signature, and prepends local variable bindings at the top of the function body:
+```python
+def calculate_interest(principal_amount, interest_rate, duration_years):
+    p = principal_amount
+    r = interest_rate
+    t = duration_years
+    return p * r * t
+```
 
+---
 
+## 20. Inline Expression Loops & Comprehensions
 
+### Motivation
+Standard Python comprehensions are verbose due to repeating the loop variable three times (e.g. `[u.email for u in users if u.is_active]`). By using the loop sigil `$` as the implicit element placeholder, Loh can make comprehensions extremely concise.
 
+### Proposed Syntax
+```python
+# List comprehension
+active_emails = [$.email <~ users ? $.is_active]
 
+# Dict comprehension
+user_map = {$.id: $ <~ users}
+
+# Generator expression as function argument
+total_price = sum($.price <~ items)
+```
+
+### Compile-Time Desugaring
+Translates to standard Python comprehensions by replacing `$` with a compiler-generated variable:
+```python
+active_emails = [_item.email for _item in users if _item.is_active]
+user_map = {_item.id: _item for _item in users}
+total_price = sum(_item.price for _item in items)
+```
+
+---
+
+## 21. The Syntactic Merge Operator (`{{ }}`)
+
+### Motivation
+When calling multiple methods or setting attributes on a single target, developers must repeat the receiver prefix (e.g. `plt.plot()`, `plt.title()`) or use context managers which add runtime lookup and function call overhead. Loh introduces a compile-time syntactic merge operator `{{ }}` that acts as a zero-cost macro, distributing a target expression over a block of statements.
+
+### Proposed Syntax
+```python
+# Distributing a method receiver
+plt. {{
+    plot(x, y)
+    title("Sales")
+    show()
+}}
+
+# Distributing a function wrapper
+print( {{
+    "Processing..."
+    calculate()
+    "Done."
+}} )
+
+# Declarative Enum Generation (composing Class syntax with {{ }})
+Color:Enum:
+    {{ RED GREEN BLUE }} = auto()
+```
+
+### Compile-Time Desugaring
+At parse-time, the compiler expands each statement or semicolon-separated fragment inside the double curly braces by prepending the target expression and appending the postfix expression (if any):
+```python
+# Expands to:
+plt.plot(x, y)
+plt.title("Sales")
+plt.show()
+
+# Expands to:
+print("Processing...")
+print(calculate())
+print("Done.")
+
+# Expands to:
+class Color(Enum):
+    RED = auto()
+    GREEN = auto()
+    BLUE = auto()
+```
+
+---
+
+## 22. Anonymous Expression Classes (`::(...)`)
+
+### Motivation
+Creating one-off mock classes or ad-hoc event callbacks without polluting the module namespace is a common need. Expression-wrapped anonymous classes allow defining and instantiating class structures inline.
+
+### Proposed Syntax
+```python
+mock = :BaseClass:(
+    .get_value():
+        -> 42
+)
+
+raw_object = ::(
+    .x = 10,
+    .y = 20
+)
+```
+
+### Compile-Time Desugaring
+Generates a unique local class declaration and instantiates it:
+```python
+class _AnonClass_1(BaseClass):
+    def get_value(self):
+        return 42
+        
+mock = _AnonClass_1()
+```
+
+---
+
+## 23. First-Class Type-Scoped Variables
+
+### Motivation
+Elevating type hints from static analysis metadata into lexical, type-scoped local variable slots.
+
+### Proposed Syntax
+* **Anonymous Parameters**: `.foo(:int, :float, :str, var)`
+* **Most-Recent Assignment Rule**: `print(:int)` resolves to the most recently assigned integer variable in the local scope.
+* **Value-First Binding (`x:b`)**: Passes the value `x` using the type parameter `:b` as the target identifier key.
+* **Type-First Binding (`:a = y`)**: Explicitly targets the type-scoped parameter `:a` and assigns `y` to it.
+
+### Compile-Time Desugaring
+The compiler tracks type-scoped local bindings statically and maps them to compiler-generated names in the local scope.
+
+---
+
+## 24. Class Attribute Property Shorthand (`.name: property`)
+
+### Motivation
+In standard Python, declaring class properties requires using `@property` and `@name.setter` decorators, which introduces significant boilerplate and nesting for simple getters and setters. Loh can provide a clean, declarative shorthand syntax for defining properties directly in the class block.
+
+### Proposed Syntax
+1. **Read-Only Property**:
+   ```python
+   Circle::
+       .radius: float
+       
+       .area: property -> 3.14159 * .radius ** 2
+   ```
+2. **Read-Write Property**:
+   ```python
+   Circle::
+       ._radius: float
+       
+       .radius: property:
+           get: -> ._radius
+           set(val): ._radius = val
+   ```
+
+### Compile-Time Desugaring
+The parser compiles these properties to standard Python property decorator methods:
+1. **Read-Only**:
+   ```python
+   class Circle:
+       @property
+       def area(self):
+           return 3.14159 * self.radius ** 2
+   ```
+2. **Read-Write**:
+   ```python
+   class Circle:
+       @property
+       def radius(self):
+           return self._radius
+       @radius.setter
+       def radius(self, val):
+           self._radius = val
+   ```
+
+---
+
+## 25. Conditional Pattern Matching (`? expr ?== pattern:`)
+
+### Motivation
+Python's structural pattern matching requires a full `match` statement, which adds a nesting level even when checking a single pattern. Integrating pattern matching directly into the `if` (`?`) condition allows checking and binding pattern variables inline.
+
+### Proposed Syntax
+```python
+# Check if response matches success pattern and bind data
+? response ?== {"status": "success", "data": payload}:
+    process(payload)
+??:
+    raise ValueError("Request failed")
+```
+
+### Compile-Time Desugaring
+At parse-time, the conditional pattern matches are desugared into a single-case match block or a helper function call:
+```python
+_matched = False
+match response:
+    case {"status": "success", "data": payload}:
+        _matched = True
+        process(payload)
+
+if not _matched:
+    raise ValueError("Request failed")
+```
+
+---
+
+## 26. Parameter Destructuring in Function Signatures
+
+### Motivation
+When passing dictionaries or objects as options or complex structures to functions, developers manually unpack keys or attributes inside the function body. Allowing destructuring patterns directly in the function parameter signature keeps argument unpacking declarative and DRY.
+
+### Proposed Syntax
+```python
+def draw_point({x, y, color="black"}):
+    print(x, y, color)
+```
+
+### Compile-Time Desugaring
+The compiler replaces the destructured parameter with an auto-generated parameter, and prepends destructuring assignments at the top of the function body:
+```python
+def draw_point(_point_obj):
+    # Retrieve x, y, and color safely with default fallbacks
+    x = _point_obj.x if hasattr(_point_obj, "x") else _point_obj["x"]
+    y = _point_obj.y if hasattr(_point_obj, "y") else _point_obj["y"]
+    color = _point_obj.color if hasattr(_point_obj, "color") else (_point_obj["color"] if "color" in _point_obj else "black")
+    
+    print(x, y, color)
+```
+
+---
+
+## 27. Partial Function Application (`func(..., _, ...)`)
+
+### Motivation
+Standard Python requires `functools.partial` or lambda wrapping to pre-bind arguments to a callable. Utilizing the pipe placeholder `_` in normal function calls provides an elegant syntax to create partially applied function thunks at compile time.
+
+### Proposed Syntax
+```python
+# Create a partial function adding 10
+add_ten = add(10, _)
+
+# Pass partial call to map
+doubles = list(map(multiply(_, 2), numbers))
+```
+
+### Compile-Time Desugaring
+If a call expression contains a standalone `_` argument, it desugars into an anonymous lambda:
+```python
+add_ten = lambda _val: add(10, _val)
+doubles = list(map(lambda _val: multiply(_val, 2), numbers))
+```
+
+---
+
+## 28. None-Filtering Postfix Operator (`lst ~?`)
+
+### Motivation
+Filtering `None` values out of iterables is a frequent task that requires verbose list comprehensions (e.g. `[x for x in lst if x is not None]`). A dedicated none-filtering postfix operator `~?` provides a clean, zero-overhead way to compact sequences.
+
+### Proposed Syntax
+```python
+# Filters out None values from the list
+clean_results = fetch_results() ~?
+```
+
+### Compile-Time Desugaring
+Translates directly into a list comprehension filtering out `None`:
+```python
+clean_results = [_item for _item in fetch_results() if _item is not None]
+```

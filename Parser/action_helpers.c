@@ -2860,3 +2860,657 @@ _PyPegen_make_double_starred_assign(Parser *p, expr_ty target, expr_ty value) {
     if (!call_expr) return NULL;
     return _PyAST_Expr(call_expr, lineno, col_offset, end_lineno, end_col_offset, p->arena);
 }
+
+static void desugar_double_dot_arguments(Parser *p, arguments_ty args);
+static void desugar_double_dot_pattern(Parser *p, pattern_ty pattern);
+static void desugar_double_dot_generators(Parser *p, asdl_comprehension_seq *generators);
+
+expr_ty
+_PyPegen_desugar_double_dot_expr(Parser *p, expr_ty expr) {
+    if (!expr) {
+        return NULL;
+    }
+    if (!p->has_double_dot) {
+        return expr;
+    }
+    switch (expr->kind) {
+        case Name_kind: {
+            const char *name_str = PyUnicode_AsUTF8(expr->v.Name.id);
+            if (name_str && strcmp(name_str, "..") == 0) {
+                PyObject *super_id = _PyPegen_new_identifier(p, "super");
+                if (!super_id) return NULL;
+                expr_ty super_func = _PyAST_Name(super_id, Load, expr->lineno, expr->col_offset, expr->end_lineno, expr->end_col_offset, p->arena);
+                if (!super_func) return NULL;
+                return _PyAST_Call(super_func, NULL, NULL, expr->lineno, expr->col_offset, expr->end_lineno, expr->end_col_offset, p->arena);
+            }
+            return expr;
+        }
+        case Attribute_kind: {
+            expr->v.Attribute.value = _PyPegen_desugar_double_dot_expr(p, expr->v.Attribute.value);
+            return expr;
+        }
+        case Call_kind: {
+            // Check if calling `..` directly (i.e. `..(args)`)
+            if (expr->v.Call.func && expr->v.Call.func->kind == Name_kind) {
+                const char *name_str = PyUnicode_AsUTF8(expr->v.Call.func->v.Name.id);
+                if (name_str && strcmp(name_str, "..") == 0) {
+                    // Desugar to `super().__init__(args)`
+                    PyObject *super_id = _PyPegen_new_identifier(p, "super");
+                    if (!super_id) return NULL;
+                    expr_ty super_func = _PyAST_Name(super_id, Load, expr->lineno, expr->col_offset, expr->end_lineno, expr->end_col_offset, p->arena);
+                    if (!super_func) return NULL;
+                    expr_ty super_call = _PyAST_Call(super_func, NULL, NULL, expr->lineno, expr->col_offset, expr->end_lineno, expr->end_col_offset, p->arena);
+                    if (!super_call) return NULL;
+                    PyObject *init_id = _PyPegen_new_identifier(p, "__init__");
+                    if (!init_id) return NULL;
+                    expr_ty init_attr = _PyAST_Attribute(super_call, init_id, Load, expr->lineno, expr->col_offset, expr->end_lineno, expr->end_col_offset, p->arena);
+                    if (!init_attr) return NULL;
+                    expr->v.Call.func = init_attr;
+                }
+            }
+            expr->v.Call.func = _PyPegen_desugar_double_dot_expr(p, expr->v.Call.func);
+            if (expr->v.Call.args) {
+                int len = asdl_seq_LEN(expr->v.Call.args);
+                for (int i = 0; i < len; i++) {
+                    expr_ty arg = asdl_seq_GET(expr->v.Call.args, i);
+                    asdl_seq_SET(expr->v.Call.args, i, _PyPegen_desugar_double_dot_expr(p, arg));
+                }
+            }
+            if (expr->v.Call.keywords) {
+                int len = asdl_seq_LEN(expr->v.Call.keywords);
+                for (int i = 0; i < len; i++) {
+                    keyword_ty kw = asdl_seq_GET(expr->v.Call.keywords, i);
+                    kw->value = _PyPegen_desugar_double_dot_expr(p, kw->value);
+                }
+            }
+            return expr;
+        }
+        case BoolOp_kind: {
+            if (expr->v.BoolOp.values) {
+                int len = asdl_seq_LEN(expr->v.BoolOp.values);
+                for (int i = 0; i < len; i++) {
+                    expr_ty val = asdl_seq_GET(expr->v.BoolOp.values, i);
+                    asdl_seq_SET(expr->v.BoolOp.values, i, _PyPegen_desugar_double_dot_expr(p, val));
+                }
+            }
+            return expr;
+        }
+        case NamedExpr_kind: {
+            expr->v.NamedExpr.target = _PyPegen_desugar_double_dot_expr(p, expr->v.NamedExpr.target);
+            expr->v.NamedExpr.value = _PyPegen_desugar_double_dot_expr(p, expr->v.NamedExpr.value);
+            return expr;
+        }
+        case BinOp_kind: {
+            expr->v.BinOp.left = _PyPegen_desugar_double_dot_expr(p, expr->v.BinOp.left);
+            expr->v.BinOp.right = _PyPegen_desugar_double_dot_expr(p, expr->v.BinOp.right);
+            return expr;
+        }
+        case UnaryOp_kind: {
+            expr->v.UnaryOp.operand = _PyPegen_desugar_double_dot_expr(p, expr->v.UnaryOp.operand);
+            return expr;
+        }
+        case Lambda_kind: {
+            if (expr->v.Lambda.args) {
+                desugar_double_dot_arguments(p, expr->v.Lambda.args);
+            }
+            expr->v.Lambda.body = _PyPegen_desugar_double_dot_expr(p, expr->v.Lambda.body);
+            return expr;
+        }
+        case IfExp_kind: {
+            expr->v.IfExp.test = _PyPegen_desugar_double_dot_expr(p, expr->v.IfExp.test);
+            expr->v.IfExp.body = _PyPegen_desugar_double_dot_expr(p, expr->v.IfExp.body);
+            expr->v.IfExp.orelse = _PyPegen_desugar_double_dot_expr(p, expr->v.IfExp.orelse);
+            return expr;
+        }
+        case Dict_kind: {
+            if (expr->v.Dict.keys) {
+                int len = asdl_seq_LEN(expr->v.Dict.keys);
+                for (int i = 0; i < len; i++) {
+                    expr_ty key = asdl_seq_GET(expr->v.Dict.keys, i);
+                    if (key) {
+                        asdl_seq_SET(expr->v.Dict.keys, i, _PyPegen_desugar_double_dot_expr(p, key));
+                    }
+                }
+            }
+            if (expr->v.Dict.values) {
+                int len = asdl_seq_LEN(expr->v.Dict.values);
+                for (int i = 0; i < len; i++) {
+                    expr_ty val = asdl_seq_GET(expr->v.Dict.values, i);
+                    asdl_seq_SET(expr->v.Dict.values, i, _PyPegen_desugar_double_dot_expr(p, val));
+                }
+            }
+            return expr;
+        }
+        case Set_kind: {
+            if (expr->v.Set.elts) {
+                int len = asdl_seq_LEN(expr->v.Set.elts);
+                for (int i = 0; i < len; i++) {
+                    expr_ty elt = asdl_seq_GET(expr->v.Set.elts, i);
+                    asdl_seq_SET(expr->v.Set.elts, i, _PyPegen_desugar_double_dot_expr(p, elt));
+                }
+            }
+            return expr;
+        }
+        case ListComp_kind: {
+            expr->v.ListComp.elt = _PyPegen_desugar_double_dot_expr(p, expr->v.ListComp.elt);
+            desugar_double_dot_generators(p, expr->v.ListComp.generators);
+            return expr;
+        }
+        case SetComp_kind: {
+            expr->v.SetComp.elt = _PyPegen_desugar_double_dot_expr(p, expr->v.SetComp.elt);
+            desugar_double_dot_generators(p, expr->v.SetComp.generators);
+            return expr;
+        }
+        case DictComp_kind: {
+            expr->v.DictComp.key = _PyPegen_desugar_double_dot_expr(p, expr->v.DictComp.key);
+            expr->v.DictComp.value = _PyPegen_desugar_double_dot_expr(p, expr->v.DictComp.value);
+            desugar_double_dot_generators(p, expr->v.DictComp.generators);
+            return expr;
+        }
+        case GeneratorExp_kind: {
+            expr->v.GeneratorExp.elt = _PyPegen_desugar_double_dot_expr(p, expr->v.GeneratorExp.elt);
+            desugar_double_dot_generators(p, expr->v.GeneratorExp.generators);
+            return expr;
+        }
+        case Await_kind: {
+            expr->v.Await.value = _PyPegen_desugar_double_dot_expr(p, expr->v.Await.value);
+            return expr;
+        }
+        case Yield_kind: {
+            if (expr->v.Yield.value) {
+                expr->v.Yield.value = _PyPegen_desugar_double_dot_expr(p, expr->v.Yield.value);
+            }
+            return expr;
+        }
+        case YieldFrom_kind: {
+            expr->v.YieldFrom.value = _PyPegen_desugar_double_dot_expr(p, expr->v.YieldFrom.value);
+            return expr;
+        }
+        case Compare_kind: {
+            expr->v.Compare.left = _PyPegen_desugar_double_dot_expr(p, expr->v.Compare.left);
+            if (expr->v.Compare.comparators) {
+                int len = asdl_seq_LEN(expr->v.Compare.comparators);
+                for (int i = 0; i < len; i++) {
+                    expr_ty comp = asdl_seq_GET(expr->v.Compare.comparators, i);
+                    asdl_seq_SET(expr->v.Compare.comparators, i, _PyPegen_desugar_double_dot_expr(p, comp));
+                }
+            }
+            return expr;
+        }
+        case FormattedValue_kind: {
+            expr->v.FormattedValue.value = _PyPegen_desugar_double_dot_expr(p, expr->v.FormattedValue.value);
+            if (expr->v.FormattedValue.format_spec) {
+                expr->v.FormattedValue.format_spec = _PyPegen_desugar_double_dot_expr(p, expr->v.FormattedValue.format_spec);
+            }
+            return expr;
+        }
+        case Interpolation_kind: {
+            expr->v.Interpolation.value = _PyPegen_desugar_double_dot_expr(p, expr->v.Interpolation.value);
+            if (expr->v.Interpolation.format_spec) {
+                expr->v.Interpolation.format_spec = _PyPegen_desugar_double_dot_expr(p, expr->v.Interpolation.format_spec);
+            }
+            return expr;
+        }
+        case JoinedStr_kind: {
+            if (expr->v.JoinedStr.values) {
+                int len = asdl_seq_LEN(expr->v.JoinedStr.values);
+                for (int i = 0; i < len; i++) {
+                    expr_ty val = asdl_seq_GET(expr->v.JoinedStr.values, i);
+                    asdl_seq_SET(expr->v.JoinedStr.values, i, _PyPegen_desugar_double_dot_expr(p, val));
+                }
+            }
+            return expr;
+        }
+        case TemplateStr_kind: {
+            if (expr->v.TemplateStr.values) {
+                int len = asdl_seq_LEN(expr->v.TemplateStr.values);
+                for (int i = 0; i < len; i++) {
+                    expr_ty val = asdl_seq_GET(expr->v.TemplateStr.values, i);
+                    asdl_seq_SET(expr->v.TemplateStr.values, i, _PyPegen_desugar_double_dot_expr(p, val));
+                }
+            }
+            return expr;
+        }
+        case Pipe_kind: {
+            expr->v.Pipe.left = _PyPegen_desugar_double_dot_expr(p, expr->v.Pipe.left);
+            expr->v.Pipe.right = _PyPegen_desugar_double_dot_expr(p, expr->v.Pipe.right);
+            return expr;
+        }
+        case Subscript_kind: {
+            expr->v.Subscript.value = _PyPegen_desugar_double_dot_expr(p, expr->v.Subscript.value);
+            expr->v.Subscript.slice = _PyPegen_desugar_double_dot_expr(p, expr->v.Subscript.slice);
+            return expr;
+        }
+        case Starred_kind: {
+            expr->v.Starred.value = _PyPegen_desugar_double_dot_expr(p, expr->v.Starred.value);
+            return expr;
+        }
+        case List_kind: {
+            if (expr->v.List.elts) {
+                int len = asdl_seq_LEN(expr->v.List.elts);
+                for (int i = 0; i < len; i++) {
+                    expr_ty elt = asdl_seq_GET(expr->v.List.elts, i);
+                    asdl_seq_SET(expr->v.List.elts, i, _PyPegen_desugar_double_dot_expr(p, elt));
+                }
+            }
+            return expr;
+        }
+        case Tuple_kind: {
+            if (expr->v.Tuple.elts) {
+                int len = asdl_seq_LEN(expr->v.Tuple.elts);
+                for (int i = 0; i < len; i++) {
+                    expr_ty elt = asdl_seq_GET(expr->v.Tuple.elts, i);
+                    asdl_seq_SET(expr->v.Tuple.elts, i, _PyPegen_desugar_double_dot_expr(p, elt));
+                }
+            }
+            return expr;
+        }
+        case Slice_kind: {
+            if (expr->v.Slice.lower) {
+                expr->v.Slice.lower = _PyPegen_desugar_double_dot_expr(p, expr->v.Slice.lower);
+            }
+            if (expr->v.Slice.upper) {
+                expr->v.Slice.upper = _PyPegen_desugar_double_dot_expr(p, expr->v.Slice.upper);
+            }
+            if (expr->v.Slice.step) {
+                expr->v.Slice.step = _PyPegen_desugar_double_dot_expr(p, expr->v.Slice.step);
+            }
+            return expr;
+        }
+        case Constant_kind:
+        default:
+            return expr;
+    }
+}
+
+static void
+desugar_double_dot_arguments(Parser *p, arguments_ty args) {
+    if (!args) return;
+    if (args->defaults) {
+        int len = asdl_seq_LEN(args->defaults);
+        for (int i = 0; i < len; i++) {
+            expr_ty def = asdl_seq_GET(args->defaults, i);
+            asdl_seq_SET(args->defaults, i, _PyPegen_desugar_double_dot_expr(p, def));
+        }
+    }
+    if (args->kw_defaults) {
+        int len = asdl_seq_LEN(args->kw_defaults);
+        for (int i = 0; i < len; i++) {
+            expr_ty def = asdl_seq_GET(args->kw_defaults, i);
+            if (def) {
+                asdl_seq_SET(args->kw_defaults, i, _PyPegen_desugar_double_dot_expr(p, def));
+            }
+        }
+    }
+    if (args->posonlyargs) {
+        int len = asdl_seq_LEN(args->posonlyargs);
+        for (int i = 0; i < len; i++) {
+            arg_ty arg = asdl_seq_GET(args->posonlyargs, i);
+            if (arg->annotation) {
+                arg->annotation = _PyPegen_desugar_double_dot_expr(p, arg->annotation);
+            }
+        }
+    }
+    if (args->args) {
+        int len = asdl_seq_LEN(args->args);
+        for (int i = 0; i < len; i++) {
+            arg_ty arg = asdl_seq_GET(args->args, i);
+            if (arg->annotation) {
+                arg->annotation = _PyPegen_desugar_double_dot_expr(p, arg->annotation);
+            }
+        }
+    }
+    if (args->kwonlyargs) {
+        int len = asdl_seq_LEN(args->kwonlyargs);
+        for (int i = 0; i < len; i++) {
+            arg_ty arg = asdl_seq_GET(args->kwonlyargs, i);
+            if (arg->annotation) {
+                arg->annotation = _PyPegen_desugar_double_dot_expr(p, arg->annotation);
+            }
+        }
+    }
+    if (args->vararg && args->vararg->annotation) {
+        args->vararg->annotation = _PyPegen_desugar_double_dot_expr(p, args->vararg->annotation);
+    }
+    if (args->kwarg && args->kwarg->annotation) {
+        args->kwarg->annotation = _PyPegen_desugar_double_dot_expr(p, args->kwarg->annotation);
+    }
+}
+
+static void
+desugar_double_dot_pattern(Parser *p, pattern_ty pattern) {
+    if (!pattern) return;
+    switch (pattern->kind) {
+        case MatchValue_kind:
+            pattern->v.MatchValue.value = _PyPegen_desugar_double_dot_expr(p, pattern->v.MatchValue.value);
+            break;
+        case MatchSequence_kind:
+            if (pattern->v.MatchSequence.patterns) {
+                int len = asdl_seq_LEN(pattern->v.MatchSequence.patterns);
+                for (int i = 0; i < len; i++) {
+                    desugar_double_dot_pattern(p, asdl_seq_GET(pattern->v.MatchSequence.patterns, i));
+                }
+            }
+            break;
+        case MatchMapping_kind:
+            if (pattern->v.MatchMapping.keys) {
+                int len = asdl_seq_LEN(pattern->v.MatchMapping.keys);
+                for (int i = 0; i < len; i++) {
+                    expr_ty key = asdl_seq_GET(pattern->v.MatchMapping.keys, i);
+                    asdl_seq_SET(pattern->v.MatchMapping.keys, i, _PyPegen_desugar_double_dot_expr(p, key));
+                }
+            }
+            if (pattern->v.MatchMapping.patterns) {
+                int len = asdl_seq_LEN(pattern->v.MatchMapping.patterns);
+                for (int i = 0; i < len; i++) {
+                    desugar_double_dot_pattern(p, asdl_seq_GET(pattern->v.MatchMapping.patterns, i));
+                }
+            }
+            break;
+        case MatchClass_kind:
+            pattern->v.MatchClass.cls = _PyPegen_desugar_double_dot_expr(p, pattern->v.MatchClass.cls);
+            if (pattern->v.MatchClass.patterns) {
+                int len = asdl_seq_LEN(pattern->v.MatchClass.patterns);
+                for (int i = 0; i < len; i++) {
+                    desugar_double_dot_pattern(p, asdl_seq_GET(pattern->v.MatchClass.patterns, i));
+                }
+            }
+            if (pattern->v.MatchClass.kwd_patterns) {
+                int len = asdl_seq_LEN(pattern->v.MatchClass.kwd_patterns);
+                for (int i = 0; i < len; i++) {
+                    desugar_double_dot_pattern(p, asdl_seq_GET(pattern->v.MatchClass.kwd_patterns, i));
+                }
+            }
+            break;
+        case MatchAs_kind:
+            if (pattern->v.MatchAs.pattern) {
+                desugar_double_dot_pattern(p, pattern->v.MatchAs.pattern);
+            }
+            break;
+        case MatchOr_kind:
+            if (pattern->v.MatchOr.patterns) {
+                int len = asdl_seq_LEN(pattern->v.MatchOr.patterns);
+                for (int i = 0; i < len; i++) {
+                    desugar_double_dot_pattern(p, asdl_seq_GET(pattern->v.MatchOr.patterns, i));
+                }
+            }
+            break;
+        default:
+            break;
+    }
+}
+
+static void
+desugar_double_dot_generators(Parser *p, asdl_comprehension_seq *generators) {
+    if (!generators) return;
+    int len = asdl_seq_LEN(generators);
+    for (int i = 0; i < len; i++) {
+        comprehension_ty gen = asdl_seq_GET(generators, i);
+        gen->target = _PyPegen_desugar_double_dot_expr(p, gen->target);
+        gen->iter = _PyPegen_desugar_double_dot_expr(p, gen->iter);
+        if (gen->ifs) {
+            int ifs_len = asdl_seq_LEN(gen->ifs);
+            for (int j = 0; j < ifs_len; j++) {
+                expr_ty cond = asdl_seq_GET(gen->ifs, j);
+                asdl_seq_SET(gen->ifs, j, _PyPegen_desugar_double_dot_expr(p, cond));
+            }
+        }
+    }
+}
+
+void
+_PyPegen_desugar_double_dot_stmt(Parser *p, stmt_ty stmt) {
+    if (!stmt) {
+        return;
+    }
+    switch (stmt->kind) {
+        case FunctionDef_kind: {
+            if (stmt->v.FunctionDef.decorator_list) {
+                int len = asdl_seq_LEN(stmt->v.FunctionDef.decorator_list);
+                for (int i = 0; i < len; i++) {
+                    expr_ty dec = asdl_seq_GET(stmt->v.FunctionDef.decorator_list, i);
+                    asdl_seq_SET(stmt->v.FunctionDef.decorator_list, i, _PyPegen_desugar_double_dot_expr(p, dec));
+                }
+            }
+            if (stmt->v.FunctionDef.returns) {
+                stmt->v.FunctionDef.returns = _PyPegen_desugar_double_dot_expr(p, stmt->v.FunctionDef.returns);
+            }
+            if (stmt->v.FunctionDef.args) {
+                desugar_double_dot_arguments(p, stmt->v.FunctionDef.args);
+            }
+            _PyPegen_desugar_double_dot_stmts(p, stmt->v.FunctionDef.body);
+            break;
+        }
+        case AsyncFunctionDef_kind: {
+            if (stmt->v.AsyncFunctionDef.decorator_list) {
+                int len = asdl_seq_LEN(stmt->v.AsyncFunctionDef.decorator_list);
+                for (int i = 0; i < len; i++) {
+                    expr_ty dec = asdl_seq_GET(stmt->v.AsyncFunctionDef.decorator_list, i);
+                    asdl_seq_SET(stmt->v.AsyncFunctionDef.decorator_list, i, _PyPegen_desugar_double_dot_expr(p, dec));
+                }
+            }
+            if (stmt->v.AsyncFunctionDef.returns) {
+                stmt->v.AsyncFunctionDef.returns = _PyPegen_desugar_double_dot_expr(p, stmt->v.AsyncFunctionDef.returns);
+            }
+            if (stmt->v.AsyncFunctionDef.args) {
+                desugar_double_dot_arguments(p, stmt->v.AsyncFunctionDef.args);
+            }
+            _PyPegen_desugar_double_dot_stmts(p, stmt->v.AsyncFunctionDef.body);
+            break;
+        }
+        case ClassDef_kind: {
+            if (stmt->v.ClassDef.bases) {
+                int len = asdl_seq_LEN(stmt->v.ClassDef.bases);
+                for (int i = 0; i < len; i++) {
+                    expr_ty base = asdl_seq_GET(stmt->v.ClassDef.bases, i);
+                    asdl_seq_SET(stmt->v.ClassDef.bases, i, _PyPegen_desugar_double_dot_expr(p, base));
+                }
+            }
+            if (stmt->v.ClassDef.keywords) {
+                int len = asdl_seq_LEN(stmt->v.ClassDef.keywords);
+                for (int i = 0; i < len; i++) {
+                    keyword_ty kw = asdl_seq_GET(stmt->v.ClassDef.keywords, i);
+                    kw->value = _PyPegen_desugar_double_dot_expr(p, kw->value);
+                }
+            }
+            if (stmt->v.ClassDef.decorator_list) {
+                int len = asdl_seq_LEN(stmt->v.ClassDef.decorator_list);
+                for (int i = 0; i < len; i++) {
+                    expr_ty dec = asdl_seq_GET(stmt->v.ClassDef.decorator_list, i);
+                    asdl_seq_SET(stmt->v.ClassDef.decorator_list, i, _PyPegen_desugar_double_dot_expr(p, dec));
+                }
+            }
+            _PyPegen_desugar_double_dot_stmts(p, stmt->v.ClassDef.body);
+            break;
+        }
+        case Return_kind: {
+            if (stmt->v.Return.value) {
+                stmt->v.Return.value = _PyPegen_desugar_double_dot_expr(p, stmt->v.Return.value);
+            }
+            break;
+        }
+        case Delete_kind: {
+            if (stmt->v.Delete.targets) {
+                int len = asdl_seq_LEN(stmt->v.Delete.targets);
+                for (int i = 0; i < len; i++) {
+                    expr_ty target = asdl_seq_GET(stmt->v.Delete.targets, i);
+                    asdl_seq_SET(stmt->v.Delete.targets, i, _PyPegen_desugar_double_dot_expr(p, target));
+                }
+            }
+            break;
+        }
+        case Assign_kind: {
+            if (stmt->v.Assign.targets) {
+                int len = asdl_seq_LEN(stmt->v.Assign.targets);
+                for (int i = 0; i < len; i++) {
+                    expr_ty target = asdl_seq_GET(stmt->v.Assign.targets, i);
+                    asdl_seq_SET(stmt->v.Assign.targets, i, _PyPegen_desugar_double_dot_expr(p, target));
+                }
+            }
+            stmt->v.Assign.value = _PyPegen_desugar_double_dot_expr(p, stmt->v.Assign.value);
+            break;
+        }
+        case TypeAlias_kind: {
+            stmt->v.TypeAlias.name = _PyPegen_desugar_double_dot_expr(p, stmt->v.TypeAlias.name);
+            stmt->v.TypeAlias.value = _PyPegen_desugar_double_dot_expr(p, stmt->v.TypeAlias.value);
+            break;
+        }
+        case AugAssign_kind: {
+            stmt->v.AugAssign.target = _PyPegen_desugar_double_dot_expr(p, stmt->v.AugAssign.target);
+            stmt->v.AugAssign.value = _PyPegen_desugar_double_dot_expr(p, stmt->v.AugAssign.value);
+            break;
+        }
+        case AnnAssign_kind: {
+            stmt->v.AnnAssign.target = _PyPegen_desugar_double_dot_expr(p, stmt->v.AnnAssign.target);
+            stmt->v.AnnAssign.annotation = _PyPegen_desugar_double_dot_expr(p, stmt->v.AnnAssign.annotation);
+            if (stmt->v.AnnAssign.value) {
+                stmt->v.AnnAssign.value = _PyPegen_desugar_double_dot_expr(p, stmt->v.AnnAssign.value);
+            }
+            break;
+        }
+        case For_kind: {
+            stmt->v.For.target = _PyPegen_desugar_double_dot_expr(p, stmt->v.For.target);
+            stmt->v.For.iter = _PyPegen_desugar_double_dot_expr(p, stmt->v.For.iter);
+            _PyPegen_desugar_double_dot_stmts(p, stmt->v.For.body);
+            _PyPegen_desugar_double_dot_stmts(p, stmt->v.For.orelse);
+            break;
+        }
+        case AsyncFor_kind: {
+            stmt->v.AsyncFor.target = _PyPegen_desugar_double_dot_expr(p, stmt->v.AsyncFor.target);
+            stmt->v.AsyncFor.iter = _PyPegen_desugar_double_dot_expr(p, stmt->v.AsyncFor.iter);
+            _PyPegen_desugar_double_dot_stmts(p, stmt->v.AsyncFor.body);
+            _PyPegen_desugar_double_dot_stmts(p, stmt->v.AsyncFor.orelse);
+            break;
+        }
+        case While_kind: {
+            stmt->v.While.test = _PyPegen_desugar_double_dot_expr(p, stmt->v.While.test);
+            _PyPegen_desugar_double_dot_stmts(p, stmt->v.While.body);
+            _PyPegen_desugar_double_dot_stmts(p, stmt->v.While.orelse);
+            break;
+        }
+        case If_kind: {
+            stmt->v.If.test = _PyPegen_desugar_double_dot_expr(p, stmt->v.If.test);
+            _PyPegen_desugar_double_dot_stmts(p, stmt->v.If.body);
+            _PyPegen_desugar_double_dot_stmts(p, stmt->v.If.orelse);
+            break;
+        }
+        case With_kind: {
+            if (stmt->v.With.items) {
+                int len = asdl_seq_LEN(stmt->v.With.items);
+                for (int i = 0; i < len; i++) {
+                    withitem_ty item = asdl_seq_GET(stmt->v.With.items, i);
+                    item->context_expr = _PyPegen_desugar_double_dot_expr(p, item->context_expr);
+                    if (item->optional_vars) {
+                        item->optional_vars = _PyPegen_desugar_double_dot_expr(p, item->optional_vars);
+                    }
+                }
+            }
+            _PyPegen_desugar_double_dot_stmts(p, stmt->v.With.body);
+            break;
+        }
+        case AsyncWith_kind: {
+            if (stmt->v.AsyncWith.items) {
+                int len = asdl_seq_LEN(stmt->v.AsyncWith.items);
+                for (int i = 0; i < len; i++) {
+                    withitem_ty item = asdl_seq_GET(stmt->v.AsyncWith.items, i);
+                    item->context_expr = _PyPegen_desugar_double_dot_expr(p, item->context_expr);
+                    if (item->optional_vars) {
+                        item->optional_vars = _PyPegen_desugar_double_dot_expr(p, item->optional_vars);
+                    }
+                }
+            }
+            _PyPegen_desugar_double_dot_stmts(p, stmt->v.AsyncWith.body);
+            break;
+        }
+        case Match_kind: {
+            stmt->v.Match.subject = _PyPegen_desugar_double_dot_expr(p, stmt->v.Match.subject);
+            if (stmt->v.Match.cases) {
+                int len = asdl_seq_LEN(stmt->v.Match.cases);
+                for (int i = 0; i < len; i++) {
+                    match_case_ty mcase = asdl_seq_GET(stmt->v.Match.cases, i);
+                    desugar_double_dot_pattern(p, mcase->pattern);
+                    if (mcase->guard) {
+                        mcase->guard = _PyPegen_desugar_double_dot_expr(p, mcase->guard);
+                    }
+                    _PyPegen_desugar_double_dot_stmts(p, mcase->body);
+                }
+            }
+            break;
+        }
+        case Raise_kind: {
+            if (stmt->v.Raise.exc) {
+                stmt->v.Raise.exc = _PyPegen_desugar_double_dot_expr(p, stmt->v.Raise.exc);
+            }
+            if (stmt->v.Raise.cause) {
+                stmt->v.Raise.cause = _PyPegen_desugar_double_dot_expr(p, stmt->v.Raise.cause);
+            }
+            break;
+        }
+        case Try_kind: {
+            _PyPegen_desugar_double_dot_stmts(p, stmt->v.Try.body);
+            if (stmt->v.Try.handlers) {
+                int len = asdl_seq_LEN(stmt->v.Try.handlers);
+                for (int i = 0; i < len; i++) {
+                    excepthandler_ty handler = asdl_seq_GET(stmt->v.Try.handlers, i);
+                    if (handler->v.ExceptHandler.type) {
+                        handler->v.ExceptHandler.type = _PyPegen_desugar_double_dot_expr(p, handler->v.ExceptHandler.type);
+                    }
+                    _PyPegen_desugar_double_dot_stmts(p, handler->v.ExceptHandler.body);
+                }
+            }
+            _PyPegen_desugar_double_dot_stmts(p, stmt->v.Try.orelse);
+            _PyPegen_desugar_double_dot_stmts(p, stmt->v.Try.finalbody);
+            break;
+        }
+        case TryStar_kind: {
+            _PyPegen_desugar_double_dot_stmts(p, stmt->v.TryStar.body);
+            if (stmt->v.TryStar.handlers) {
+                int len = asdl_seq_LEN(stmt->v.TryStar.handlers);
+                for (int i = 0; i < len; i++) {
+                    excepthandler_ty handler = asdl_seq_GET(stmt->v.TryStar.handlers, i);
+                    if (handler->v.ExceptHandler.type) {
+                        handler->v.ExceptHandler.type = _PyPegen_desugar_double_dot_expr(p, handler->v.ExceptHandler.type);
+                    }
+                    _PyPegen_desugar_double_dot_stmts(p, handler->v.ExceptHandler.body);
+                }
+            }
+            _PyPegen_desugar_double_dot_stmts(p, stmt->v.TryStar.orelse);
+            _PyPegen_desugar_double_dot_stmts(p, stmt->v.TryStar.finalbody);
+            break;
+        }
+        case Assert_kind: {
+            stmt->v.Assert.test = _PyPegen_desugar_double_dot_expr(p, stmt->v.Assert.test);
+            if (stmt->v.Assert.msg) {
+                stmt->v.Assert.msg = _PyPegen_desugar_double_dot_expr(p, stmt->v.Assert.msg);
+            }
+            break;
+        }
+        case Expr_kind: {
+            stmt->v.Expr.value = _PyPegen_desugar_double_dot_expr(p, stmt->v.Expr.value);
+            break;
+        }
+        case Pass_kind:
+        case Break_kind:
+        case Continue_kind:
+        case Import_kind:
+        case ImportFrom_kind:
+        case Global_kind:
+        case Nonlocal_kind:
+        default:
+            break;
+    }
+}
+
+asdl_stmt_seq *
+_PyPegen_desugar_double_dot_stmts(Parser *p, asdl_stmt_seq *stmts) {
+    if (!stmts) return NULL;
+    if (!p->has_double_dot) {
+        return stmts;
+    }
+    int len = asdl_seq_LEN(stmts);
+    for (int i = 0; i < len; i++) {
+        stmt_ty stmt = asdl_seq_GET(stmts, i);
+        _PyPegen_desugar_double_dot_stmt(p, stmt);
+    }
+    return stmts;
+}

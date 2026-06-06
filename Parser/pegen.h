@@ -91,6 +91,7 @@ typedef struct {
     int call_invalid_rules;
     int debug;
     location last_stmt_location;
+    int has_double_dot;
 } Parser;
 
 typedef struct {
@@ -404,5 +405,9 @@ expr_ty _PyPegen_make_double_star_expr(Parser *p, expr_ty a);
 expr_ty _PyPegen_empty_subscript(Parser *p, expr_ty a);
 stmt_ty _PyPegen_make_starred_assign(Parser *p, expr_ty target, expr_ty value);
 stmt_ty _PyPegen_make_double_starred_assign(Parser *p, expr_ty target, expr_ty value);
+
+asdl_stmt_seq *_PyPegen_desugar_double_dot_stmts(Parser *p, asdl_stmt_seq *stmts);
+void _PyPegen_desugar_double_dot_stmt(Parser *p, stmt_ty stmt);
+expr_ty _PyPegen_desugar_double_dot_expr(Parser *p, expr_ty expr);
 
 #endif

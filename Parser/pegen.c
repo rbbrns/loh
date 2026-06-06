@@ -857,6 +857,7 @@ _PyPegen_Parser_New(struct tok_state *tok, int start_rule, int flags,
     p->last_stmt_location.col_offset = 0;
     p->last_stmt_location.end_lineno = 0;
     p->last_stmt_location.end_col_offset = 0;
+    p->has_double_dot = 0;
 #ifdef Py_DEBUG
     p->debug = _Py_GetConfig()->parser_debug;
 #endif

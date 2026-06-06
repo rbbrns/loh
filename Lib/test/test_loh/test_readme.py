@@ -100,6 +100,23 @@ class TestReadmeExamples(unittest.TestCase):
         self.assertEqual(acc.owner, "Alice")
         self.assertEqual(acc.deposit(50.0), 150.0)
 
+        SavingsAccount:Account:
+            .(owner, balance, .interest_rate):
+                ..(owner, balance)  # calls parent constructor
+
+            .deposit(amount):
+                -> ..deposit(amount)  # calls parent method
+
+            .get_details():
+                -> f"{.owner}, Rate: {.interest_rate}"
+
+        sav = SavingsAccount("Bob", 200.0, 0.05)
+        self.assertEqual(sav.owner, "Bob")
+        self.assertEqual(sav.balance, 200.0)
+        self.assertEqual(sav.interest_rate, 0.05)
+        self.assertEqual(sav.deposit(50.0), 250.0)
+        self.assertEqual(sav.get_details(), "Bob, Rate: 0.05")
+
     def test_exceptions_and_assertions(self):
         ran = False
         ^:
