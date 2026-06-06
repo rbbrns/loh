@@ -39,7 +39,7 @@ Employee::
 # Subclasses demonstrating single inheritance
 Waiter:Employee:
     .(emp_id: EmployeeId, name: str, .section: str):
-        super().__init__(emp_id, name, "Waiter")
+        ..(emp_id, name, "Waiter")
         .tips = 0.0
         .assigned_tables = []
 
@@ -51,12 +51,12 @@ Waiter:Employee:
 
 Chef:Employee:
     .(emp_id: EmployeeId, name: str, .specialty: str):
-        super().__init__(emp_id, name, "Chef")
+        ..(emp_id, name, "Chef")
         .active_orders_count = 0
 
 Technician:Employee:
     .(emp_id: EmployeeId, name: str):
-        super().__init__(emp_id, name, "Technician")
+        ..(emp_id, name, "Technician")
 
 # MenuItem using shorthand parameter properties
 MenuItem::
