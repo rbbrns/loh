@@ -1698,8 +1698,12 @@ x = (
         self.assertEqual(x, 10)
 
     def test_invalid_syntax_error_message(self):
-        with self.assertRaisesRegex(SyntaxError,
-                                    "f-string: expecting '=', or '!', or ':', or '}'"):
+        expected_msg = (
+            "invalid syntax"
+            if hasattr(sys, "loh_version") else
+            "f-string: expecting '=', or '!', or ':', or '}'"
+        )
+        with self.assertRaisesRegex(SyntaxError, expected_msg):
             compile("f'{a $ b}'", "?", "exec")
 
     def test_with_two_commas_in_format_specifier(self):

@@ -25041,7 +25041,7 @@ double_starred_kvpair_rule(Parser *p)
     return _res;
 }
 
-// kvpair: expression ':' expression | NAME '=' expression
+// kvpair: expression ':' expression
 static KeyValuePair*
 kvpair_rule(Parser *p)
 {
@@ -25054,15 +25054,6 @@ kvpair_rule(Parser *p)
     }
     KeyValuePair* _res = NULL;
     int _mark = p->mark;
-    if (p->mark == p->fill && _PyPegen_fill_token(p) < 0) {
-        p->error_indicator = 1;
-        p->level--;
-        return NULL;
-    }
-    int _start_lineno = p->tokens[_mark]->lineno;
-    UNUSED(_start_lineno); // Only used by EXTRA macro
-    int _start_col_offset = p->tokens[_mark]->col_offset;
-    UNUSED(_start_col_offset); // Only used by EXTRA macro
     { // expression ':' expression
         if (p->error_indicator) {
             p->level--;
@@ -25092,45 +25083,6 @@ kvpair_rule(Parser *p)
         p->mark = _mark;
         D(fprintf(stderr, "%*c%s kvpair[%d-%d]: %s failed!\n", p->level, ' ',
                   p->error_indicator ? "ERROR!" : "-", _mark, p->mark, "expression ':' expression"));
-    }
-    { // NAME '=' expression
-        if (p->error_indicator) {
-            p->level--;
-            return NULL;
-        }
-        D(fprintf(stderr, "%*c> kvpair[%d-%d]: %s\n", p->level, ' ', _mark, p->mark, "NAME '=' expression"));
-        Token * _literal;
-        expr_ty a;
-        expr_ty b;
-        if (
-            (a = _PyPegen_name_token(p))  // NAME
-            &&
-            (_literal = _PyPegen_expect_token(p, 22))  // token='='
-            &&
-            (b = expression_rule(p))  // expression
-        )
-        {
-            D(fprintf(stderr, "%*c+ kvpair[%d-%d]: %s succeeded!\n", p->level, ' ', _mark, p->mark, "NAME '=' expression"));
-            Token *_token = _PyPegen_get_last_nonnwhitespace_token(p);
-            if (_token == NULL) {
-                p->level--;
-                return NULL;
-            }
-            int _end_lineno = _token->end_lineno;
-            UNUSED(_end_lineno); // Only used by EXTRA macro
-            int _end_col_offset = _token->end_col_offset;
-            UNUSED(_end_col_offset); // Only used by EXTRA macro
-            _res = _PyPegen_key_value_pair ( p , _PyAST_Constant ( a -> v . Name . id , NULL , EXTRA ) , b );
-            if (_res == NULL && PyErr_Occurred()) {
-                p->error_indicator = 1;
-                p->level--;
-                return NULL;
-            }
-            goto done;
-        }
-        p->mark = _mark;
-        D(fprintf(stderr, "%*c%s kvpair[%d-%d]: %s failed!\n", p->level, ' ',
-                  p->error_indicator ? "ERROR!" : "-", _mark, p->mark, "NAME '=' expression"));
     }
     _res = NULL;
   done:

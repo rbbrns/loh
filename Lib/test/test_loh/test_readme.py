@@ -294,9 +294,9 @@ class TestReadmeExamples(unittest.TestCase):
         self.assertTrue(x)
         self.assertFalse(y)
 
-    def test_dict_literals(self):
-        my_dict = {x=10, y=20, z=~}
-        self.assertEqual(my_dict, {'x': 10, 'y': 20, 'z': None})
+    def test_dict_literals_removed_syntax_error(self):
+        with self.assertRaises(SyntaxError):
+            compile("{x=10}", "<string>", "eval")
 
     def test_pipe_operator(self):
         result = 5 |> (x) -> x + 1 |> (x) -> x * 2
@@ -456,7 +456,7 @@ $:
 
     def test_multi_key_subscript_slicing_and_unpacking(self):
         code = """
-d = {x=1, y=2}
+d = {'x': 1, 'y': 2}
 
 # Standalone RHS unpacking
 keys = *d        # ['x', 'y']

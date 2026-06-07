@@ -85,21 +85,21 @@ Reservation::
 # Lighting System (Smart Building Operations)
 LightingSystem::
     .():
-        # Initialize zones with default brightness using dict keyword syntax
-        .zones = {dining=0, bar=0, patio=0, kitchen=0}
+        # Initialize zones with default brightness
+        .zones = {"dining": 0, "bar": 0, "patio": 0, "kitchen": 0}
 
     .set_preset(preset: str):
         # Structural pattern matching on preset names
         levels = {}
         ?== preset:
             "Morning":
-                levels = {dining=30, bar=10, patio=0, kitchen=80}
+                levels = {"dining": 30, "bar": 10, "patio": 0, "kitchen": 80}
             "Lunch":
-                levels = {dining=70, bar=50, patio=50, kitchen=90}
+                levels = {"dining": 70, "bar": 50, "patio": 50, "kitchen": 90}
             "Dinner":
-                levels = {dining=40, bar=30, patio=60, kitchen=95}
+                levels = {"dining": 40, "bar": 30, "patio": 60, "kitchen": 95}
             _:
-                levels = {dining=10, bar=10, patio=0, kitchen=10}
+                levels = {"dining": 10, "bar": 10, "patio": 0, "kitchen": 10}
 
         .zones = levels
         print(f"[System] Lighting set to '{preset}': {.zones}")
@@ -108,12 +108,12 @@ LightingSystem::
 AVSystem::
     .():
         .audio_source = "Silent"
-        .volume = {dining=0, bar=0, patio=0}
+        .volume = {"dining": 0, "bar": 0, "patio": 0}
         .bar_tv_channel = "Off"
 
     .configure_av(audio_source: str, vol_dining: int, vol_bar: int, vol_patio: int, bar_tv_channel: str):
         .audio_source = audio_source
-        .volume = {dining=vol_dining, bar=vol_bar, patio=vol_patio}
+        .volume = {"dining": vol_dining, "bar": vol_bar, "patio": vol_patio}
         .bar_tv_channel = bar_tv_channel
         print(f"[System] A/V Configured -> Playlist: {.audio_source}, Vol: {.volume}, Bar TV: {.bar_tv_channel}")
 

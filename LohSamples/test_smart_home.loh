@@ -8,7 +8,7 @@
 # Read and execute smart_home.loh to load its definitions without executing its simulation
 dir_path = os.path.dirname(__file__)
 smart_home_file = os.path.join(dir_path, "smart_home.loh")
-smart_home_ns = {__name__="smart_home"}
+smart_home_ns = {"__name__": "smart_home"}
 
 with open(smart_home_file, "r") as f:
     code_str = f.read()

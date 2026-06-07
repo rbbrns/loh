@@ -679,25 +679,8 @@ y-
 
 ---
 
-### **17. Dict Literals Keyword-Style Syntax**
 
-> **Motivation:** Dictionary literals function as collections of named attributes. Using keyword-style assignments (`{x=10}`) maps key-value definition to standard function call conventions, treating dictionary keys as named parameters and eliminating quote clutter.
-
-Instead of standard string mapping, dictionary literals can accept keyword-style assignments:
-
-#### **Python**
-```python
-my_dict = {'x': 10, 'y': 20, 'z': None}
-```
-
-#### **Loh**
-```python
-my_dict = {x=10, y=20, z=}
-```
-
----
-
-### **18. The Pipe Operator (`|>`)**
+### **17. The Pipe Operator (`|>`)**
 
 > **Motivation:** Data processing is a sequential flow of transformations. The pipe operator `|>` allows you to chain function calls in the order they occur (from left to right), matching the developer's mental model of passing data through a pipeline rather than reading nested functions inside-out.
 
@@ -728,7 +711,7 @@ processed = (
 
 ---
 
-### **19. The `empty_none_str` Future Import**
+### **18. The `empty_none_str` Future Import**
 
 > **Motivation:** When formatting user-facing text, empty values should naturally display as blank spaces rather than the word `"None"`. The `empty_none_str` future import ensures that string representation of missing values behaves intuitively, defaulting to an empty string `""` without requiring manual fallback checks.
 
@@ -747,7 +730,7 @@ print(str(None))  # Outputs: ""
 
 ---
 
-### **20. None-Safe Operators (`~.`, `~~`, `~[]`)**
+### **19. None-Safe Operators (`~.`, `~~`, `~[]`)**
 
 > **Motivation:** Accessing attributes or indexing nested data structures that might contain `None` often requires verbose inline checks or deep conditional branching. Loh introduces three None-safe operators to streamline safe navigation, indexing, and default-value fallback handling without repeated evaluations or boilerplate.
 
@@ -784,7 +767,7 @@ first_item = data~['items']~[0]
 
 ---
 
-### **21. Range / Slice Literals (`..`)**
+### **20. Range / Slice Literals (`..`)**
 
 > **Motivation:** Standard Python relies on `range(start, stop)` for iteration and sequences. In mathematical notations and languages like Rust or Ruby, range/interval literals (`1..10`) are used to represent sequences cleanly. Adding this to Loh makes loop variables and slice checks extremely compact.
 
@@ -814,7 +797,7 @@ $ i <~ 0..10:
 
 ---
 
-### **22. Inline Scope Initializer Block (`obj { ... }`)**
+### **21. Inline Scope Initializer Block (`obj { ... }`)**
 
 > **Motivation:** Configuring or modifying objects upon construction or inline inside pipelines typically requires separate statement-level assignments. An inline scope initializer block allows properties to be assigned and methods to be invoked using Loh's leading-dot receiver context, returning the configured receiver object.
 
@@ -850,7 +833,7 @@ send_email(user {
 
 ---
 
-### **23. Runtime Versioning (`sys.loh_version`, `sys.loh_version_info`)**
+### **22. Runtime Versioning (`sys.loh_version`, `sys.loh_version_info`)**
 
 > **Motivation:** As Loh evolves and introduces breaking changes, downstream tooling, compilers, and consumers need a reliable way to query the language version at runtime to adjust behavior or assert compatibility.
 
@@ -873,7 +856,7 @@ else:
 
 ---
 
-### **24. The `auto_fstrings` Future Import**
+### **23. The `auto_fstrings` Future Import**
 
 > **Motivation:** Writing `f"..."` for every string interpolation is verbose and can lead to bugs when developers forget the `f` prefix. The `auto_fstrings` future import in Loh allows standard string literals containing braces `{}` to automatically compile as f-strings.
 
@@ -907,7 +890,7 @@ css = "div {{ color: red; }}"  # Evaluates to: "div { color: red; }"
 
 ---
 
-### **25. None-Safe Attribute Assignment**
+### **24. None-Safe Attribute Assignment**
 
 > **Motivation:** Safe navigation `user~.profile~.address` protects against attribute reads crashing on `None` values. However, trying to assign to a nested property where a parent might be `None` still results in a traceback. Applying safe navigation to assignment allows writing values safely to nested properties, silently short-circuiting and doing nothing if any parent object in the chain is `None`.
 
@@ -927,7 +910,7 @@ user~.score += 10
 
 ---
 
-### **26. Infinite Loops Shorthand**
+### **25. Infinite Loops Shorthand**
 
 > **Motivation:** Python lacks a dedicated infinite loop construct, requiring `while True:`. Loh uses the loop sigil `$` alone followed by `:` to represent an infinite loop.
 
@@ -944,7 +927,7 @@ $:
 
 ---
 
-### **27. Multi-Key Subscript Slicing and Unpacking (`*` / `**`)**
+### **26. Multi-Key Subscript Slicing and Unpacking (`*` / `**`)**
 
 > **Motivation:** Extracting subsets of dictionary keys, converting lists to index-value mappings, and retrieving values/keys as lists are common but verbose tasks. By using the `*` (sequence/list) and `**` (mapping/dictionary) prefix operators in combination with subscripts or standalone targets, Loh provides a clean and powerful syntax that is 100% backward compatible with standard Python's tuple-subscript conflicts.
 
@@ -983,7 +966,7 @@ Loh defines the following behaviors for `*` and `**` on the RHS (evaluating) and
 
 #### **Example**
 ```python
-d = {x=1, y=2}
+d = {'x': 1, 'y': 2}
 
 # Standalone RHS unpacking
 keys = *d        # ['x', 'y']
@@ -999,7 +982,7 @@ subdict = **d['x']      # {'x': 1}
 
 ---
 
-### **28. The `implicit_returns` Future Import**
+### **27. The `implicit_returns` Future Import**
 
 > **Motivation:** Writing explicit return statements (`return` or `->` in Loh) in short helper functions or lambda-like standard methods adds visual noise. Expression-oriented languages like Rust and Ruby automatically return the last evaluated expression in a function body. Enabling this behavior via a future import makes Loh functions extremely clean and concise.
 

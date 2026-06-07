@@ -8,7 +8,7 @@
 # Read and execute restaurant.loh to load its definitions without executing its simulation
 dir_path = os.path.dirname(__file__)
 restaurant_file = os.path.join(dir_path, "restaurant.loh")
-restaurant_ns = {__name__="restaurant"}
+restaurant_ns = {"__name__": "restaurant"}
 
 with open(restaurant_file, "r") as f:
     code_str = f.read()
