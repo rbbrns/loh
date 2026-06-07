@@ -86,6 +86,7 @@ Loh maps Python's verbose keywords and structures to elegant, symbol-based alter
 | `def` | *(omit)* | Function definition |
 | `def __init__(self, ...)` | `.(...)` | Constructor shorthand |
 | `self.param = param` | `.param` in signature | Parameter property binding |
+| Parameter Keyword-Only Alias | `primary \| alias` | Keyword-only parameter alias (e.g. `limit \| l = 100`) |
 | `super()` | `..` | Parent class reference shorthand |
 | `type` | `:` | Type alias declaration |
 | `match` | `?==` | Structural pattern matching subject |
@@ -246,6 +247,28 @@ countdown(n) -> Generator:
     $? n > 0:
         ~> n
         n -= 1
+```
+
+#### **Parameter Keyword-Only Multi-Name Aliases (`limit | l = 100`)**
+
+> **Motivation:** APIs frequently evolve to require clearer parameter names, or benefit from short, convenient keyboard shortcuts (e.g. `l` for `limit`). By allowing parameter alias syntax `primary | alias`, Loh automatically handles the routing: both names are validated (raising a conflict `TypeError` if both are supplied), the value is resolved to the primary name, and the alias name is removed from the local scope so it does not clutter the function's variables.
+
+##### **Python**
+```python
+def query(limit=100, **kwargs):
+    # Manually resolve aliases in python
+    if 'l' in kwargs:
+        if 'limit' in kwargs or limit != 100:
+            raise TypeError("got multiple values for alias parameter 'limit'/'l'")
+        limit = kwargs.pop('l')
+    return limit
+```
+
+##### **Loh**
+```python
+query(limit | l = 100):
+    # Loh automatically desugars and resolves 'l' to 'limit', then deletes 'l'
+    -> limit
 ```
 
 ---

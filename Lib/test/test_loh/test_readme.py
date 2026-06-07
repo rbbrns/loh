@@ -84,6 +84,15 @@ class TestReadmeExamples(unittest.TestCase):
         
         self.assertEqual(setup_config("test", a=1, **{"a": 2}), {"name": "test", "a": 2})
 
+        # Parameter aliases
+        my_func(limit | l = 100):
+            -> limit
+        self.assertEqual(my_func(42), 42)
+        self.assertEqual(my_func(limit=50), 50)
+        self.assertEqual(my_func(l=60), 60)
+        self.assertEqual(my_func(), 100)
+
+
     def test_classes(self):
         BaseAccount::
             pass

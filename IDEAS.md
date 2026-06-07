@@ -1228,5 +1228,32 @@ At parse-time, if the operand of the unary `~` operator is a dictionary literal 
 french_to_english = {value: key for key, value in english_to_french.items()}
 ```
 
+---
+
+## 44. Pipe Unpacking Operators (`|*>`, `|**>`)
+
+### Motivation
+Standard pipes (`|>`) feed a single value as the first argument to a function call. However, when a pipeline needs to pass multiple arguments (unpacked from an iterable or sequence) or keyword arguments (unpacked from a dictionary), developers must wrap the function call in a lambda expression (e.g. `args |> lambda x: func(*x)`). Introducing dedicated unpacking pipes—`|*>` for positional argument unpacking and `|**>` for keyword argument unpacking—makes pipeline argument forwarding extremely direct and expressive.
+
+### Proposed Syntax
+```python
+# 1. Positional unpack pipe (|*>)
+(10, 20) |*> math.pow  # Equivalent to: math.pow(10, 20)
+
+# 2. Keyword unpack pipe (|**>)
+{"sep": ", ", "end": "\n"} |**> print("A", "B", ?)
+```
+
+### Compile-Time Desugaring
+At parse-time, the unpacking pipes desugar into function calls with standard Python unpacking operators (`*` and `**`):
+```python
+# (10, 20) |*> math.pow translates to:
+math.pow(*(10, 20))
+
+# kwargs |**> func translates to:
+func(**kwargs)
+```
+
+
 
 

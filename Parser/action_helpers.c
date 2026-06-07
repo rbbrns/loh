@@ -2141,9 +2141,367 @@ desugar_arg_sequence(Parser *p, asdl_arg_seq *arg_list, asdl_stmt_seq *body) {
     return body;
 }
 
-asdl_stmt_seq *
-_PyPegen_desugar_parameter_properties(Parser *p, arguments_ty args, asdl_stmt_seq *body)
+arg_ty
+_PyPegen_make_aliased_arg(Parser *p, expr_ty primary, expr_ty alias, expr_ty annotation)
 {
+    if (!primary || primary->kind != Name_kind || !alias || alias->kind != Name_kind) {
+        return NULL;
+    }
+    const char *primary_str = PyUnicode_AsUTF8(primary->v.Name.id);
+    const char *alias_str = PyUnicode_AsUTF8(alias->v.Name.id);
+    if (!primary_str || !alias_str) {
+        return NULL;
+    }
+    char buf[512];
+    snprintf(buf, sizeof(buf), "%s|%s", primary_str, alias_str);
+    PyObject *combined_id = _PyPegen_new_identifier(p, buf);
+    if (!combined_id) {
+        return NULL;
+    }
+    return _PyAST_arg(combined_id, annotation, NULL, primary->lineno, primary->col_offset, alias->end_lineno, alias->end_col_offset, p->arena);
+}
+
+static asdl_arg_seq *
+append_arg_seq(Parser *p, asdl_arg_seq *seq, arg_ty element)
+{
+    int len = seq ? asdl_seq_LEN(seq) : 0;
+    asdl_arg_seq *new_seq = _Py_asdl_arg_seq_new(len + 1, p->arena);
+    if (!new_seq) return NULL;
+    for (int i = 0; i < len; i++) {
+        asdl_seq_SET(new_seq, i, asdl_seq_GET(seq, i));
+    }
+    asdl_seq_SET(new_seq, len, element);
+    return new_seq;
+}
+
+static asdl_expr_seq *
+append_expr_seq(Parser *p, asdl_expr_seq *seq, expr_ty element)
+{
+    int len = seq ? asdl_seq_LEN(seq) : 0;
+    asdl_expr_seq *new_seq = _Py_asdl_expr_seq_new(len + 1, p->arena);
+    if (!new_seq) return NULL;
+    for (int i = 0; i < len; i++) {
+        asdl_seq_SET(new_seq, i, asdl_seq_GET(seq, i));
+    }
+    asdl_seq_SET(new_seq, len, element);
+    return new_seq;
+}
+
+static stmt_ty
+make_alias_error_check(Parser *p, PyObject *name_id, PyObject *alias_id, PyObject *sentinel_id, const char *func_name, int lineno, int col, int end_lineno, int end_col)
+{
+    PyArena *arena = p->arena;
+    
+    // name is not _LOH_SENTINEL
+    expr_ty name_node = _PyAST_Name(name_id, Load, lineno, col, end_lineno, end_col, arena);
+    expr_ty sentinel_node = _PyAST_Name(sentinel_id, Load, lineno, col, end_lineno, end_col, arena);
+    asdl_int_seq *ops1 = _Py_asdl_int_seq_new(1, arena);
+    asdl_seq_SET(ops1, 0, IsNot);
+    asdl_expr_seq *comps1 = _Py_asdl_expr_seq_new(1, arena);
+    asdl_seq_SET(comps1, 0, sentinel_node);
+    expr_ty cond1 = _PyAST_Compare(name_node, ops1, comps1, lineno, col, end_lineno, end_col, arena);
+    
+    // alias_name is not _LOH_SENTINEL
+    expr_ty alias_node = _PyAST_Name(alias_id, Load, lineno, col, end_lineno, end_col, arena);
+    expr_ty sentinel_node2 = _PyAST_Name(sentinel_id, Load, lineno, col, end_lineno, end_col, arena);
+    asdl_int_seq *ops2 = _Py_asdl_int_seq_new(1, arena);
+    asdl_seq_SET(ops2, 0, IsNot);
+    asdl_expr_seq *comps2 = _Py_asdl_expr_seq_new(1, arena);
+    asdl_seq_SET(comps2, 0, sentinel_node2);
+    expr_ty cond2 = _PyAST_Compare(alias_node, ops2, comps2, lineno, col, end_lineno, end_col, arena);
+    
+    // cond1 and cond2
+    asdl_expr_seq *bool_values = _Py_asdl_expr_seq_new(2, arena);
+    asdl_seq_SET(bool_values, 0, cond1);
+    asdl_seq_SET(bool_values, 1, cond2);
+    expr_ty test = _PyAST_BoolOp(And, bool_values, lineno, col, end_lineno, end_col, arena);
+    
+    // Construct TypeError("...")
+    char msg[512];
+    snprintf(msg, sizeof(msg), "%s() got multiple values for alias parameter '%s'/'%s'",
+             func_name ? func_name : "function", PyUnicode_AsUTF8(name_id), PyUnicode_AsUTF8(alias_id));
+    PyObject *msg_obj = PyUnicode_FromString(msg);
+    expr_ty msg_const = _PyAST_Constant(msg_obj, NULL, lineno, col, end_lineno, end_col, arena);
+    expr_ty type_error_name = _PyAST_Name(_PyPegen_new_identifier(p, "TypeError"), Load, lineno, col, end_lineno, end_col, arena);
+    asdl_expr_seq *call_args = _Py_asdl_expr_seq_new(1, arena);
+    asdl_seq_SET(call_args, 0, msg_const);
+    expr_ty call_expr = _PyAST_Call(type_error_name, call_args, NULL, lineno, col, end_lineno, end_col, arena);
+    stmt_ty raise_stmt = _PyAST_Raise(call_expr, NULL, lineno, col, end_lineno, end_col, arena);
+    
+    asdl_stmt_seq *if_body = (asdl_stmt_seq *)_PyPegen_singleton_seq(p, raise_stmt);
+    return _PyAST_If(test, if_body, NULL, lineno, col, end_lineno, end_col, arena);
+}
+
+static stmt_ty
+make_alias_resolution(Parser *p, PyObject *name_id, PyObject *alias_id, PyObject *sentinel_id, expr_ty default_expr, const char *func_name, int lineno, int col, int end_lineno, int end_col)
+{
+    PyArena *arena = p->arena;
+    
+    // name = alias_name
+    expr_ty name_store = _PyAST_Name(name_id, Store, lineno, col, end_lineno, end_col, arena);
+    asdl_expr_seq *targets1 = (asdl_expr_seq *)_PyPegen_singleton_seq(p, name_store);
+    expr_ty alias_load = _PyAST_Name(alias_id, Load, lineno, col, end_lineno, end_col, arena);
+    stmt_ty assign_alias = _PyAST_Assign(targets1, alias_load, NULL, lineno, col, end_lineno, end_col, arena);
+    
+    asdl_stmt_seq *inner_if_body = (asdl_stmt_seq *)_PyPegen_singleton_seq(p, assign_alias);
+    asdl_stmt_seq *inner_if_orelse = NULL;
+    
+    if (default_expr) {
+        // name = default_expr
+        expr_ty name_store2 = _PyAST_Name(name_id, Store, lineno, col, end_lineno, end_col, arena);
+        asdl_expr_seq *targets2 = (asdl_expr_seq *)_PyPegen_singleton_seq(p, name_store2);
+        stmt_ty assign_default = _PyAST_Assign(targets2, default_expr, NULL, lineno, col, end_lineno, end_col, arena);
+        inner_if_orelse = (asdl_stmt_seq *)_PyPegen_singleton_seq(p, assign_default);
+    } else {
+        // raise TypeError("missing 1 required argument")
+        char msg[512];
+        snprintf(msg, sizeof(msg), "%s() missing 1 required argument: '%s' or '%s'",
+                 func_name ? func_name : "function", PyUnicode_AsUTF8(name_id), PyUnicode_AsUTF8(alias_id));
+        PyObject *msg_obj = PyUnicode_FromString(msg);
+        expr_ty msg_const = _PyAST_Constant(msg_obj, NULL, lineno, col, end_lineno, end_col, arena);
+        expr_ty type_error_name = _PyAST_Name(_PyPegen_new_identifier(p, "TypeError"), Load, lineno, col, end_lineno, end_col, arena);
+        asdl_expr_seq *call_args = _Py_asdl_expr_seq_new(1, arena);
+        asdl_seq_SET(call_args, 0, msg_const);
+        expr_ty call_expr = _PyAST_Call(type_error_name, call_args, NULL, lineno, col, end_lineno, end_col, arena);
+        stmt_ty raise_stmt = _PyAST_Raise(call_expr, NULL, lineno, col, end_lineno, end_col, arena);
+        inner_if_orelse = (asdl_stmt_seq *)_PyPegen_singleton_seq(p, raise_stmt);
+    }
+    
+    // alias_name is not _LOH_SENTINEL
+    expr_ty alias_node = _PyAST_Name(alias_id, Load, lineno, col, end_lineno, end_col, arena);
+    expr_ty sentinel_node = _PyAST_Name(sentinel_id, Load, lineno, col, end_lineno, end_col, arena);
+    asdl_int_seq *ops1 = _Py_asdl_int_seq_new(1, arena);
+    asdl_seq_SET(ops1, 0, IsNot);
+    asdl_expr_seq *comps1 = _Py_asdl_expr_seq_new(1, arena);
+    asdl_seq_SET(comps1, 0, sentinel_node);
+    expr_ty inner_cond = _PyAST_Compare(alias_node, ops1, comps1, lineno, col, end_lineno, end_col, arena);
+    
+    stmt_ty inner_if = _PyAST_If(inner_cond, inner_if_body, inner_if_orelse, lineno, col, end_lineno, end_col, arena);
+    
+    // name is _LOH_SENTINEL
+    expr_ty name_node = _PyAST_Name(name_id, Load, lineno, col, end_lineno, end_col, arena);
+    expr_ty sentinel_node2 = _PyAST_Name(sentinel_id, Load, lineno, col, end_lineno, end_col, arena);
+    asdl_int_seq *ops2 = _Py_asdl_int_seq_new(1, arena);
+    asdl_seq_SET(ops2, 0, Is);
+    asdl_expr_seq *comps2 = _Py_asdl_expr_seq_new(1, arena);
+    asdl_seq_SET(comps2, 0, sentinel_node2);
+    expr_ty outer_cond = _PyAST_Compare(name_node, ops2, comps2, lineno, col, end_lineno, end_col, arena);
+    
+    asdl_stmt_seq *outer_if_body = (asdl_stmt_seq *)_PyPegen_singleton_seq(p, inner_if);
+    return _PyAST_If(outer_cond, outer_if_body, NULL, lineno, col, end_lineno, end_col, arena);
+}
+
+static stmt_ty
+make_alias_delete(Parser *p, PyObject *alias_id, int lineno, int col, int end_lineno, int end_col)
+{
+    PyArena *arena = p->arena;
+    expr_ty alias_node = _PyAST_Name(alias_id, Del, lineno, col, end_lineno, end_col, arena);
+    asdl_expr_seq *targets = (asdl_expr_seq *)_PyPegen_singleton_seq(p, alias_node);
+    return _PyAST_Delete(targets, lineno, col, end_lineno, end_col, arena);
+}
+
+static asdl_stmt_seq *
+desugar_parameter_aliases(Parser *p, PyObject *func_name, arguments_ty args, asdl_stmt_seq *body)
+{
+    if (!args) return body;
+    
+    PyObject *sentinel_id = _PyPegen_new_identifier(p, "_LOH_SENTINEL");
+    if (!sentinel_id) return body;
+    
+    const char *func_name_str = func_name ? PyUnicode_AsUTF8(func_name) : "function";
+
+    // 1. Process positional-only and positional-or-keyword arguments
+    int posonly_len = args->posonlyargs ? asdl_seq_LEN(args->posonlyargs) : 0;
+    int args_len = args->args ? asdl_seq_LEN(args->args) : 0;
+    int total_pos = posonly_len + args_len;
+    
+    if (total_pos > 0) {
+        int M = args->defaults ? asdl_seq_LEN(args->defaults) : 0;
+        
+        // Temporarily store original defaults and new defaults
+        expr_ty *orig_defaults = PyMem_Malloc(total_pos * sizeof(expr_ty));
+        expr_ty *new_defaults = PyMem_Malloc(total_pos * sizeof(expr_ty));
+        if (!orig_defaults || !new_defaults) {
+            if (orig_defaults) PyMem_Free(orig_defaults);
+            if (new_defaults) PyMem_Free(new_defaults);
+            return NULL;
+        }
+        for (int i = 0; i < total_pos; i++) {
+            orig_defaults[i] = (i >= total_pos - M) ? asdl_seq_GET(args->defaults, i - (total_pos - M)) : NULL;
+            new_defaults[i] = orig_defaults[i];
+        }
+        
+        // Loop in reverse to prepend resolution logic in the correct execution order
+        for (int i = total_pos - 1; i >= 0; i--) {
+            arg_ty arg;
+            if (i < posonly_len) {
+                arg = asdl_seq_GET(args->posonlyargs, i);
+            } else {
+                arg = asdl_seq_GET(args->args, i - posonly_len);
+            }
+            
+            const char *name_str = PyUnicode_AsUTF8(arg->arg);
+            if (name_str && strchr(name_str, '|')) {
+                char buf[512];
+                strncpy(buf, name_str, sizeof(buf));
+                buf[sizeof(buf) - 1] = '\0';
+                char *pipe = strchr(buf, '|');
+                *pipe = '\0';
+                
+                PyObject *primary_id = _PyPegen_new_identifier(p, buf);
+                PyObject *alias_id = _PyPegen_new_identifier(p, pipe + 1);
+                if (!primary_id || !alias_id) {
+                    PyMem_Free(orig_defaults);
+                    PyMem_Free(new_defaults);
+                    return NULL;
+                }
+                
+                int lineno = arg->lineno;
+                int col = arg->col_offset;
+                int end_lineno = arg->end_lineno;
+                int end_col = arg->end_col_offset;
+                PyArena *arena = p->arena;
+                
+                // Save original default value
+                expr_ty default_expr = orig_defaults[i];
+                
+                // Update primary argument name
+                arg->arg = primary_id;
+                
+                // Update default value for primary in signature to _LOH_SENTINEL
+                expr_ty sentinel_node = _PyAST_Name(sentinel_id, Load, lineno, col, end_lineno, end_col, arena);
+                new_defaults[i] = sentinel_node;
+                
+                // Append alias argument as keyword-only parameter
+                arg_ty alias_arg = _PyAST_arg(alias_id, NULL, NULL, lineno, col, end_lineno, end_col, arena);
+                args->kwonlyargs = append_arg_seq(p, args->kwonlyargs, alias_arg);
+                expr_ty sentinel_node_kw = _PyAST_Name(sentinel_id, Load, lineno, col, end_lineno, end_col, arena);
+                args->kw_defaults = append_expr_seq(p, args->kw_defaults, sentinel_node_kw);
+                
+                if (!args->kwonlyargs || !args->kw_defaults) {
+                    PyMem_Free(orig_defaults);
+                    PyMem_Free(new_defaults);
+                    return NULL;
+                }
+                
+                // Prepend resolution logic to body
+                stmt_ty del_stmt = make_alias_delete(p, alias_id, lineno, col, end_lineno, end_col);
+                stmt_ty res_stmt = make_alias_resolution(p, primary_id, alias_id, sentinel_id, default_expr, func_name_str, lineno, col, end_lineno, end_col);
+                stmt_ty err_stmt = make_alias_error_check(p, primary_id, alias_id, sentinel_id, func_name_str, lineno, col, end_lineno, end_col);
+                
+                body = (asdl_stmt_seq *)_PyPegen_seq_insert_in_front(p, del_stmt, (asdl_seq *)body);
+                body = (asdl_stmt_seq *)_PyPegen_seq_insert_in_front(p, res_stmt, (asdl_seq *)body);
+                body = (asdl_stmt_seq *)_PyPegen_seq_insert_in_front(p, err_stmt, (asdl_seq *)body);
+                
+                if (!body) {
+                    PyMem_Free(orig_defaults);
+                    PyMem_Free(new_defaults);
+                    return NULL;
+                }
+            }
+        }
+        
+        // Reconstruct args->defaults
+        int first_default_idx = -1;
+        for (int i = 0; i < total_pos; i++) {
+            if (new_defaults[i] != NULL) {
+                first_default_idx = i;
+                break;
+            }
+        }
+        if (first_default_idx != -1) {
+            int new_defaults_len = total_pos - first_default_idx;
+            asdl_expr_seq *new_defaults_seq = _Py_asdl_expr_seq_new(new_defaults_len, p->arena);
+            if (!new_defaults_seq) {
+                PyMem_Free(orig_defaults);
+                PyMem_Free(new_defaults);
+                return NULL;
+            }
+            for (int i = 0; i < new_defaults_len; i++) {
+                asdl_seq_SET(new_defaults_seq, i, new_defaults[first_default_idx + i]);
+            }
+            args->defaults = new_defaults_seq;
+        } else {
+            args->defaults = NULL;
+        }
+        
+        PyMem_Free(orig_defaults);
+        PyMem_Free(new_defaults);
+    }
+    
+    // 2. Process keyword-only arguments (args->kwonlyargs)
+    if (args->kwonlyargs) {
+        int kw_len = asdl_seq_LEN(args->kwonlyargs);
+        // Loop in reverse
+        for (int i = kw_len - 1; i >= 0; i--) {
+            arg_ty arg = asdl_seq_GET(args->kwonlyargs, i);
+            const char *name_str = PyUnicode_AsUTF8(arg->arg);
+            if (name_str && strchr(name_str, '|')) {
+                char buf[512];
+                strncpy(buf, name_str, sizeof(buf));
+                buf[sizeof(buf) - 1] = '\0';
+                char *pipe = strchr(buf, '|');
+                *pipe = '\0';
+                
+                PyObject *primary_id = _PyPegen_new_identifier(p, buf);
+                PyObject *alias_id = _PyPegen_new_identifier(p, pipe + 1);
+                if (!primary_id || !alias_id) {
+                    return NULL;
+                }
+                
+                int lineno = arg->lineno;
+                int col = arg->col_offset;
+                int end_lineno = arg->end_lineno;
+                int end_col = arg->end_col_offset;
+                PyArena *arena = p->arena;
+                
+                // Save original default value
+                expr_ty default_expr = (args->kw_defaults && i < asdl_seq_LEN(args->kw_defaults)) ? asdl_seq_GET(args->kw_defaults, i) : NULL;
+                
+                // Update primary argument name
+                arg->arg = primary_id;
+                
+                // Update default value for primary in signature to _LOH_SENTINEL
+                expr_ty sentinel_node = _PyAST_Name(sentinel_id, Load, lineno, col, end_lineno, end_col, arena);
+                if (args->kw_defaults && i < asdl_seq_LEN(args->kw_defaults)) {
+                    asdl_seq_SET(args->kw_defaults, i, sentinel_node);
+                }
+                
+                // Append alias argument as keyword-only parameter
+                arg_ty alias_arg = _PyAST_arg(alias_id, NULL, NULL, lineno, col, end_lineno, end_col, arena);
+                args->kwonlyargs = append_arg_seq(p, args->kwonlyargs, alias_arg);
+                expr_ty sentinel_node_kw = _PyAST_Name(sentinel_id, Load, lineno, col, end_lineno, end_col, arena);
+                args->kw_defaults = append_expr_seq(p, args->kw_defaults, sentinel_node_kw);
+                
+                if (!args->kwonlyargs || !args->kw_defaults) {
+                    return NULL;
+                }
+                
+                // Prepend resolution logic to body
+                stmt_ty del_stmt = make_alias_delete(p, alias_id, lineno, col, end_lineno, end_col);
+                stmt_ty res_stmt = make_alias_resolution(p, primary_id, alias_id, sentinel_id, default_expr, func_name_str, lineno, col, end_lineno, end_col);
+                stmt_ty err_stmt = make_alias_error_check(p, primary_id, alias_id, sentinel_id, func_name_str, lineno, col, end_lineno, end_col);
+                
+                body = (asdl_stmt_seq *)_PyPegen_seq_insert_in_front(p, del_stmt, (asdl_seq *)body);
+                body = (asdl_stmt_seq *)_PyPegen_seq_insert_in_front(p, res_stmt, (asdl_seq *)body);
+                body = (asdl_stmt_seq *)_PyPegen_seq_insert_in_front(p, err_stmt, (asdl_seq *)body);
+                
+                if (!body) {
+                    return NULL;
+                }
+            }
+        }
+    }
+    
+    return body;
+}
+
+asdl_stmt_seq *
+_PyPegen_desugar_parameter_properties(Parser *p, PyObject *func_name, arguments_ty args, asdl_stmt_seq *body)
+{
+    body = desugar_parameter_aliases(p, func_name, args, body);
+    if (!body) return NULL;
+    
     if (args) {
         body = desugar_arg_sequence(p, args->kwonlyargs, body);
         if (!body) return NULL;

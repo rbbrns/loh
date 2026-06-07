@@ -7881,7 +7881,7 @@ function_def_raw_rule(Parser *p)
             UNUSED(_end_lineno); // Only used by EXTRA macro
             int _end_col_offset = _token->end_col_offset;
             UNUSED(_end_col_offset); // Only used by EXTRA macro
-            _res = _PyAST_FunctionDef ( n -> v . Name . id , ( params ) ? params : CHECK ( arguments_ty , _PyPegen_empty_arguments ( p ) ) , _PyPegen_desugar_parameter_properties ( p , params , b ) , NULL , a , NEW_TYPE_COMMENT ( p , tc ) , t , EXTRA );
+            _res = _PyAST_FunctionDef ( n -> v . Name . id , ( params ) ? params : CHECK ( arguments_ty , _PyPegen_empty_arguments ( p ) ) , _PyPegen_desugar_parameter_properties ( p , n -> v . Name . id , params , b ) , NULL , a , NEW_TYPE_COMMENT ( p , tc ) , t , EXTRA );
             if (_res == NULL && PyErr_Occurred()) {
                 p->error_indicator = 1;
                 p->level--;
@@ -7941,7 +7941,7 @@ function_def_raw_rule(Parser *p)
             UNUSED(_end_lineno); // Only used by EXTRA macro
             int _end_col_offset = _token->end_col_offset;
             UNUSED(_end_col_offset); // Only used by EXTRA macro
-            _res = _PyAST_FunctionDef ( n -> v . Name . id , ( params ) ? params : CHECK ( arguments_ty , _PyPegen_empty_arguments ( p ) ) , _PyPegen_desugar_parameter_properties ( p , params , b ) , NULL , a , NEW_TYPE_COMMENT ( p , tc ) , t , EXTRA );
+            _res = _PyAST_FunctionDef ( n -> v . Name . id , ( params ) ? params : CHECK ( arguments_ty , _PyPegen_empty_arguments ( p ) ) , _PyPegen_desugar_parameter_properties ( p , n -> v . Name . id , params , b ) , NULL , a , NEW_TYPE_COMMENT ( p , tc ) , t , EXTRA );
             if (_res == NULL && PyErr_Occurred()) {
                 p->error_indicator = 1;
                 p->level--;
@@ -8005,7 +8005,7 @@ function_def_raw_rule(Parser *p)
             UNUSED(_end_lineno); // Only used by EXTRA macro
             int _end_col_offset = _token->end_col_offset;
             UNUSED(_end_col_offset); // Only used by EXTRA macro
-            _res = _PyAST_FunctionDef ( n -> v . Name . id , _PyPegen_insert_arg_in_front ( p , _PyAST_arg ( d -> v . Name . id , NULL , NULL , EXTRA ) , params ) , _PyPegen_desugar_parameter_properties ( p , params , b ) , NULL , a , NEW_TYPE_COMMENT ( p , tc ) , t , EXTRA );
+            _res = _PyAST_FunctionDef ( n -> v . Name . id , _PyPegen_insert_arg_in_front ( p , _PyAST_arg ( d -> v . Name . id , NULL , NULL , EXTRA ) , params ) , _PyPegen_desugar_parameter_properties ( p , n -> v . Name . id , params , b ) , NULL , a , NEW_TYPE_COMMENT ( p , tc ) , t , EXTRA );
             if (_res == NULL && PyErr_Occurred()) {
                 p->error_indicator = 1;
                 p->level--;
@@ -8063,7 +8063,7 @@ function_def_raw_rule(Parser *p)
             UNUSED(_end_lineno); // Only used by EXTRA macro
             int _end_col_offset = _token->end_col_offset;
             UNUSED(_end_col_offset); // Only used by EXTRA macro
-            _res = _PyAST_FunctionDef ( _PyPegen_new_identifier ( p , "__init__" ) , _PyPegen_insert_arg_in_front ( p , _PyAST_arg ( d -> v . Name . id , NULL , NULL , EXTRA ) , params ) , _PyPegen_desugar_parameter_properties ( p , params , b ) , NULL , a , NEW_TYPE_COMMENT ( p , tc ) , NULL , EXTRA );
+            _res = _PyAST_FunctionDef ( _PyPegen_new_identifier ( p , "__init__" ) , _PyPegen_insert_arg_in_front ( p , _PyAST_arg ( d -> v . Name . id , NULL , NULL , EXTRA ) , params ) , _PyPegen_desugar_parameter_properties ( p , _PyPegen_new_identifier ( p , "__init__" ) , params , b ) , NULL , a , NEW_TYPE_COMMENT ( p , tc ) , NULL , EXTRA );
             if (_res == NULL && PyErr_Occurred()) {
                 p->error_indicator = 1;
                 p->level--;
@@ -8127,7 +8127,7 @@ function_def_raw_rule(Parser *p)
             UNUSED(_end_lineno); // Only used by EXTRA macro
             int _end_col_offset = _token->end_col_offset;
             UNUSED(_end_col_offset); // Only used by EXTRA macro
-            _res = CHECK_VERSION ( stmt_ty , 5 , "Async functions are" , _PyAST_AsyncFunctionDef ( n -> v . Name . id , ( params ) ? params : CHECK ( arguments_ty , _PyPegen_empty_arguments ( p ) ) , _PyPegen_desugar_parameter_properties ( p , params , b ) , NULL , a , NEW_TYPE_COMMENT ( p , tc ) , t , EXTRA ) );
+            _res = CHECK_VERSION ( stmt_ty , 5 , "Async functions are" , _PyAST_AsyncFunctionDef ( n -> v . Name . id , ( params ) ? params : CHECK ( arguments_ty , _PyPegen_empty_arguments ( p ) ) , _PyPegen_desugar_parameter_properties ( p , n -> v . Name . id , params , b ) , NULL , a , NEW_TYPE_COMMENT ( p , tc ) , t , EXTRA ) );
             if (_res == NULL && PyErr_Occurred()) {
                 p->error_indicator = 1;
                 p->level--;
@@ -8194,7 +8194,7 @@ function_def_raw_rule(Parser *p)
             UNUSED(_end_lineno); // Only used by EXTRA macro
             int _end_col_offset = _token->end_col_offset;
             UNUSED(_end_col_offset); // Only used by EXTRA macro
-            _res = _PyAST_AsyncFunctionDef ( n -> v . Name . id , _PyPegen_insert_arg_in_front ( p , _PyAST_arg ( d -> v . Name . id , NULL , NULL , EXTRA ) , params ) , _PyPegen_desugar_parameter_properties ( p , params , b ) , NULL , a , NEW_TYPE_COMMENT ( p , tc ) , t , EXTRA );
+            _res = _PyAST_AsyncFunctionDef ( n -> v . Name . id , _PyPegen_insert_arg_in_front ( p , _PyAST_arg ( d -> v . Name . id , NULL , NULL , EXTRA ) , params ) , _PyPegen_desugar_parameter_properties ( p , n -> v . Name . id , params , b ) , NULL , a , NEW_TYPE_COMMENT ( p , tc ) , t , EXTRA );
             if (_res == NULL && PyErr_Occurred()) {
                 p->error_indicator = 1;
                 p->level--;
@@ -9925,7 +9925,10 @@ param_maybe_default_rule(Parser *p)
     return _res;
 }
 
-// param: name_or_dot annotation? | '.' NAME annotation?
+// param:
+//     | name_or_dot '|' NAME annotation?
+//     | name_or_dot annotation?
+//     | '.' NAME annotation?
 static arg_ty
 param_rule(Parser *p)
 {
@@ -9947,6 +9950,39 @@ param_rule(Parser *p)
     UNUSED(_start_lineno); // Only used by EXTRA macro
     int _start_col_offset = p->tokens[_mark]->col_offset;
     UNUSED(_start_col_offset); // Only used by EXTRA macro
+    { // name_or_dot '|' NAME annotation?
+        if (p->error_indicator) {
+            p->level--;
+            return NULL;
+        }
+        D(fprintf(stderr, "%*c> param[%d-%d]: %s\n", p->level, ' ', _mark, p->mark, "name_or_dot '|' NAME annotation?"));
+        Token * _literal;
+        expr_ty a;
+        expr_ty b;
+        void *c;
+        if (
+            (a = name_or_dot_rule(p))  // name_or_dot
+            &&
+            (_literal = _PyPegen_expect_token(p, 18))  // token='|'
+            &&
+            (b = _PyPegen_name_token(p))  // NAME
+            &&
+            (c = annotation_rule(p), !p->error_indicator)  // annotation?
+        )
+        {
+            D(fprintf(stderr, "%*c+ param[%d-%d]: %s succeeded!\n", p->level, ' ', _mark, p->mark, "name_or_dot '|' NAME annotation?"));
+            _res = _PyPegen_make_aliased_arg ( p , a , b , c );
+            if (_res == NULL && PyErr_Occurred()) {
+                p->error_indicator = 1;
+                p->level--;
+                return NULL;
+            }
+            goto done;
+        }
+        p->mark = _mark;
+        D(fprintf(stderr, "%*c%s param[%d-%d]: %s failed!\n", p->level, ' ',
+                  p->error_indicator ? "ERROR!" : "-", _mark, p->mark, "name_or_dot '|' NAME annotation?"));
+    }
     { // name_or_dot annotation?
         if (p->error_indicator) {
             p->level--;

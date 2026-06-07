@@ -3984,6 +3984,16 @@ _PyBuiltin_Init(PyInterpreterState *interp)
     }
     Py_DECREF(debug);
 
+    PyObject *loh_sentinel = PyObject_CallNoArgs((PyObject *)&PyBaseObject_Type);
+    if (loh_sentinel == NULL) {
+        return NULL;
+    }
+    if (PyDict_SetItemString(dict, "_LOH_SENTINEL", loh_sentinel) < 0) {
+        Py_DECREF(loh_sentinel);
+        return NULL;
+    }
+    Py_DECREF(loh_sentinel);
+
     return mod;
 #undef ADD_TO_ALL
 #undef SETBUILTIN

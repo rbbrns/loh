@@ -399,19 +399,19 @@ function_def_raw[stmt_ty]:
     | !"match" n=NAME t=[type_params] '(' params=[params] ')' a=['->' z=expression { z }] ':' tc=[func_type_comment] b=block {
         _PyAST_FunctionDef(n->v.Name.id,
                         (params) ? params : CHECK(arguments_ty, _PyPegen_empty_arguments(p)),
-                        _PyPegen_desugar_parameter_properties(p, params, b), NULL, a, NEW_TYPE_COMMENT(p, tc), t, EXTRA) }
+                        _PyPegen_desugar_parameter_properties(p, n->v.Name.id, params, b), NULL, a, NEW_TYPE_COMMENT(p, tc), t, EXTRA) }
     | 'def' n=NAME t=[type_params] '(' params=[params] ')' a=['->' z=expression { z }] ':' tc=[func_type_comment] b=block {
         _PyAST_FunctionDef(n->v.Name.id,
                         (params) ? params : CHECK(arguments_ty, _PyPegen_empty_arguments(p)),
-                        _PyPegen_desugar_parameter_properties(p, params, b), NULL, a, NEW_TYPE_COMMENT(p, tc), t, EXTRA) }
+                        _PyPegen_desugar_parameter_properties(p, n->v.Name.id, params, b), NULL, a, NEW_TYPE_COMMENT(p, tc), t, EXTRA) }
     | ['def'] d=dot n=NAME t=[type_params] '(' params=[params] ')' a=['->' z=expression { z }] ':' tc=[func_type_comment] b=block {
         _PyAST_FunctionDef(n->v.Name.id,
                         _PyPegen_insert_arg_in_front(p, _PyAST_arg(d->v.Name.id, NULL, NULL, EXTRA), params),
-                        _PyPegen_desugar_parameter_properties(p, params, b), NULL, a, NEW_TYPE_COMMENT(p, tc), t, EXTRA) }
+                        _PyPegen_desugar_parameter_properties(p, n->v.Name.id, params, b), NULL, a, NEW_TYPE_COMMENT(p, tc), t, EXTRA) }
     | ['def'] d=dot '(' params=[params] ')' a=['->' z=expression { z }] ':' tc=[func_type_comment] b=block {
         _PyAST_FunctionDef(_PyPegen_new_identifier(p, "__init__"),
                         _PyPegen_insert_arg_in_front(p, _PyAST_arg(d->v.Name.id, NULL, NULL, EXTRA), params),
-                        _PyPegen_desugar_parameter_properties(p, params, b), NULL, a, NEW_TYPE_COMMENT(p, tc), NULL, EXTRA) }
+                        _PyPegen_desugar_parameter_properties(p, _PyPegen_new_identifier(p, "__init__"), params, b), NULL, a, NEW_TYPE_COMMENT(p, tc), NULL, EXTRA) }
     | async ['def'] n=NAME t=[type_params] '(' params=[params] ')' a=['->' z=expression { z }] ':' tc=[func_type_comment] b=block {
         CHECK_VERSION(
             stmt_ty,
@@ -419,12 +419,12 @@ function_def_raw[stmt_ty]:
             "Async functions are",
             _PyAST_AsyncFunctionDef(n->v.Name.id,
                             (params) ? params : CHECK(arguments_ty, _PyPegen_empty_arguments(p)),
-                            _PyPegen_desugar_parameter_properties(p, params, b), NULL, a, NEW_TYPE_COMMENT(p, tc), t, EXTRA)
+                            _PyPegen_desugar_parameter_properties(p, n->v.Name.id, params, b), NULL, a, NEW_TYPE_COMMENT(p, tc), t, EXTRA)
         ) }
     | async ['def'] d=dot n=NAME t=[type_params] '(' params=[params] ')' a=['->' z=expression { z }] ':' tc=[func_type_comment] b=block {
         _PyAST_AsyncFunctionDef(n->v.Name.id,
                         _PyPegen_insert_arg_in_front(p, _PyAST_arg(d->v.Name.id, NULL, NULL, EXTRA), params),
-                        _PyPegen_desugar_parameter_properties(p, params, b), NULL, a, NEW_TYPE_COMMENT(p, tc), t, EXTRA) }
+                        _PyPegen_desugar_parameter_properties(p, n->v.Name.id, params, b), NULL, a, NEW_TYPE_COMMENT(p, tc), t, EXTRA) }
 
 # Function parameters
 # -------------------
@@ -512,6 +512,7 @@ param_maybe_default[NameDefaultPair*]:
     | a=param c=default? ',' tc=TYPE_COMMENT? { _PyPegen_name_default_pair(p, a, c, tc) }
     | a=param c=default? tc=TYPE_COMMENT? &')' { _PyPegen_name_default_pair(p, a, c, tc) }
 param[arg_ty]:
+    | a=name_or_dot '|' b=NAME c=annotation? { _PyPegen_make_aliased_arg(p, a, b, c) }
     | a=name_or_dot b=annotation? { _PyAST_arg(a->v.Name.id, b, NULL, EXTRA) }
     | '.' a=NAME b=annotation? { _PyAST_arg(_PyPegen_make_dot_identifier(p, a->v.Name.id), b, NULL, EXTRA) }
 param_star_annotation[arg_ty]: a=NAME b=star_annotation { _PyAST_arg(a->v.Name.id, b, NULL, EXTRA) }
