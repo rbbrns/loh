@@ -63,6 +63,8 @@ Loh maps Python's verbose keywords and structures to elegant, symbol-based alter
 | `elif` | `??` | Else-if branch |
 | `else` | `??` | Else branch |
 | `for` | `$` | For loop |
+| Implicit Loop | `$ <~ items:` / `$ := items:` | Implicit loop targeting `$` (e.g. `print($)`) |
+| Filtered Loop | `for t in ex ? cond:` | Loop with inline filter check (e.g. `? item > 2:`) |
 | `while` | `$?` | While loop |
 | `break` | `$>` | Break statement |
 | `continue` | `$<` | Continue statement |
@@ -196,6 +198,28 @@ $ i in range(10):
     print("Loop finished")
 ```
 
+#### **Implicit Loops & Loop Filters**
+
+Loh supports short-form implicit loops and inline header filtering to reduce boilerplate nesting:
+
+1. **Implicit Loops (`$ <~` / `$ :=`)**: Omitting the target variable name binds the loop sigil `$` to the current element inside the loop body.
+2. **Inline Loop Filters (`? condition`)**: Allows placing a query filter directly in the loop signature row, avoiding an indented `if` check.
+
+##### **Python**
+```python
+# 1. Standard loop filter requires nesting
+for user in users:
+    if not user.is_active:
+        continue
+    send_email(user)
+```
+
+##### **Loh**
+```python
+# Implicit target, inline filter, and accessing current item as '$'
+$ <~ users ? $.is_active:
+    send_email($)
+```
 
 ---
 

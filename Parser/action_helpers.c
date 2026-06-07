@@ -2161,6 +2161,40 @@ _PyPegen_make_aliased_arg(Parser *p, expr_ty primary, expr_ty alias, expr_ty ann
     return _PyAST_arg(combined_id, annotation, NULL, primary->lineno, primary->col_offset, alias->end_lineno, alias->end_col_offset, p->arena);
 }
 
+stmt_ty
+_PyPegen_make_filtered_for(Parser *p, int is_async, expr_ty target, expr_ty iter, expr_ty cond, asdl_stmt_seq *body, asdl_stmt_seq *orelse, PyObject *type_comment, int lineno, int col, int end_lineno, int end_col, PyArena *arena)
+{
+    if (cond) {
+        // Construct `if not (cond): continue`
+        // 1. UnaryOp(Not, cond)
+        expr_ty not_cond = _PyAST_UnaryOp(Not, cond, lineno, col, end_lineno, end_col, arena);
+        if (!not_cond) return NULL;
+        
+        // 2. Continue
+        stmt_ty continue_stmt = _PyAST_Continue(lineno, col, end_lineno, end_col, arena);
+        if (!continue_stmt) return NULL;
+        
+        // 3. body of if statement (sequence containing continue)
+        asdl_stmt_seq *if_body = (asdl_stmt_seq *)_PyPegen_singleton_seq(p, continue_stmt);
+        if (!if_body) return NULL;
+        
+        // 4. If statement
+        stmt_ty if_stmt = _PyAST_If(not_cond, if_body, NULL, lineno, col, end_lineno, end_col, arena);
+        if (!if_stmt) return NULL;
+        
+        // 5. Prepend to body
+        body = (asdl_stmt_seq *)_PyPegen_seq_insert_in_front(p, if_stmt, (asdl_seq *)body);
+        if (!body) return NULL;
+    }
+    
+    if (is_async) {
+        return _PyAST_AsyncFor(target, iter, body, orelse, type_comment, lineno, col, end_lineno, end_col, arena);
+    } else {
+        return _PyAST_For(target, iter, body, orelse, type_comment, lineno, col, end_lineno, end_col, arena);
+    }
+}
+
+
 static asdl_arg_seq *
 append_arg_seq(Parser *p, asdl_arg_seq *seq, arg_ty element)
 {

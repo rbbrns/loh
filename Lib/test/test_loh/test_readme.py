@@ -50,6 +50,25 @@ class TestReadmeExamples(unittest.TestCase):
         $ i := range(3):
             pass
 
+        # Implicit loops
+        items = [1, 2, 3]
+        res = []
+        $ <~ items:
+            res.append($)
+        self.assertEqual(res, [1, 2, 3])
+
+        # Loop filters
+        res2 = []
+        $ item <~ items ? item > 1:
+            res2.append(item)
+        self.assertEqual(res2, [2, 3])
+
+        # Combined implicit and filter
+        res3 = []
+        $ <~ items ? $ > 2:
+            res3.append($)
+        self.assertEqual(res3, [3])
+
         # Comprehensions
         evens = [i $ i <~ range(10) ? i % 2 == 0]
         self.assertEqual(evens, [0, 2, 4, 6, 8])

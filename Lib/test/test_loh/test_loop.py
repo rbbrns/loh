@@ -150,3 +150,49 @@ class Tests(unittest.TestCase):
         $?+:$>
         ?!$>:
             ^^^ AssertionError
+
+    def test_implicit_loop(self):
+        items = [1, 2, 3]
+        res = []
+        $ <~ items:
+            res.append($)
+        self.assertEqual(res, [1, 2, 3])
+
+        # implicit loop with :=
+        res2 = []
+        $ := items:
+            res2.append($)
+        self.assertEqual(res2, [1, 2, 3])
+
+    def test_loop_filter(self):
+        items = [1, 2, 3, 4, 5]
+        res = []
+        $ item <~ items ? item > 2:
+            res.append(item)
+        self.assertEqual(res, [3, 4, 5])
+
+        res2 = []
+        $ item := items ? item % 2 == 1:
+            res2.append(item)
+        self.assertEqual(res2, [1, 3, 5])
+
+    def test_combined_implicit_and_filter(self):
+        items = [1, 2, 3, 4, 5]
+        res = []
+        $ <~ items ? $ % 2 == 0:
+            res.append($)
+        self.assertEqual(res, [2, 4])
+
+    def test_async_filtered_loop(self):
+        import asyncio
+        async def async_gen():
+            for i in range(5):
+                yield i
+        
+        res = []
+        % def run_loop():
+            % for item in async_gen() ? item % 2 == 0:
+                res.append(item)
+        asyncio.run(run_loop())
+        self.assertEqual(res, [0, 2, 4])
+

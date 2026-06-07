@@ -544,6 +544,9 @@ loop_else_block[asdl_stmt_seq*]:
     | if not break &&':' b=block { b }
     | 'else' &&':' b=block { b }
 
+loop_filter[expr_ty]:
+    | '?' e=expression { e }
+
 # While statement
 # ---------------
 
@@ -558,12 +561,18 @@ for_stmt[stmt_ty]:
     | invalid_for_stmt
     | '$' ':' b=block el=[loop_else_block] {
         _PyAST_While(_PyAST_Constant(Py_True, NULL, EXTRA), b, el, EXTRA) }
-    | for t=star_targets ':=' ~ ex=star_expressions ':' tc=[TYPE_COMMENT] b=block el=[loop_else_block] {
-        _PyAST_For(t, ex, b, el, NEW_TYPE_COMMENT(p, tc), EXTRA) }
-    | for t=star_targets in ~ ex=star_expressions ':' tc=[TYPE_COMMENT] b=block el=[loop_else_block] {
-        _PyAST_For(t, ex, b, el, NEW_TYPE_COMMENT(p, tc), EXTRA) }
-    | async for t=star_targets in ~ ex=star_expressions ':' tc=[TYPE_COMMENT] b=block el=[loop_else_block] {
-        CHECK_VERSION(stmt_ty, 5, "Async for loops are", _PyAST_AsyncFor(t, ex, b, el, NEW_TYPE_COMMENT(p, tc), EXTRA)) }
+    | for ':=' ~ ex=star_expressions_without_ternary cond=[loop_filter] ':' tc=[TYPE_COMMENT] b=block el=[loop_else_block] {
+        _PyPegen_make_filtered_for(p, 0, _PyAST_Name(_PyPegen_new_identifier(p, "_dollar_item"), Store, EXTRA), ex, cond, b, el, NEW_TYPE_COMMENT(p, tc), EXTRA) }
+    | for in ~ ex=star_expressions_without_ternary cond=[loop_filter] ':' tc=[TYPE_COMMENT] b=block el=[loop_else_block] {
+        _PyPegen_make_filtered_for(p, 0, _PyAST_Name(_PyPegen_new_identifier(p, "_dollar_item"), Store, EXTRA), ex, cond, b, el, NEW_TYPE_COMMENT(p, tc), EXTRA) }
+    | for t=star_targets ':=' ~ ex=star_expressions_without_ternary cond=[loop_filter] ':' tc=[TYPE_COMMENT] b=block el=[loop_else_block] {
+        _PyPegen_make_filtered_for(p, 0, t, ex, cond, b, el, NEW_TYPE_COMMENT(p, tc), EXTRA) }
+    | for t=star_targets in ~ ex=star_expressions_without_ternary cond=[loop_filter] ':' tc=[TYPE_COMMENT] b=block el=[loop_else_block] {
+        _PyPegen_make_filtered_for(p, 0, t, ex, cond, b, el, NEW_TYPE_COMMENT(p, tc), EXTRA) }
+    | async for in ~ ex=star_expressions_without_ternary cond=[loop_filter] ':' tc=[TYPE_COMMENT] b=block el=[loop_else_block] {
+        CHECK_VERSION(stmt_ty, 5, "Async for loops are", _PyPegen_make_filtered_for(p, 1, _PyAST_Name(_PyPegen_new_identifier(p, "_dollar_item"), Store, EXTRA), ex, cond, b, el, NEW_TYPE_COMMENT(p, tc), EXTRA)) }
+    | async for t=star_targets in ~ ex=star_expressions_without_ternary cond=[loop_filter] ':' tc=[TYPE_COMMENT] b=block el=[loop_else_block] {
+        CHECK_VERSION(stmt_ty, 5, "Async for loops are", _PyPegen_make_filtered_for(p, 1, t, ex, cond, b, el, NEW_TYPE_COMMENT(p, tc), EXTRA)) }
     | invalid_for_target
 
 # With statement
@@ -906,6 +915,36 @@ star_expression[expr_ty] (memo):
     | '*' a=bitwise_or { _PyAST_Starred(a, Load, EXTRA) }
     | expression
 
+expression_without_ternary[expr_ty]:
+    | invalid_expression
+    | invalid_legacy_expression
+    | pipe_expression_without_ternary
+    | coalesce_expression_without_ternary
+    | rescue_expression_without_ternary
+    | lambdef
+    | disjunction
+
+pipe_expression_without_ternary[expr_ty]:
+    | a=expression '|>' b=expression_without_ternary { _PyAST_Pipe(a, b, EXTRA) }
+
+coalesce_expression_without_ternary[expr_ty]:
+    | a=disjunction '~~' b=expression_without_ternary { _PyPegen_none_coalesce(p, a, b) }
+
+rescue_expression_without_ternary[expr_ty]:
+    | a=disjunction '?^' '(' b=disjunction as c=NAME ')' '->' d=expression_without_ternary { _PyPegen_rescue_expr(p, a, b, c, d) }
+    | a=disjunction '?^' b=disjunction '->' c=expression_without_ternary { _PyPegen_rescue_expr(p, a, b, NULL, c) }
+    | a=disjunction '?^' b=expression_without_ternary { _PyPegen_rescue_expr(p, a, NULL, NULL, b) }
+
+star_expression_without_ternary[expr_ty] (memo):
+    | '*' a=bitwise_or { _PyAST_Starred(a, Load, EXTRA) }
+    | expression_without_ternary
+
+star_expressions_without_ternary[expr_ty]:
+    | a=star_expression_without_ternary b=(',' c=star_expression_without_ternary { c })+ [','] {
+        _PyAST_Tuple(CHECK(asdl_expr_seq*, _PyPegen_seq_insert_in_front(p, a, b)), Load, EXTRA) }
+    | a=star_expression_without_ternary ',' { _PyAST_Tuple(CHECK(asdl_expr_seq*, _PyPegen_singleton_seq(p, a)), Load, EXTRA) }
+    | star_expression_without_ternary
+
 star_named_expressions[asdl_expr_seq*]: a[asdl_expr_seq*]=','.star_named_expression+ [','] { a }
 
 star_named_expression[expr_ty]:
@@ -1079,6 +1118,7 @@ slice[expr_ty]:
 
 atom[expr_ty]:
     | NAME
+    | '$' { _PyAST_Name(_PyPegen_new_identifier(p, "_dollar_item"), Load, EXTRA) }
     | a=dot b=NAME { _PyAST_Attribute(a, b->v.Name.id, Load, EXTRA) }
     | dot
     | a=double_dot b=NAME { _PyAST_Attribute(a, b->v.Name.id, Load, EXTRA) }
@@ -1367,6 +1407,7 @@ target_with_star_atom[expr_ty] (memo):
     | star_atom
 
 star_atom[expr_ty]:
+    | '$' { _PyAST_Name(_PyPegen_new_identifier(p, "_dollar_item"), Store, EXTRA) }
     | a=(NAME | dot) { _PyPegen_set_expr_context(p, a, Store) }
     | '(' a=target_with_star_atom ')' { _PyPegen_set_expr_context(p, a, Store) }
     | '(' a=[star_targets_tuple_seq] ')' { _PyAST_Tuple(a, Store, EXTRA) }
