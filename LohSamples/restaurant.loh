@@ -172,7 +172,7 @@ RestaurantManager::
             ? emp.role == "Waiter" && emp.clocked_in:
                 ? table_num <~ emp.assigned_tables:
                     waiter = emp
-                    $>>
+                    $>
         -> waiter
 
     .assign_order_to_chef(order: Order) -> Chef:
@@ -246,7 +246,7 @@ RestaurantManager::
         $ emp <~ .employees.values():
             ? emp.role == "Technician" && emp.clocked_in:
                 tech = emp
-                $>>
+                $>
 
         ? tech === ~:
             ^^^ StaffNotAvailable("No clocked-in Technician to run diagnostics.")
@@ -307,10 +307,10 @@ RestaurantManager::
     diagnostics_msg = ""
     ^:
         diagnostics_msg = manager.perform_system_diagnostics()
-    ^? StaffNotAvailable => e:
+    ?^ StaffNotAvailable => e:
         print(f"Opening failed: {e}")
         sys.exit(1)
-    ^??:
+    ?!^:
         print(f"[Ops] {diagnostics_msg}")
 
     # Transition to Lunch mode
@@ -360,10 +360,10 @@ RestaurantManager::
         ? item ~~~:
             ^^^ MenuItemNotFound("Requested menu item is not offered.")
         order_10.add_item(item)
-    ^? MenuItemNotFound => e:
+    ?^ MenuItemNotFound => e:
         raised_not_found = +
         print(f"[Order Error] Handled expected order failure: {e}")
-    ^*:
+    *:
         # Clean up empty order for table 10
         print("[Ops] Cleaned up table 10's order setup.")
 

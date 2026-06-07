@@ -1,0 +1,205 @@
+# Loh Smart Home Automation System Sample
+# A realistic simulation of smart IoT device management, zone operations,
+# custom automation rules, and system diagnostic routines.
+#
+# Showcases modern Loh syntax features including new parent shorthand (..),
+# inline exception rescue (?^), multi-key subscripting (*), and postfix operators.
+
+/ __loh__ / empty_none_str
+/ __loh__ / auto_fstrings
+
+/datetime/datetime => dt
+/sys
+
+# Custom exception classes
+DeviceOfflineError: Exception: ...
+AutomationRuleError: Exception: ...
+
+# Base Device Class
+Device::
+    .(.id: str, .name: str, .type: str):
+        .online = +  # Sets online to True using postfix boolean
+        .power_usage = 0.0 # Watts
+
+    .status_report() -> str:
+        # Auto f-strings enabled; no need for leading 'f'
+        -> "Device {.name} ({.id}): {.type} is {'online' ? .online ?? 'offline'}"
+
+    .get_power() -> float:
+        -> .power_usage ? .online ?? 0.0
+
+# Subclasses demonstrating parent constructor delegation (..)
+SmartLight:Device:
+    .(id: str, name: str, .brightness: int = 100):
+        ..(id, name, "Light")  # Delegation to parent constructor
+        .power_usage = 10.0
+
+    .set_brightness(.brightness):
+        print("Set light brightness to {.brightness}%")
+
+Thermostat:Device:
+    .(id: str, name: str, .target_temp: float = 72.0):
+        ..(id, name, "Thermostat")
+        .power_usage = 150.0
+
+SmartLock:Device:
+    .(id: str, name: str):
+        ..(id, name, "Lock")
+        .locked = +
+        .power_usage = 0.5
+
+    .unlock():
+        .locked = -
+        print("Lock {.name} unlocked.")
+
+    .lock():
+        .locked = +
+        print("Lock {.name} locked.")
+
+# Room containing devices
+Room::
+    .(.name: str):
+        .devices = {} # id -> Device
+
+    .add_device(d: Device):
+        # Merge dictionary update in-place using double star LHS assignment
+        ** .devices = {d.id: d}
+
+    .get_devices(ids: list[str]) -> list[Device]:
+        # Extract values at keys into a list using multi-key subscripting
+        ^:
+            res = * .devices[tuple(ids)]
+            -> res
+        ?^ KeyError:
+            -> []
+
+# Automation Rule representation
+AutomationRule::
+    .(.id: str, .trigger_device_id: str, .trigger_state: str, .target_device_id: str, .action: str):
+        .active = +
+
+# SmartHomeManager
+SmartHomeManager::
+    .(.name: str):
+        .rooms = {} # name -> Room
+        .devices = {} # id -> Device
+        .rules = []
+
+    .register_room(r: Room):
+        .rooms[r.name] = r
+
+    .register_device(d: Device):
+        .devices[d.id] = d
+
+    .register_rule(rule: AutomationRule):
+        .rules.append(rule)
+
+    .execute_scene(scene: str):
+        # Structural pattern matching to transition device states
+        ?== scene:
+            "Away":
+                # Lock all locks, turn off all lights
+                $ d <~ .devices.values():
+                    ?== d.type:
+                        "Lock":
+                            d.lock()
+                        "Light":
+                            d.online = -
+            "Evening":
+                # Lock locks, dim lights
+                $ d <~ .devices.values():
+                    ?== d.type:
+                        "Lock":
+                            d.lock()
+                        "Light":
+                            d.online = +
+                            d.set_brightness(40)
+            _:
+                ^^^ ValueError("Unknown scene preset: {scene}")
+
+    .read_sensor(device_id: str) -> float:
+        # Simulates sensor reading. Offline devices raise error.
+        d = .devices.get(device_id)
+        ? d === ~ || d.online---:
+            ^^^ DeviceOfflineError("Device {device_id} is offline or not registered.")
+        -> 74.5
+
+    .evaluate_room_temp(thermostat_id: str) -> float:
+        # Inline exception rescue expression: catch DeviceOfflineError, fallback to 70.0
+        temp = .read_sensor(thermostat_id) ?^ DeviceOfflineError -> 70.0
+        -> temp
+
+    .calculate_total_power() -> float:
+        # Pipe operator evaluating total power
+        -> .devices.values() |> (lst) -> sum([d.get_power() $ d <~ lst])
+
+    .audit_connectivity() -> str:
+        # Audit offline devices. Loop else check
+        offline_id = ~
+        $ d <~ .devices.values():
+            ? d.online---: # Postfix identity check to False
+                offline_id = d.id
+                $>
+        ?!$>:
+            -> "All devices are online."
+        -> "Diagnostic Alert: Device {offline_id} is offline!"
+
+# ----------------------------------------------------
+# Simulation and Operational Testing of the Loh Smart Home
+# ----------------------------------------------------
+
+? __name__ == "__main__":
+    print("Initializing simulation for 'Loh Smart Villa'...")
+
+    manager = SmartHomeManager("Loh Smart Villa") {
+        .register_room(Room("Living Room"));
+        .register_room(Room("Kitchen"))
+    }
+
+    # Create devices using inline initializers
+    light1 = SmartLight("light_1", "Main Ceiling Light") { .set_brightness(80) }
+    thermostat1 = Thermostat("temp_1", "Living Room Thermostat")
+    lock1 = SmartLock("lock_1", "Front Door Lock")
+
+    manager.register_device(light1)
+    manager.register_device(thermostat1)
+    manager.register_device(lock1)
+
+    manager.rooms["Living Room"].add_device(light1)
+    manager.rooms["Living Room"].add_device(thermostat1)
+    manager.rooms["Living Room"].add_device(lock1)
+
+    # Test Multi-Key Subscript Slicing & Unpacking (RHS and LHS)
+    # Verify we can extract multiple devices at once
+    extracted_devices = manager.rooms["Living Room"].get_devices(["light_1", "lock_1"])
+    ^?! len(extracted_devices) == 2, "Multi-key subscript extraction failed"
+
+    # Test Parent Class Shorthand (..) constructor delegation
+    ^?! light1.type == "Light", "Parent constructor delegation failed"
+    ^?! lock1.locked+++, "Lock was not locked by default constructor"
+
+    # Verify initial power usage: 10 (light) + 150 (thermostat) + 0.5 (lock) = 160.5
+    total_power = manager.calculate_total_power()
+    ^?! abs(total_power - 160.5) < 1e-5, "Total power calculation incorrect"
+
+    # Test sensor reading diagnostics with inline exception rescue expression
+    temp = manager.evaluate_room_temp("temp_1")
+    ^?! temp == 74.5, "Sensor reading failed"
+
+    # Set thermostat offline to test rescue fallback
+    thermostat1.online = - # Sets to False using postfix boolean
+    ^?! thermostat1.online---, "Thermostat was not set to offline"
+
+    temp_fallback = manager.evaluate_room_temp("temp_1")
+    ^?! temp_fallback == 70.0, "Inline exception rescue fallback failed"
+
+    # Verify audit reports offline device
+    audit_report = manager.audit_connectivity()
+    ^?! "Diagnostic Alert" <~ audit_report, "Connectivity audit failed to detect offline device"
+
+    # Run "Away" scene using structural pattern matching ?==
+    manager.execute_scene("Away")
+    ^?! lock1.locked+++, "Away scene failed to lock Front Door"
+    ^?! light1.online---, "Away scene failed to turn off Ceiling Light"
+
+    print("All assertions passed! The Loh Smart Home simulation ran successfully.")

@@ -112,14 +112,14 @@
      - ``"??"``
    * - .. data:: CIRCUMFLEXQUESTION
      - ``"^?"``
+   * - .. data:: QUESTIONCIRCUMFLEX
+     - ``"?^"``
    * - .. data:: CIRCUMFLEXQUESTIONEXCLAMATION
      - ``"^?!"``
    * - .. data:: DOUBLECIRCUMFLEX
      - ``"^^"``
    * - .. data:: TRIPLECIRCUMFLEX
      - ``"^^^"``
-   * - .. data:: TILDECIRCUMFLEX
-     - ``"~^"``
    * - .. data:: EQUALRARROW
      - ``"=>"``
    * - .. data:: DOLLAR
@@ -128,12 +128,8 @@
      - ``"$?"``
    * - .. data:: DOLLARGREATER
      - ``"$>"``
-   * - .. data:: DOLLARGREATERGREATER
-     - ``"$>>"``
    * - .. data:: GREATERDOLLAR
      - ``"$<"``
-   * - .. data:: GREATERGREATERDOLLAR
-     - ``"$<<"``
    * - .. data:: TRIPLEEQUAL
      - ``"==="``
    * - .. data:: DOUBLEPLUS

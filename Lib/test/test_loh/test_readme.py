@@ -39,11 +39,11 @@ class TestReadmeExamples(unittest.TestCase):
         total = 0
         $ i in range(10):
             ? i == 5:
-                $<<
+                $<
             ? i == 8:
-                $>>
+                $>
             total += i
-        ?!$>>:
+        ?!$>:
             self.fail("Loop should break and not execute else")
 
         # Alternative loops
@@ -121,23 +121,23 @@ class TestReadmeExamples(unittest.TestCase):
         ran = False
         ^:
             result = 10 / 0
-        ^? ZeroDivisionError => e:
+        ?^ ZeroDivisionError => e:
             ran = True
-        ^??:
+        ?!^:
             self.fail("Should have raised ZeroDivisionError")
-        ^*:
+        *:
             pass
         self.assertTrue(ran)
 
-        # Legacy operator syntax (Option 2)
+        # Legacy operator syntax
         ran = False
-        ~^:
+        ^:
             result = 10 / 0
         ?^ ZeroDivisionError => e:
             ran = True
         ?!^:
             self.fail("Should have raised ZeroDivisionError")
-        ?*:
+        *:
             pass
         self.assertTrue(ran)
 

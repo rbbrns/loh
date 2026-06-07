@@ -66,17 +66,15 @@ const char * const _PyParser_TokenNames[] = {
     "QUESTION",
     "QUESTIONQUESTION",
     "CIRCUMFLEXQUESTION",
+    "QUESTIONCIRCUMFLEX",
     "CIRCUMFLEXQUESTIONEXCLAMATION",
     "DOUBLECIRCUMFLEX",
     "TRIPLECIRCUMFLEX",
-    "TILDECIRCUMFLEX",
     "EQUALRARROW",
     "DOLLAR",
     "DOLLARQUESTION",
     "DOLLARGREATER",
-    "DOLLARGREATERGREATER",
     "GREATERDOLLAR",
-    "GREATERGREATERDOLLAR",
     "TRIPLEEQUAL",
     "DOUBLEPLUS",
     "DOUBLEMINUS",
@@ -235,6 +233,7 @@ _PyToken_TwoChars(int c1, int c2)
         switch (c2) {
         case '=': return QUESTIONEQUAL;
         case '?': return QUESTIONQUESTION;
+        case '^': return QUESTIONCIRCUMFLEX;
         }
         break;
     case '@':
@@ -260,7 +259,6 @@ _PyToken_TwoChars(int c1, int c2)
         switch (c2) {
         case '.': return TILDEDOT;
         case '>': return TILDEGREATER;
-        case '^': return TILDECIRCUMFLEX;
         case '~': return DOUBLETILDE;
         }
         break;
@@ -277,20 +275,6 @@ _PyToken_ThreeChars(int c1, int c2, int c3)
         case '=':
             switch (c3) {
             case '=': return NOTEQUALEQUAL;
-            }
-            break;
-        }
-        break;
-    case '$':
-        switch (c2) {
-        case '<':
-            switch (c3) {
-            case '<': return GREATERGREATERDOLLAR;
-            }
-            break;
-        case '>':
-            switch (c3) {
-            case '>': return DOLLARGREATERGREATER;
             }
             break;
         }

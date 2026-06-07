@@ -724,14 +724,20 @@ The compiler tracks type-scoped local bindings statically and maps them to compi
 In standard Python, declaring class properties requires using `@property` and `@name.setter` decorators, which introduces significant boilerplate and nesting for simple getters and setters. Loh can provide a clean, declarative shorthand syntax for defining properties directly in the class block.
 
 ### Proposed Syntax
-1. **Read-Only Property**:
+1. **Naked/Auto-Implemented Property**:
+   Declaring a property without a body automatically backs it with a private, single-underscore-prefixed attribute:
+   ```python
+   Circle::
+       .radius: property
+   ```
+2. **Read-Only Property**:
    ```python
    Circle::
        .radius: float
        
        .area: property -> 3.14159 * .radius ** 2
    ```
-2. **Read-Write Property**:
+3. **Read-Write Property**:
    ```python
    Circle::
        ._radius: float
@@ -743,14 +749,7 @@ In standard Python, declaring class properties requires using `@property` and `@
 
 ### Compile-Time Desugaring
 The parser compiles these properties to standard Python property decorator methods:
-1. **Read-Only**:
-   ```python
-   class Circle:
-       @property
-       def area(self):
-           return 3.14159 * self.radius ** 2
-   ```
-2. **Read-Write**:
+1. **Naked/Auto-Implemented**:
    ```python
    class Circle:
        @property
@@ -760,6 +759,24 @@ The parser compiles these properties to standard Python property decorator metho
        def radius(self, val):
            self._radius = val
    ```
+2. **Read-Only**:
+   ```python
+   class Circle:
+       @property
+       def area(self):
+           return 3.14159 * self.radius ** 2
+   ```
+3. **Read-Write**:
+   ```python
+   class Circle:
+       @property
+       def radius(self):
+           return self._radius
+       @radius.setter
+       def radius(self, val):
+           self._radius = val
+   ```
+
 
 ---
 
@@ -815,30 +832,29 @@ def draw_point(_point_obj):
     print(x, y, color)
 ```
 
----
-
-## 27. Partial Function Application (`func(..., _, ...)`)
+## 27. Partial Function Application (`func(args)...`)
 
 ### Motivation
-Standard Python requires `functools.partial` or lambda wrapping to pre-bind arguments to a callable. Utilizing the pipe placeholder `_` in normal function calls provides an elegant syntax to create partially applied function thunks at compile time.
+Standard Python requires `functools.partial` or lambda wrapping to pre-bind arguments to a callable. Appending the ellipsis `...` to a call expression provides a highly readable, native syntax to create partially applied function thunks at compile time using standard library mechanisms.
 
 ### Proposed Syntax
 ```python
-# Create a partial function adding 10
-add_ten = add(10, _)
+# Create a partial function pre-binding the first argument
+add_ten = add(10)...
 
-# Pass partial call to map
-doubles = list(map(multiply(_, 2), numbers))
+# Pre-bind keyword arguments
+configure_local = configure(host="localhost")...
 ```
 
 ### Compile-Time Desugaring
-If a call expression contains a standalone `_` argument, it desugars into an anonymous lambda:
+At parse-time, any call expression followed by the ellipsis operator `...` is wrapped in a call to `functools.partial`:
 ```python
-add_ten = lambda _val: add(10, _val)
-doubles = list(map(lambda _val: multiply(_val, 2), numbers))
+import functools
+
+add_ten = functools.partial(add, 10)
+configure_local = functools.partial(configure, host="localhost")
 ```
 
----
 
 ## 28. None-Filtering Postfix Operator (`lst ~?`)
 
@@ -855,4 +871,362 @@ clean_results = fetch_results() ~?
 Translates directly into a list comprehension filtering out `None`:
 ```python
 clean_results = [_item for _item in fetch_results() if _item is not None]
+
+---
+
+## 29. Call-Site Attribute Initializer Shorthand (`Circle(.radius = 5.0)`)
+
+### Motivation
+When constructing an object, setting several initial attributes usually requires writing explicit parameters in the constructor or declaring variable assignments on separate lines after instantiation. Using dot-prefixed arguments in the call-site argument list allows directly initializing object attributes inline, providing clean symmetry with constructor parameter properties.
+
+### Proposed Syntax
+```python
+# Create an instance and set attributes directly
+c = Circle(.radius = 5.0, .color = "blue")
 ```
+
+### Compile-Time Desugaring
+At parse-time, call-site arguments prefixed with a dot are extracted and compiled into an immediately invoked helper function that assigns properties to the instantiated object:
+```python
+def _init_Circle():
+    _temp = Circle()
+    _temp.radius = 5.0
+    _temp.color = "blue"
+    return _temp
+c = _init_Circle()
+```
+
+---
+
+## 30. Variable Swap Operator (`a <=> b`)
+
+### Motivation
+Swapping the values of two variables in standard Python requires writing a tuple unpacking assignment (`a, b = b, a`). Providing a dedicated infix swap operator `<=>` makes this common operation visually distinct, symmetrical, and concise.
+
+### Proposed Syntax
+```python
+a <=> b
+```
+
+### Compile-Time Desugaring
+The swap operator desugars directly into standard Python tuple assignment at parse-time:
+```python
+a, b = b, a
+```
+
+---
+
+## 31. First-Class Regular Expression Literals (`/pattern/flags`)
+
+### Motivation
+Python requires importing the `re` module and calling `re.compile(r"pattern")` to work with regular expressions. Introducing JavaScript-style regex literals `/pattern/` avoids boilerplate imports and compile steps, making regex usage lightweight.
+
+### Proposed Syntax
+```python
+# Matches email address case-insensitively
+email_rx = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/i
+
+? email_rx.match(user_input):
+    print("Valid email")
+```
+
+### Compile-Time Desugaring
+The parser compiles `/pattern/flags` directly to `re.compile` calls, mapping flags like `i` (IGNORECASE), `m` (MULTILINE), and `s` (DOTALL):
+```python
+import re
+email_rx = re.compile(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$", re.IGNORECASE)
+```
+
+---
+
+## 32. Main Entrypoint Block (`main:`)
+
+### Motivation
+The standard Python check `if __name__ == "__main__":` is notoriously verbose and boilerplate-heavy. Providing a simple top-level `main:` block cleanups module entrypoints.
+
+### Proposed Syntax
+```python
+main:
+    print("Application started")
+```
+
+### Compile-Time Desugaring
+The parser maps the `main:` block header directly to the standard Python entrypoint guard:
+```python
+if __name__ == "__main__":
+    print("Application started")
+```
+
+---
+
+## 33. Standalone Argument Forwarding Shorthand (`*` and `**`)
+
+### Motivation
+Forwarding all positional and keyword arguments from one function to another (e.g. `log(*args, **kwargs)`) is a highly common delegation pattern that is verbose to repeat. Loh partially supports keyword forwarding via bare `**` parameters and arguments (binding to a local dictionary variable named `"**"`). We want to extend this to support bare `*` for positional arguments, creating a fully symmetric forwarding mechanism.
+
+### Proposed Syntax
+1. **Keyword Forwarding (Existing)**:
+   ```python
+   def setup_config(name, **):
+       # Excess keyword arguments are captured in a dict variable named "**"
+       **['name'] = name
+       -> **
+       
+   # Call setup_config and forward parameters
+   setup_config("test", **)
+   ```
+2. **Positional Forwarding (Proposed)**:
+   Allowing a bare `*` at the end of a parameter signature to capture excess positional arguments, and a bare `*` in calls to forward them:
+   ```python
+   def delegate(a, *):
+       # Positional arguments are captured in a tuple variable named "*"
+       log(*, a)
+   ```
+
+### Compile-Time Desugaring
+At parse-time, the parser treats `*` and `**` as standard variable Name nodes containing the identifiers `"*"` and `"**"`.
+1. **Signature Parsing**:
+   - `def foo(**)` maps the keyword arguments parameter (`kwarg`) to `Name("**")`.
+   - `def foo(*)` maps the excess positional arguments parameter (`vararg`) to `Name("*")`.
+2. **Call Parsing**:
+   - `func(**)` maps to a keyword argument node `_PyAST_keyword(arg=NULL, value=Name("**"))` (dictionary unpacking).
+   - `func(*)` maps to a starred expression node `_PyAST_Starred(value=Name("*"), ctx=Load)` (sequence unpacking).
+
+
+---
+
+## 34. Static and Class Method Signatures (`+method()` and `++method()`)
+
+### Motivation
+Declaring static and class methods in standard Python requires writing `@staticmethod` and `@classmethod` decorators above the function signature. Since Loh uses a single dot prefix `.` to signify instance context (`self`), using `+` and `++` prefixes for static and class methods provides a clean, compile-time shorthand that matches class method syntax.
+
+### Proposed Syntax
+```python
+Helper::
+    # Static method (no cls/self)
+    +parse_int(val: str) -> int:
+        return int(val)
+
+    # Class method (receives cls)
+    ++create_default() -> Helper:
+        return cls()
+```
+
+### Compile-Time Desugaring
+The parser compiles these prefixes to standard Python method decorators and parameter signatures:
+```python
+class Helper:
+    @staticmethod
+    def parse_int(val: str) -> int:
+        return int(val)
+
+    @classmethod
+    def create_default(cls) -> Helper:
+        return cls()
+```
+
+---
+
+## 35. Unified Dict/Object Safe Navigation (`obj~.key`)
+
+### Motivation
+When working with heterogeneous data sources (like dynamic JSON payloads or ORM models), developers must write separate code paths to handle attribute lookup versus dictionary key lookup. Extending safe navigation `~.` to dynamically fall back to dictionary key access if the target is a dictionary provides a single, unified safe lookup.
+
+### Proposed Syntax
+```python
+# Works whether 'user' is a custom object or a dictionary
+role = user~.profile~.role
+```
+
+### Compile-Time Desugaring
+The parser desugars `~.` into helper lookups that check for attribute presence first, falling back to dictionary get if applicable:
+```python
+_temp1 = user
+if _temp1 is not None:
+    _temp2 = _temp1.profile if hasattr(_temp1, "profile") else (_temp1.get("profile") if isinstance(_temp1, dict) else None)
+    if _temp2 is not None:
+        role = _temp2.role if hasattr(_temp2, "role") else (_temp2.get("role") if isinstance(_temp2, dict) else None)
+    else:
+        role = None
+else:
+    role = None
+```
+
+---
+
+## 36. None-Safe Destructuring Assignment (`~[a, b] = target`)
+
+### Motivation
+Unpacking iterables or lists throws `ValueError` or `TypeError` if the collection is `None` or has fewer elements than expected. Standard destructuring default patterns are verbose. Prepending `~` to a destructuring assignment provides a safe unpack that automatically binds `None` to missing elements rather than throwing exceptions.
+
+### Proposed Syntax
+```python
+# Safe unpack that binds None if list is short or None
+~[first, second] = get_items()
+```
+
+### Compile-Time Desugaring
+The parser desugars safe unpacking into checks on length and presence:
+```python
+_temp = get_items()
+first = _temp[0] if _temp and len(_temp) > 0 else None
+second = _temp[1] if _temp and len(_temp) > 1 else None
+```
+
+---
+
+## 37. Compile-Time Class Constants (`const NAME = value`)
+
+### Motivation
+In standard Python, class attributes are mutable class variables by default. To make attributes read-only constants, developers must declare custom properties or read-only descriptors. Enforcing constants at compile-time prevents mutation without introducing runtime descriptor overhead.
+
+### Proposed Syntax
+```python
+Circle::
+    # Declares a compile-time class constant
+    const PI = 3.14159
+```
+
+### Compile-Time Desugaring
+At parse-time, the parser tracks all class-level `const` identifiers statically. If the compiler detects any assignments to a `const` field (like `Circle.PI = 4` or `.PI = 4` within methods), it raises a compile-time `SyntaxError`.
+
+---
+
+## 38. None-Safe Pipe Operator (`~|>`)
+
+### Motivation
+Piping variables through function chains (`data |> func1 |> func2`) throws `TypeError` if one of the intermediate steps or the initial value evaluates to `None`. Incorporating safe navigation into the pipe chain via `~|>` (matching safe navigation `~.`, safe subscript `~[`, and safe call `~()`) lets the pipeline short-circuit and evaluate to `None` if any stage is `None`.
+
+### Proposed Syntax
+```python
+# Short-circuits and returns None if fetch_user() is None
+username = fetch_user() ~|> .name ~|> str.strip
+```
+
+### Compile-Time Desugaring
+At parse-time, the `~|>` operator compiles to inline conditional checks that short-circuit and propagate `None`:
+```python
+_val1 = fetch_user()
+_val2 = _val1.name if _val1 is not None else None
+username = str.strip(_val2) if _val2 is not None else None
+```
+
+---
+
+## 39. Multi-Line Arrow Functions `(args) ->:`
+
+### Motivation
+Python's lambda expressions are strictly restricted to a single expression. Writing complex callbacks requires nesting local helper function definitions, which is verbose. Supporting block-bodied arrow functions provides clean inline multi-line callback declarations.
+
+### Proposed Syntax
+```python
+# Pass a multi-line callback to a map function
+doubles = list(map( (x) ->:
+    y = x * 2
+    -> y + 1
+, numbers))
+```
+
+### Compile-Time Desugaring
+At parse-time, a block-bodied arrow function is compiled by defining a unique local helper function and replacing the expression with the helper's reference:
+```python
+def _lambda_callback_1(x):
+    y = x * 2
+    return y + 1
+
+doubles = list(map(_lambda_callback_1, numbers))
+```
+
+---
+
+## 40. List Append/Push Operator (`lst << item`)
+
+### Motivation
+Appending single items to list-like collections in standard Python is in-place and returns `None` (e.g. `lst.append(item)`), which prevents fluent method chaining. Overloading the left-shift bitwise operator `<<` as a push operator allows appending items while returning the mutated collection receiver.
+
+### Proposed Syntax
+```python
+# Mutates the list and returns it, allowing fluent chaining
+users = [] << User("Alice") << User("Bob")
+```
+
+### Compile-Time Desugaring
+At parse-time, the operator `<<` on list/set literals or identifiers compiles directly to a helper method that performs the append operation and returns the collection:
+```python
+def _loh_push(collection, item):
+    if hasattr(collection, "append"):
+        collection.append(item)
+    elif hasattr(collection, "add"):
+        collection.add(item)
+    return collection
+
+users = _loh_push(_loh_push([], User("Alice")), User("Bob"))
+```
+
+---
+
+## 41. Parallel Pipe Operator (`|>*`)
+
+### Motivation
+Executing operations in parallel across iterables (e.g. fetching URLs or resizing images) usually requires importing `concurrent.futures`, setting up executor context managers, and mapping collections. A dedicated parallel pipe operator `|>*` lets developers map functions across iterables in parallel using a thread/process pool with zero boilerplate.
+
+### Proposed Syntax
+```python
+# Fetches all page payloads in parallel
+results = urls |>* fetch_page
+```
+
+### Compile-Time Desugaring
+At parse-time, the `|>*` operator compiles directly to a map call running inside a thread pool executor:
+```python
+import concurrent.futures
+
+def _parallel_map(func, iterable):
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        return list(executor.map(func, iterable))
+
+results = _parallel_map(fetch_page, urls)
+```
+
+---
+
+## 42. Optional Parameter Default Shorthand (`param = ?`)
+
+### Motivation
+In function signatures, parameters that default to `None` (optional parameters) require writing `= None` or `= --` (Loh's empty none constant). Using a single query mark `?` as the default value matches the syntax of optional/nullable values in other languages, making default-to-None assignments extremely concise.
+
+### Proposed Syntax
+```python
+def fetch(url: str, timeout: int = ?, headers = ?):
+    print(timeout, headers)
+```
+
+### Compile-Time Desugaring
+At parse-time, a default value of `?` in a function parameter signature is desugared to Loh's empty none constant `None` (represented by CPython's `Py_None`):
+```python
+def fetch(url: str, timeout: int = None, headers = None):
+    print(timeout, headers)
+```
+
+---
+
+## 43. Dictionary Inversion Operator (`~dict`)
+
+### Motivation
+Inverting a mapping dictionary (swapping its keys and values) is a common task that typically requires writing a dictionary comprehension (e.g. `{v: k for k, v in d.items()}`). Overloading the unary bitwise NOT operator `~` on dictionary expressions provides a clean, native syntax for dict inversion.
+
+### Proposed Syntax
+```python
+# Inverts the translation mapping
+english_to_french = {"one": "un", "two": "deux"}
+french_to_english = ~english_to_french
+```
+
+### Compile-Time Desugaring
+At parse-time, if the operand of the unary `~` operator is a dictionary literal or expression, the compiler desugars it into a dictionary comprehension:
+```python
+french_to_english = {value: key for key, value in english_to_french.items()}
+```
+
+
+

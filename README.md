@@ -64,18 +64,18 @@ Loh maps Python's verbose keywords and structures to elegant, symbol-based alter
 | `else` | `??` | Else branch |
 | `for` | `$` | For loop |
 | `while` | `$?` | While loop |
-| `break` | `$>>` | Break statement |
-| `continue` | `$<<` | Continue statement |
-| `try` | `~^` *(or `^:`)* | Try block |
-| `except` | `?^` *(or `^?`)* | Except handler |
-| `except*` | `?^*` *(or `^?*`)* | Except-star handler |
-| `else` *(try)* | `?!^` *(or `^??:`)* | Try-else block |
-| `finally` | `?*` *(or `^*:`)* | Finally block |
+| `break` | `$>` | Break statement |
+| `continue` | `$<` | Continue statement |
+| `try` | `^:` | Try block |
+| `except` | `?^` | Except handler |
+| `except*` | `?^*` | Except-star handler |
+| `else` *(try)* | `?!^:` | Try-else block |
+| `finally` | `*:` | Finally block |
 | `as` | `=>` *(or `as`)* | Alias binding operator |
 | `raise` | `^^^` | Raise exception |
 | `assert` | `^?!` | Assert statement |
 | `assert not` | `^?` | Negated assert statement |
-| Inline exception rescue | `expr ^? fallback` / `expr ^? exc -> fallback` | Inline exception rescue expression |
+| Inline exception rescue | `expr ?^ fallback` / `expr ?^ exc -> fallback` | Inline exception rescue expression |
 | `with` | `&` | Context manager |
 | `import` / `from` | `/` | Import symbol |
 | `return` | `->` | Return statement |
@@ -165,9 +165,9 @@ z = a ? cond
 
 ### **3. Loops & Control Flow**
 
-> **Motivation:** The iteration symbol `$` represents traversing a collection. Using `$>>` (pointing forward/out) and `$<<` (pointing backward/loop-start) matches the physical flow of breaking out of or looping back in control structures. The loop-else replacement `?!$>>:` (literally "if not break") explicitly documents the execution path, resolving a common point of confusion in Python's standard `else:` loop syntax.
+> **Motivation:** The iteration symbol `$` represents traversing a collection. Using `$>` (pointing forward/out) and `$<` (pointing backward/loop-start) matches the physical flow of breaking out of or looping back in control structures. The loop-else replacement `?!$>:` (literally "if not break") explicitly documents the execution path, resolving a common point of confusion in Python's standard `else:` loop syntax.
 
-Loh loop grammar uses `$` for `for` loops, `$?` for `while` loops, `$>>` for `break`, and `$<<` for `continue`.
+Loh loop grammar uses `$` for `for` loops, `$?` for `while` loops, `$>` for `break`, and `$<` for `continue`.
 
 #### **Python**
 ```python
@@ -187,11 +187,11 @@ else:
 total = 0
 $ i in range(10):
     ? i == 5:
-        $<<
+        $<
     ? i == 8:
-        $>>
+        $>
     total += i
-?!$>>:
+?!$>:
     print("Loop finished")
 ```
 
@@ -375,7 +375,7 @@ type IntOrFloat = int | float
 
 ### **10. Exceptions & Try-Except-Finally**
 
-> **Motivation:** Exception handling is a control flow structure designed to catch errors. The symbol `~^` represents entering a guarded try block, while `?^` queries for matching exceptions. Alternatively, grouping all clauses under a unified `^` prefix (e.g. `^:`, `^?`, `^??:`, `^*:`) creates a highly consistent and cohesive block structure. Raising string literals directly (`^^^ "error"`) simplifies throwing standard exceptions, removing the boilerplate of instantiating exception classes for simple error messages.
+> **Motivation:** Exception handling is a control flow structure designed to catch errors. The caret symbol `^` represents entering a guarded try block, while `?^` queries for matching exceptions. `?!^:` acts as try-else block (if no exception occurred), and `*:` represents finally block (wildcard cleanup). Raising string literals directly (`^^^ "error"`) simplifies throwing standard exceptions, removing the boilerplate of instantiating exception classes for simple error messages.
 
 #### **Python**
 ```python
@@ -396,24 +396,13 @@ raise Exception("Failed") from error
 
 #### **Loh**
 ```python
-# Option 1: Unified caret syntax (Recommended)
 ^:
-    result = 10 / 0
-^? ZeroDivisionError => e:
-    print(f"Error: {e}")
-^??:
-    print("Success")
-^*:
-    print("Cleanup")
-
-# Option 2: Legacy operator syntax
-~^:
     result = 10 / 0
 ?^ ZeroDivisionError => e:
     print(f"Error: {e}")
 ?!^:
     print("Success")
-?*:
+*:
     print("Cleanup")
 
 # Raising Exceptions
@@ -450,14 +439,14 @@ except ValueError as e:
 ##### **Loh**
 ```python
 # Rescue any exception (defaults to catching Exception)
-value = int(x) ^? 0
+value = int(x) ?^ 0
 
 # Rescue specific exception(s)
-value = int(x) ^? ValueError -> -1
-value = int(x) ^? (ValueError | TypeError) -> -1
+value = int(x) ?^ ValueError -> -1
+value = int(x) ?^ (ValueError | TypeError) -> -1
 
 # Rescue with variable binding
-value = int(x) ^? (ValueError => e) -> len(e.args)
+value = int(x) ?^ (ValueError => e) -> len(e.args)
 ```
 
 ---

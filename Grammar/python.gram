@@ -129,15 +129,15 @@ elif: ( 'elif' | '??' )
 else: ( 'else' | '??' )
 assert: ( 'assert' | '^?!' )
 raise: ( 'raise' | '^^^' )
-try: ( 'try' | '~^' | '^' )
-except: ( 'except' | (if '^') | '^?' )
-try_else: ( 'else' | (if not '^') | '^?' '?' )
-finally: ( 'finally' | (if '*') | '^' '*' )
+try: ( 'try' | '^' )
+except: ( 'except' | '?^' )
+try_else: ( 'else' | (if not '^') )
+finally: ( 'finally' | '*' )
 as: ( 'as' | '=>' )
 for: ( 'for' | '$' )
 while: ( 'while' | '$?' )
-break: ( 'break' | '$>>' )
-continue: ( 'continue' | '$<<' )
+break: ( 'break' | '$>' )
+continue: ( 'continue' | '$<' )
 is: ( 'is' | '===' )
 is_not: ( '!==' )
 async: ( 'async' | '%' )
@@ -881,9 +881,9 @@ starred_or_double_starred_expr[expr_ty]:
     | '**' a=expression { _PyPegen_make_double_star_expr(p, a) }
 
 rescue_expression[expr_ty]:
-    | a=disjunction '^?' '(' b=disjunction as c=NAME ')' '->' d=expression { _PyPegen_rescue_expr(p, a, b, c, d) }
-    | a=disjunction '^?' b=disjunction '->' c=expression { _PyPegen_rescue_expr(p, a, b, NULL, c) }
-    | a=disjunction '^?' b=expression { _PyPegen_rescue_expr(p, a, NULL, NULL, b) }
+    | a=disjunction '?^' '(' b=disjunction as c=NAME ')' '->' d=expression { _PyPegen_rescue_expr(p, a, b, c, d) }
+    | a=disjunction '?^' b=disjunction '->' c=expression { _PyPegen_rescue_expr(p, a, b, NULL, c) }
+    | a=disjunction '?^' b=expression { _PyPegen_rescue_expr(p, a, NULL, NULL, b) }
 
 pipe_expression[expr_ty]:
     | a=expression '|>' b=expression { _PyAST_Pipe(a, b, EXTRA) }

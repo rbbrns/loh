@@ -35,7 +35,7 @@ LifeManager::
         $ t <~ .tasks:
             ? .energy < t.energy_cost:
                 "Not enough energy for: " + t.name |> print
-                $>> # Break out of the loop
+                $> # Break out of the loop
             
             # Execute task
             .energy -= t.energy_cost
@@ -43,7 +43,7 @@ LifeManager::
             "Completed: " + t.name + " | Energy left: " + str(.energy) |> print
         
         # Loop-else block (executes if the loop didn't break)
-        ?!$>>:
+        ?!$>:
             "All tasks completed! You crushed it today." |> print
             
         -> "Day finished with " + str(.energy) + " energy."

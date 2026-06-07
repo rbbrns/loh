@@ -6,13 +6,13 @@ class Tests(unittest.TestCase):
 
     def test_break(self):
         while True:
-            $>>
+            $>
             ^^^ AssertionError
         else:
             ^^^ AssertionError
 
         for i in range(10):
-            $>>
+            $>
             ^^^ AssertionError
         else:
             ^^^ AssertionError
@@ -22,14 +22,14 @@ class Tests(unittest.TestCase):
        i = 0
        while i<10:
             i += 1
-            $<<
+            $<
             ^^^ AssertionError
        else:
             while_else_ran = True
        self.assertTrue(while_else_ran)
 
        for i in range(10):
-            $<<
+            $<
             ^^^ AssertionError
        else:
             for_else_ran = True
@@ -53,23 +53,23 @@ class Tests(unittest.TestCase):
         self.assertTrue(i == 9)
 
     def test_for_else(self):
-        $ i := range(10): $>>
-        ?!$>>: ^^^ AssertionError
+        $ i := range(10): $>
+        ?!$>: ^^^ AssertionError
 
-        $ i := range(10): $>>
-        ?! $>>: ^^^ AssertionError
+        $ i := range(10): $>
+        ?! $>: ^^^ AssertionError
 
-        $ i := range(10): $>>
+        $ i := range(10): $>
         else: ^^^ AssertionError
 
-        $ i := range(10): $>>
+        $ i := range(10): $>
         if not break: ^^^ AssertionError
 
-        $ i := range(10): $>>
-        ? ! $>>: ^^^ AssertionError
+        $ i := range(10): $>
+        ? ! $>: ^^^ AssertionError
 
-        $ i := range(10): $>>
-        ?!$>>: ^^^ AssertionError
+        $ i := range(10): $>
+        ?!$>: ^^^ AssertionError
 
     def test_for_comprehension(self):
         self.assertEqual([ i $ i in range(10) ], list(range(10)))
@@ -118,35 +118,35 @@ class Tests(unittest.TestCase):
         i = 0
         $? i<10:
             i += 1
-        ?! $>>:
+        ?! $>:
             else_ran = True
         self.assertTrue(i == 10)
         self.assertTrue(else_ran)
 
-        $? +: $>>
-        ?!$>>:
+        $? +: $>
+        ?!$>:
             ^^^ AssertionError
         
-        $?+:$>>
+        $?+:$>
         ?! break:
             ^^^ AssertionError
 
-        $?+:$>>
+        $?+:$>
         if not break:
             ^^^ AssertionError
 
-        $?+:$>>
-        if not $>>:
+        $?+:$>
+        if not $>:
             ^^^ AssertionError
 
-        $?+:$>>
-        ?!$>>:
+        $?+:$>
+        ?!$>:
             ^^^ AssertionError
 
-        $?+:$>>
-        ? ! $>>:
+        $?+:$>
+        ? ! $>:
             ^^^ AssertionError
 
-        $?+:$>>
-        ?!$>>:
+        $?+:$>
+        ?!$>:
             ^^^ AssertionError

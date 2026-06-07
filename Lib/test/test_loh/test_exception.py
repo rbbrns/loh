@@ -20,7 +20,7 @@ class Tests(unittest.TestCase):
             ^^^ ValueError
 
     def test_try(self):
-        ~^: 
+        ^: 
             ^^^ ValueError
             raise AssertionError 
         except ValueError:
@@ -28,7 +28,7 @@ class Tests(unittest.TestCase):
         self.assertTrue(except_ran)
             
     def test_except(self):
-        ~^: 
+        ^: 
             ^^^ ValueError
             ^^^ AssertionError
         ?^ ValueError:
@@ -37,16 +37,16 @@ class Tests(unittest.TestCase):
             ^^^ AssertionError 
         self.assertTrue(except_ran)
 
-        ~^: 
+        ^: 
             ^^^ ValueError
             ^^^ AssertionError
-        ? ^ ValueError:
+        ?^ ValueError:
             except_ran = True
-        ? ^: 
+        ?^: 
             ^^^ AssertionError 
         self.assertTrue(except_ran)
 
-        ~^: 
+        ^: 
             try_ran = True
         ?^ValueError:
             ^^^ AssertionError
@@ -54,7 +54,7 @@ class Tests(unittest.TestCase):
             ^^^ AssertionError 
         self.assertTrue(try_ran)
 
-        ~^: 
+        ^: 
             ^^^ AssertionError
         ?^ValueError:
             ^^^ AssertionError
@@ -62,20 +62,20 @@ class Tests(unittest.TestCase):
             bare_except_ran = True
         self.assertTrue(bare_except_ran)
 
-        ~^: 
+        ^: 
             ^^^ AssertionError
         ?^* Exception: 
             bare_except_star_ran = True
         self.assertTrue(bare_except_star_ran)
 
-        ~^: 
+        ^: 
             ^^^ AssertionError
         ?^ * Exception: 
             bare_except_star2_ran = True
         self.assertTrue(bare_except_star2_ran)
 
     def test_else(self):
-        ~^:
+        ^:
             try_ran = True
         ?^:
             ^^^ AssertionError
@@ -84,7 +84,7 @@ class Tests(unittest.TestCase):
         self.assertTrue(try_ran)
         self.assertTrue(else_ran)
 
-        ~^:
+        ^:
             ^^^ Exception
         ?^:
             except_ran = True
@@ -94,38 +94,38 @@ class Tests(unittest.TestCase):
 
     def test_finally(self):
         seq = []
-        ~^:
+        ^:
             seq.append('try')
         ?^:
             seq.append('except')
         ?!^:
             seq.append('else')
-        ?*:
+        *:
             seq.append('finally')
         self.assertEqual(seq, ['try', 'else', 'finally'])
 
         seq = []
-        ~^:
+        ^:
             ^^^ Exception
             seq.append('try')
         ?^:
             seq.append('except')
         ?!^:
             seq.append('else')
-        ?*:
+        *:
             seq.append('finally')
         self.assertEqual(seq, ['except', 'finally'])
 
         seq = []
-        ~^:
+        ^:
             seq.append('try')
-        ?*:
+        *:
             seq.append('finally')
         self.assertEqual(seq, ['try', 'finally'])
 
     def test_as(self):
         seq = []
-        ~^:
+        ^:
             ^^^ Exception
             seq.append('try')
         ?^ Exception => e:
@@ -134,7 +134,7 @@ class Tests(unittest.TestCase):
         self.assertEqual(seq, ['except'])
 
         seq = []
-        ~^:
+        ^:
             ^^^ Exception
             seq.append('try')
         ?^ Exception => e:

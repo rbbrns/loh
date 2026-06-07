@@ -68,30 +68,26 @@ DOUBLEVBAR              '||'
 QUESTION                '?'
 # else / elsif
 QUESTIONQUESTION        '??'
-# assert_if
+# assert_if / assert not
 CIRCUMFLEXQUESTION      '^?'
+# except / inline rescue
+QUESTIONCIRCUMFLEX      '?^'
 # assert
 CIRCUMFLEXQUESTIONEXCLAMATION  '^?!'
 # dummy raise           
 DOUBLECIRCUMFLEX        '^^'
 # raise                 
 TRIPLECIRCUMFLEX        '^^^'
-# try
-TILDECIRCUMFLEX         '~^'
 # as
 EQUALRARROW             '=>'
 # for
 DOLLAR                  '$'
 # while
 DOLLARQUESTION          '$?'
-# dummy break
-DOLLARGREATER          '$>'
 # break
-DOLLARGREATERGREATER   '$>>'
-# dummy continue
-GREATERDOLLAR           '$<'
+DOLLARGREATER          '$>'
 # continue
-GREATERGREATERDOLLAR   '$<<'
+GREATERDOLLAR           '$<'
 # is
 TRIPLEEQUAL            '==='
 # true

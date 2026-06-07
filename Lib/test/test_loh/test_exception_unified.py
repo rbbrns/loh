@@ -5,7 +5,7 @@ class Tests(unittest.TestCase):
         ran = False
         ^:
             result = 10 / 0
-        ^? ZeroDivisionError => e:
+        ?^ ZeroDivisionError => e:
             ran = True
         self.assertTrue(ran)
 
@@ -17,11 +17,11 @@ class Tests(unittest.TestCase):
         # Scenario 1: Exception is raised
         ^:
             result = 10 / 0
-        ^? ZeroDivisionError:
+        ?^ ZeroDivisionError:
             ran_except = True
-        ^??:
+        ?!^:
             ran_else = True
-        ^*:
+        *:
             ran_finally = True
 
         self.assertTrue(ran_except)
@@ -35,11 +35,11 @@ class Tests(unittest.TestCase):
         
         ^:
             result = 10 / 2
-        ^? ZeroDivisionError:
+        ?^ ZeroDivisionError:
             ran_except = True
-        ^??:
+        ?!^:
             ran_else = True
-        ^*:
+        *:
             ran_finally = True
 
         self.assertFalse(ran_except)
@@ -50,7 +50,7 @@ class Tests(unittest.TestCase):
         ran_except_star = False
         ^:
             raise ExceptionGroup("group", [ValueError("error")])
-        ^?* ValueError => eg:
+        ?^* ValueError => eg:
             ran_except_star = True
 
         self.assertTrue(ran_except_star)
@@ -59,11 +59,11 @@ class Tests(unittest.TestCase):
         handler_matched = None
         ^:
             raise TypeError("type error")
-        ^? ValueError:
+        ?^ ValueError:
             handler_matched = "value"
-        ^? TypeError:
+        ?^ TypeError:
             handler_matched = "type"
-        ^?:
+        ?^:
             handler_matched = "any"
 
         self.assertEqual(handler_matched, "type")

@@ -1,0 +1,105 @@
+# Unit tests for Loh Smart Home Automation System
+# Demonstrates unit testing Loh code using the standard unittest library.
+
+/unittest
+/sys
+/os
+
+# Read and execute smart_home.loh to load its definitions without executing its simulation
+dir_path = os.path.dirname(__file__)
+smart_home_file = os.path.join(dir_path, "smart_home.loh")
+smart_home_ns = {__name__="smart_home"}
+
+with open(smart_home_file, "r") as f:
+    code_str = f.read()
+
+exec(compile(code_str, smart_home_file, "exec"), smart_home_ns)
+
+# Extract symbols from the executed namespace
+Device = smart_home_ns["Device"]
+SmartLight = smart_home_ns["SmartLight"]
+Thermostat = smart_home_ns["Thermostat"]
+SmartLock = smart_home_ns["SmartLock"]
+Room = smart_home_ns["Room"]
+AutomationRule = smart_home_ns["AutomationRule"]
+SmartHomeManager = smart_home_ns["SmartHomeManager"]
+DeviceOfflineError = smart_home_ns["DeviceOfflineError"]
+
+TestSmartHomeComponents:unittest.TestCase:
+    .test_device_properties():
+        d = Device("dev_1", "Test Device", "Generic")
+        # Assert initial state
+        .assertTrue(d.online+++)
+        .assertEqual(d.id, "dev_1")
+        .assertEqual(d.name, "Test Device")
+        .assertEqual(d.type, "Generic")
+        .assertEqual(d.power_usage, 0.0)
+
+    .test_smart_light():
+        light = SmartLight("light_1", "Ceiling Light", 80)
+        # Verify parent constructor was called
+        .assertEqual(light.type, "Light")
+        .assertEqual(light.brightness, 80)
+        .assertEqual(light.get_power(), 10.0)
+
+        # Set offline using postfix
+        light.online = -
+        .assertEqual(light.get_power(), 0.0)
+
+    .test_smart_lock():
+        lock = SmartLock("lock_1", "Front Door")
+        .assertTrue(lock.locked+++)
+        .assertEqual(lock.get_power(), 0.5)
+
+        lock.unlock()
+        .assertTrue(lock.locked---)
+
+    .test_room_devices_multi_key():
+        room = Room("Living Room")
+        light = SmartLight("light_1", "Ceiling Light")
+        lock = SmartLock("lock_1", "Front Door")
+
+        room.add_device(light)
+        room.add_device(lock)
+
+        # Retrieve using multi-key subscripting
+        devices = room.get_devices(["light_1", "lock_1"])
+        .assertEqual(len(devices), 2)
+        .assertTrue(light <~ devices)
+        .assertTrue(lock <~ devices)
+
+        # Nonexistent key fallback
+        missing = room.get_devices(["light_999"])
+        .assertEqual(missing, [])
+
+    .test_manager_scenes_and_rescue():
+        manager = SmartHomeManager("Villa")
+        light = SmartLight("light_1", "Ceiling Light")
+        lock = SmartLock("lock_1", "Front Door")
+        thermostat = Thermostat("temp_1", "Thermostat")
+
+        manager.register_device(light)
+        manager.register_device(lock)
+        manager.register_device(thermostat)
+
+        # Initial power
+        .assertEqual(manager.calculate_total_power(), 160.5)
+
+        # Test Away Scene
+        manager.execute_scene("Away")
+        .assertTrue(lock.locked+++)
+        .assertTrue(light.online---)
+
+        # Test sensor rescue when online
+        .assertEqual(manager.evaluate_room_temp("temp_1"), 74.5)
+
+        # Test sensor rescue when offline
+        thermostat.online = -
+        .assertEqual(manager.evaluate_room_temp("temp_1"), 70.0)
+
+        # Test audit alerts
+        audit = manager.audit_connectivity()
+        .assertIn("Diagnostic Alert", audit)
+
+? __name__ == "__main__":
+    unittest.main()

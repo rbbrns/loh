@@ -3,44 +3,7 @@
 This document tracks features that have been approved for implementation in **Loh**.
 
 
-## 1. Exception & Loop Control Syntax Cleanups
-
-### Motivation
-Loh's exception and loop control features currently have some redundant symbols, overloading conflicts (such as `^?` being used for both `except` and `assert not`), and overly verbose symbols (such as `?!$>>:` for loop-else). To streamline the language grammar, reduce cognitive load, and resolve symbol conflicts, a series of syntax cleanups and tweaks are approved.
-
-### Proposed Changes
-
-#### **1. Exception Blocks & Rescue**
-* **Try / Guard**: **`^:`**
-* **Except / Catch**: **`?^`** (Replaces `^?` to resolve the conflict with `assert not`)
-* **Except-Star / Exception Groups**: **`?^*`** (Replaces `^?*`)
-* **Try-Else**: **`?!^:`** (Translates to "if not exception", representing `?` + `!` + `^`)
-* **Finally / Cleanup**: **`*:`** (Replaces `^*:` / `?*:` with a clean, 2-character wildcard symbol meaning "always/all cases")
-* **Inline Exception Rescue**: **`?^`** (Replaces `^?` to remain consistent with the catch/except symbol, e.g., `expr ?^ fallback` / `expr ?^ ValueError -> fallback`)
-
-#### **2. Assertions**
-* **Assert**: **`^?!`**
-* **Assert Not**: **`^?`** (Kept exclusively for assertions, since `except` is moved to `?^`)
-
-#### **3. Loop Control & Loop-Else**
-* **Break**: **`$>`** (Replaces `$>>` with a shorter, 2-character exit arrow)
-* **Continue**: **`$<`** (Replaces `$<<` with a shorter, 2-character return arrow)
-* **Loop-Else**: **`?!$>:`** (Translates to "if not break". By shortening break to `$>`, this block header naturally becomes much cleaner to read and write)
-
-### Compile-Time Desugaring
-1. In `Grammar/python.gram`:
-   - Redefine tokens:
-     - `break: ( 'break' | '$>' )`
-     - `continue: ( 'continue' | '$<' )`
-     - `except: ( 'except' | '?^' )`
-     - `finally: ( 'finally' | '*:' )`
-   - Remove legacy Set 1 exception tokens (`~^`, ?*).
-2. The loop-else block parser rule `loop_else_block` naturally parses `?!$>:` as `if not break :` due to token mapping.
-3. The try-else block parser rule `try_else_block` naturally parses `?!^:` as `if not '^' :` due to token mapping.
-
----
-
-## 2. Parameter Keyword-Only Multi-Name Aliases (`limit | l = 100`)
+## 1. Parameter Keyword-Only Multi-Name Aliases (`limit | l = 100`)
 
 ### Motivation
 For command-like API interfaces or backward-compatibility during refactoring, developers often want parameters to accept multiple keyword argument names (e.g., accepting both `limit` and `l`). Using the pipe `|` symbol allows specifying keyword fallbacks. To prevent positional arguments from bleeding into alias slots, the aliases are compiled as keyword-only arguments.
@@ -76,7 +39,7 @@ def fetch(limit=_LOH_SENTINEL, offset=_LOH_SENTINEL, *, l=_LOH_SENTINEL, o=_LOH_
 
 ---
 
-## 3. Loop Syntax & Control Flow Upgrades
+## 2. Loop Syntax & Control Flow Upgrades
 
 ### Motivation
 To simplify common loop patterns and remove nesting boilerplate, Loh can support short-form implicit loops and inline header filtering.
@@ -103,7 +66,8 @@ To simplify common loop patterns and remove nesting boilerplate, Loh can support
    ```
 2. `$ user <~ users ? user.is_active:` desugars to:
    ```python
-   for user in users:
-       if not (user.is_active):
-           $<  # continue
-   ```
+    for user in users:
+        if not (user.is_active):
+            $<  # continue
+    ```
+

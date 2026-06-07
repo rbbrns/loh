@@ -119,7 +119,7 @@ TestRestaurantComponents:unittest.TestCase:
         ^:
             manager.create_order(8001, 10)
             .fail("Expected TableUnavailable error")
-        ^? TableUnavailable => e:
+        ?^ TableUnavailable => e:
             ...
 
         # Occupy table and place order

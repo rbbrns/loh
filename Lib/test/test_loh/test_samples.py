@@ -11,8 +11,13 @@ TestLohSamples:unittest.TestCase:
         dir_path = os.path.dirname(__file__)
         samples_dir = os.path.abspath(os.path.join(dir_path, "../../../LohSamples"))
         
-        # Test execution of samples and their tests
-        files_to_test = ["logic.loh", "restaurant.loh", "test_restaurant.loh"]
+        files_to_test = [
+            "logic.loh",
+            "restaurant.loh",
+            "test_restaurant.loh",
+            "smart_home.loh",
+            "test_smart_home.loh"
+        ]
         
         $ f <~ files_to_test:
             file_path = os.path.join(samples_dir, f)
