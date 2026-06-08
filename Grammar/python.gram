@@ -249,6 +249,18 @@ assignment[stmt_ty]:
          _PyPegen_make_assign(p, a, b, tc) }
     | a=single_target b=augassign ~ c=annotated_rhs {
          _PyPegen_make_augassign(p, a, b->kind, c) }
+    | a=single_target '++=' ~ b=annotated_rhs {
+         _PyPegen_make_boolean_strict_assign(p, a, 1, b, EXTRA) }
+    | a=single_target '--=' ~ b=annotated_rhs {
+         _PyPegen_make_boolean_strict_assign(p, a, 0, b, EXTRA) }
+    | a=single_target '||=' ~ b=annotated_rhs {
+         _PyAST_Assign((asdl_expr_seq*)_PyPegen_singleton_seq(p, a),
+                       _PyAST_BoolOp(Or, (asdl_expr_seq*)_PyPegen_seq_insert_in_front(p, _PyPegen_set_expr_context(p, a, Load), _PyPegen_singleton_seq(p, b)), EXTRA),
+                       NULL, EXTRA) }
+    | a=single_target '&&=' ~ b=annotated_rhs {
+         _PyAST_Assign((asdl_expr_seq*)_PyPegen_singleton_seq(p, a),
+                       _PyAST_BoolOp(And, (asdl_expr_seq*)_PyPegen_seq_insert_in_front(p, _PyPegen_set_expr_context(p, a, Load), _PyPegen_singleton_seq(p, b)), EXTRA),
+                       NULL, EXTRA) }
     | invalid_assignment
 
 starred_assign[stmt_ty]:
@@ -883,6 +895,11 @@ expression[expr_ty] (memo):
     | rescue_expression
     | a=disjunction if b=disjunction else c=expression { _PyAST_IfExp(b, a, c, EXTRA) }
     | a=disjunction if b=disjunction { _PyAST_IfExp(b, a, _PyAST_Constant(Py_None, NULL, EXTRA), EXTRA) }
+    | a=disjunction else b=expression {
+         _PyAST_BoolOp(Or, (asdl_expr_seq*)_PyPegen_seq_insert_in_front(p,
+             _PyPegen_set_expr_context(p, a, Load),
+             _PyPegen_singleton_seq(p, b)), EXTRA)
+    }
     | lambdef
     | disjunction
 
@@ -921,6 +938,11 @@ expression_without_ternary[expr_ty]:
     | pipe_expression_without_ternary
     | coalesce_expression_without_ternary
     | rescue_expression_without_ternary
+    | a=disjunction else b=expression_without_ternary {
+         _PyAST_BoolOp(Or, (asdl_expr_seq*)_PyPegen_seq_insert_in_front(p,
+             _PyPegen_set_expr_context(p, a, Load),
+             _PyPegen_singleton_seq(p, b)), EXTRA)
+    }
     | lambdef
     | disjunction
 
@@ -1085,6 +1107,8 @@ primary[expr_ty]:
     | a=primary '--' { _PyAST_Compare(a, _PyPegen_singleton_int_seq(p, Eq), (asdl_expr_seq*)_PyPegen_singleton_seq(p, _PyAST_Constant(Py_False, NULL, EXTRA)), EXTRA) }
     | a=primary '~~' '~' { _PyAST_Compare(a, _PyPegen_singleton_int_seq(p, Is), (asdl_expr_seq*)_PyPegen_singleton_seq(p, _PyAST_Constant(Py_None, NULL, EXTRA)), EXTRA) }
     | a=primary '~~' !expression { _PyAST_Compare(a, _PyPegen_singleton_int_seq(p, Eq), (asdl_expr_seq*)_PyPegen_singleton_seq(p, _PyAST_Constant(Py_None, NULL, EXTRA)), EXTRA) }
+    | a=primary '!~' { _PyAST_Compare(a, _PyPegen_singleton_int_seq(p, NotEq), (asdl_expr_seq*)_PyPegen_singleton_seq(p, _PyAST_Constant(Py_None, NULL, EXTRA)), EXTRA) }
+    | a=primary '!~~' { _PyAST_Compare(a, _PyPegen_singleton_int_seq(p, IsNot), (asdl_expr_seq*)_PyPegen_singleton_seq(p, _PyAST_Constant(Py_None, NULL, EXTRA)), EXTRA) }
     | a=primary '~.' b=NAME { _PyPegen_safe_navigation(p, a, b) }
     | a=primary '.' b=NAME { _PyAST_Attribute(a, b->v.Name.id, Load, EXTRA) }
     | a=primary b=initializer_block { _PyPegen_make_initializer_block(p, a, b) }

@@ -1254,6 +1254,18 @@ math.pow(*(10, 20))
 func(**kwargs)
 ```
 
+---
 
+## 45. Index/Key-Safe Subscripting (`lst[x]~`)
 
+### Motivation
+In standard Python, looking up a missing key in a dictionary throws a `KeyError`, and looking up an out-of-bounds index in a list/tuple/string throws an `IndexError`. Developers are forced to write verbose boundary checks or use `dict.get()`. To make index and key lookups safe, Loh introduces a trailing-tilde subscript syntax `lst[x]~` that returns `None` if the element does not exist.
 
+### Proposed Syntax
+```python
+x = lst[10]~
+y = dct["missing_key"]~
+```
+
+### Compile-Time Desugaring
+At parse-time, this desugars into a call to `_loh_safe_index(primary, slice)` which catches `IndexError` and `KeyError` at runtime and returns `None` (`~`).

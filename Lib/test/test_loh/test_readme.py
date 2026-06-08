@@ -479,7 +479,7 @@ subdict = **d['x']      # {'x': 1}
 
     def test_implicit_returns(self):
         code = """from __loh__ import implicit_returns
-
+ 
 calculate_total(base, tax):
     rate = 1 + tax
     base * rate
@@ -488,6 +488,73 @@ calculate_total(base, tax):
         exec(code, {}, scope)
         self.assertEqual(scope["calculate_total"](100, 0.05), 105.0)
 
+    def test_logical_assignments(self):
+        code = """
+x = 0
+x ||= 42  # x becomes 42 (since 0 is falsy)
+
+y = 100
+y &&= 200 # y becomes 200 (since 100 is truthy)
+"""
+        scope = {}
+        exec(code, {}, scope)
+        self.assertEqual(scope["x"], 42)
+        self.assertEqual(scope["y"], 200)
+
+    def test_boolean_strict_fallback_assignments(self):
+        code = """
+x = 1
+x ++= "fallback"  # x remains 1 (since 1 == True is True in Python)
+
+y = "hello"
+y ++= "fallback"  # y becomes "fallback" (since "hello" == True is False)
+
+z = 0
+z --= "fallback"  # z remains 0 (since 0 == False is True in Python)
+"""
+        scope = {}
+        exec(code, {}, scope)
+        self.assertEqual(scope["x"], 1)
+        self.assertEqual(scope["y"], "fallback")
+        self.assertEqual(scope["z"], 0)
+
+    def test_presence_postfix_operators(self):
+        code = """
+x = 42
+present = x!~~
+
+class EqualNone:
+    __eq__(self, other):
+        -> other === ~
+
+obj = EqualNone()
+val_present = obj!~
+id_present = obj!~~
+"""
+        scope = {}
+        exec(code, {}, scope)
+        self.assertTrue(scope["present"])
+        self.assertFalse(scope["val_present"])
+        self.assertTrue(scope["id_present"])
+
+    def test_truthy_coalescing_operator(self):
+        code = """
+x = 0
+fallback = x ?? 42          # fallback is 42
+
+name = "Loh"
+result = name ?? "default"  # result is "Loh"
+
+# Does not conflict with standard ternary: true_val ? condition ?? else_val
+x = 10 ? True ?? 20         # x is 10
+"""
+        scope = {}
+        exec(code, {}, scope)
+        self.assertEqual(scope["fallback"], 42)
+        self.assertEqual(scope["result"], "Loh")
+        self.assertEqual(scope["x"], 10)
+
 if __name__ == "__main__":
     unittest.main()
+
 

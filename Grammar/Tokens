@@ -120,6 +120,19 @@ TILDEDOT                '~.'
 DOUBLETILDE             '~~'
 # dot dot (range literal)
 DOTDOT                  '..'
+# exclamation tilde (presence postfix)
+EXCLAMATIONTILDE        '!~'
+# exclamation double tilde (presence postfix identity)
+EXCLAMATIONDOUBLETILDE  '!~~'
+# double plus equal
+DOUBLEPLUSEQUAL         '++='
+# double minus equal
+DOUBLEMINUSEQUAL        '--='
+# double vbar equal
+DOUBLEVBAREQUAL         '||='
+# double ampers equal
+DOUBLEAMPEREQUAL        '&&='
+
 
 OP
 TYPE_IGNORE

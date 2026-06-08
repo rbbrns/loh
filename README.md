@@ -47,11 +47,17 @@ Loh maps Python's verbose keywords and structures to elegant, symbol-based alter
 | `x === False` | `x---` | Identity equality comparison with False |
 | `x == None` | `x~~` | Value equality comparison with None |
 | `x === None` | `x~~~` | Identity equality comparison with None |
+| `x != None` | `x !~` | Value inequality comparison with None (presence postfix) |
+| `x is not None` | `x !~~` | Identity inequality comparison with None (presence postfix) |
 | None-safe member | `~.` | None-safe attribute access / navigation |
 | None-coalesce | `~~` | None-coalescing operator (fallback value) |
 | None-safe index | `~[]` | None-safe subscripting / indexing |
 | `and` | `&&` | Logical AND |
 | `or` | `\|\|` | Logical OR |
+| `x = x or y` | `x \|\|= y` | Truthy-coalescing assignment |
+| `x = x and y` | `x &&= y` | Logical-AND assignment |
+| `x = x if x == True else y` | `x ++= y` | Boolean-strict True fallback assignment |
+| `x = x if x == False else y` | `x --= y` | Boolean-strict False fallback assignment |
 | `not` | `!` | Logical NOT |
 | `is` | `===` | Identity comparison |
 | `is not` | `!==` | Negated identity comparison |
@@ -62,6 +68,7 @@ Loh maps Python's verbose keywords and structures to elegant, symbol-based alter
 | `if` | `?` | Conditional branch |
 | `elif` | `??` | Else-if branch |
 | `else` | `??` | Else branch |
+| `a if a else b` | `a ?? b` | Truthy-coalescing expression |
 | `for` | `$` | For loop |
 | Implicit Loop | `$ <~ items:` / `$ := items:` | Implicit loop targeting `$` (e.g. `print($)`) |
 | Filtered Loop | `for t in ex ? cond:` | Loop with inline filter check (e.g. `? item > 2:`) |
@@ -1005,7 +1012,91 @@ async fetch_data(url):
     await request(url)
 ```
 
+---
 
+### **28. Truthy-Coalescing and Logical-AND Assignments (`||=`, `&&=`)**
 
+> **Motivation:** Python lacks short-circuiting logical compound assignment operators. Instead of writing `x = x or y` or `x = x and y`, Loh supports `x ||= y` and `x &&= y` which perform these operations and assign the result to the target back in-place.
 
+* **Truthy-Coalescing Assignment (`||=`)**: `x ||= y` evaluates to `x = x or y` (Python `x = x or y`).
+* **Logical-AND Assignment (`&&=`)**: `x &&= y` evaluates to `x = x and y` (Python `x = x and y`).
+
+Both operators support full short-circuiting: the right-hand side is only evaluated if the left-hand side's value requires it.
+
+#### **Example**
+```python
+x = 0
+x ||= 42  # x becomes 42 (since 0 is falsy)
+
+y = 100
+y &&= 200 # y becomes 200 (since 100 is truthy)
+```
+
+---
+
+### **29. Boolean-Strict Fallback Assignments (`++=`, `--=`)**
+
+> **Motivation:** It is common to want a fallback value if a variable is not strictly equal to `True` or `False`. While `||=` and `&&=` operate on truthiness/falsiness, `++=` and `--=` perform strict equality checks with `True` and `False` respectively.
+
+* **Boolean-Strict True Fallback (`++=`)**: `x ++= y` desugars to `x = x if x == True else y`.
+* **Boolean-Strict False Fallback (`--=`)**: `x --= y` desugars to `x = x if x == False else y`.
+
+#### **Example**
+```python
+x = 1
+x ++= "fallback"  # x remains 1 (since 1 == True is True in Python)
+
+y = "hello"
+y ++= "fallback"  # y becomes "fallback" (since "hello" == True is False)
+
+z = 0
+z --= "fallback"  # z remains 0 (since 0 == False is True in Python)
+```
+
+---
+
+### **30. Presence Postfix Operators (`!~`, `!~~`)**
+
+> **Motivation:** Postfix checks for value and identity inequality with `None` allow for cleaner presence guards and query filters without nesting or leading `not` calls.
+
+* **Value Presence Postfix (`!~`)**: `x !~` checks value inequality with `None` (equivalent to `x != None`).
+* **Identity Presence Postfix (`!~~`)**: `x !~~` checks identity inequality with `None` (equivalent to `x is not None`).
+
+#### **Example**
+```python
+x = 42
+if x!~~:
+    print("x is present")
+
+# A class overriding __eq__ for None
+class EqualNone:
+    __eq__(self, other):
+        -> other === ~
+
+obj = EqualNone()
+obj!~   # False (since obj == None is True)
+obj!~~  # True (since obj is not None)
+```
+
+---
+
+### **31. Truthy-Coalescing Operator (`??`)**
+
+> **Motivation:** Loh supports None-coalescing with `~~`, but often developers want a more general coalescing operator that falls back if the left-hand side is *falsy* (rather than strictly `None`). The truthy-coalescing operator `??` provides this by desugaring to a logical `or` expression, while maintaining full syntactic compatibility with the ternary conditional operator `a ? b ?? c`.
+
+* **Truthy-Coalescing (`??`)**: `a ?? b` evaluates to `a or b` (equivalent to `a if a else b`).
+
+Truthy-coalescing is fully short-circuiting: the right-hand side is only evaluated if the left-hand side is falsy.
+
+#### **Example**
+```python
+x = 0
+fallback = x ?? 42          # fallback is 42
+
+name = "Loh"
+result = name ?? "default"  # result is "Loh"
+
+# Does not conflict with standard ternary: true_val ? condition ?? else_val
+x = 10 ? True ?? 20         # x is 10
+```
 

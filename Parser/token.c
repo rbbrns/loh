@@ -91,6 +91,12 @@ const char * const _PyParser_TokenNames[] = {
     "TILDEDOT",
     "DOUBLETILDE",
     "DOTDOT",
+    "EXCLAMATIONTILDE",
+    "EXCLAMATIONDOUBLETILDE",
+    "DOUBLEPLUSEQUAL",
+    "DOUBLEMINUSEQUAL",
+    "DOUBLEVBAREQUAL",
+    "DOUBLEAMPEREQUAL",
     "OP",
     "TYPE_IGNORE",
     "TYPE_COMMENT",
@@ -151,6 +157,7 @@ _PyToken_TwoChars(int c1, int c2)
     case '!':
         switch (c2) {
         case '=': return NOTEQUAL;
+        case '~': return EXCLAMATIONTILDE;
         }
         break;
     case '$':
@@ -277,6 +284,20 @@ _PyToken_ThreeChars(int c1, int c2, int c3)
             case '=': return NOTEQUALEQUAL;
             }
             break;
+        case '~':
+            switch (c3) {
+            case '~': return EXCLAMATIONDOUBLETILDE;
+            }
+            break;
+        }
+        break;
+    case '&':
+        switch (c2) {
+        case '&':
+            switch (c3) {
+            case '=': return DOUBLEAMPEREQUAL;
+            }
+            break;
         }
         break;
     case '*':
@@ -284,6 +305,24 @@ _PyToken_ThreeChars(int c1, int c2, int c3)
         case '*':
             switch (c3) {
             case '=': return DOUBLESTAREQUAL;
+            }
+            break;
+        }
+        break;
+    case '+':
+        switch (c2) {
+        case '+':
+            switch (c3) {
+            case '=': return DOUBLEPLUSEQUAL;
+            }
+            break;
+        }
+        break;
+    case '-':
+        switch (c2) {
+        case '-':
+            switch (c3) {
+            case '=': return DOUBLEMINUSEQUAL;
             }
             break;
         }
@@ -352,6 +391,15 @@ _PyToken_ThreeChars(int c1, int c2, int c3)
         case '^':
             switch (c3) {
             case '^': return TRIPLECIRCUMFLEX;
+            }
+            break;
+        }
+        break;
+    case '|':
+        switch (c2) {
+        case '|':
+            switch (c3) {
+            case '=': return DOUBLEVBAREQUAL;
             }
             break;
         }

@@ -4977,6 +4977,10 @@ assignment_implicit_rule(Parser *p)
 //     | ('(' single_target ')' | single_subscript_attribute_target) ':' expression ['=' annotated_rhs]
 //     | ((star_targets '='))+ annotated_rhs !'=' TYPE_COMMENT?
 //     | single_target augassign ~ annotated_rhs
+//     | single_target '++=' ~ annotated_rhs
+//     | single_target '--=' ~ annotated_rhs
+//     | single_target '||=' ~ annotated_rhs
+//     | single_target '&&=' ~ annotated_rhs
 //     | invalid_assignment
 static stmt_ty
 assignment_rule(Parser *p)
@@ -5242,6 +5246,190 @@ assignment_rule(Parser *p)
         p->mark = _mark;
         D(fprintf(stderr, "%*c%s assignment[%d-%d]: %s failed!\n", p->level, ' ',
                   p->error_indicator ? "ERROR!" : "-", _mark, p->mark, "single_target augassign ~ annotated_rhs"));
+        if (_cut_var) {
+            p->level--;
+            return NULL;
+        }
+    }
+    { // single_target '++=' ~ annotated_rhs
+        if (p->error_indicator) {
+            p->level--;
+            return NULL;
+        }
+        D(fprintf(stderr, "%*c> assignment[%d-%d]: %s\n", p->level, ' ', _mark, p->mark, "single_target '++=' ~ annotated_rhs"));
+        int _cut_var = 0;
+        Token * _literal;
+        expr_ty a;
+        expr_ty b;
+        if (
+            (a = single_target_rule(p))  // single_target
+            &&
+            (_literal = _PyPegen_expect_token(p, 87))  // token='++='
+            &&
+            (_cut_var = 1)
+            &&
+            (b = annotated_rhs_rule(p))  // annotated_rhs
+        )
+        {
+            D(fprintf(stderr, "%*c+ assignment[%d-%d]: %s succeeded!\n", p->level, ' ', _mark, p->mark, "single_target '++=' ~ annotated_rhs"));
+            Token *_token = _PyPegen_get_last_nonnwhitespace_token(p);
+            if (_token == NULL) {
+                p->level--;
+                return NULL;
+            }
+            int _end_lineno = _token->end_lineno;
+            UNUSED(_end_lineno); // Only used by EXTRA macro
+            int _end_col_offset = _token->end_col_offset;
+            UNUSED(_end_col_offset); // Only used by EXTRA macro
+            _res = _PyPegen_make_boolean_strict_assign ( p , a , 1 , b , EXTRA );
+            if (_res == NULL && PyErr_Occurred()) {
+                p->error_indicator = 1;
+                p->level--;
+                return NULL;
+            }
+            goto done;
+        }
+        p->mark = _mark;
+        D(fprintf(stderr, "%*c%s assignment[%d-%d]: %s failed!\n", p->level, ' ',
+                  p->error_indicator ? "ERROR!" : "-", _mark, p->mark, "single_target '++=' ~ annotated_rhs"));
+        if (_cut_var) {
+            p->level--;
+            return NULL;
+        }
+    }
+    { // single_target '--=' ~ annotated_rhs
+        if (p->error_indicator) {
+            p->level--;
+            return NULL;
+        }
+        D(fprintf(stderr, "%*c> assignment[%d-%d]: %s\n", p->level, ' ', _mark, p->mark, "single_target '--=' ~ annotated_rhs"));
+        int _cut_var = 0;
+        Token * _literal;
+        expr_ty a;
+        expr_ty b;
+        if (
+            (a = single_target_rule(p))  // single_target
+            &&
+            (_literal = _PyPegen_expect_token(p, 88))  // token='--='
+            &&
+            (_cut_var = 1)
+            &&
+            (b = annotated_rhs_rule(p))  // annotated_rhs
+        )
+        {
+            D(fprintf(stderr, "%*c+ assignment[%d-%d]: %s succeeded!\n", p->level, ' ', _mark, p->mark, "single_target '--=' ~ annotated_rhs"));
+            Token *_token = _PyPegen_get_last_nonnwhitespace_token(p);
+            if (_token == NULL) {
+                p->level--;
+                return NULL;
+            }
+            int _end_lineno = _token->end_lineno;
+            UNUSED(_end_lineno); // Only used by EXTRA macro
+            int _end_col_offset = _token->end_col_offset;
+            UNUSED(_end_col_offset); // Only used by EXTRA macro
+            _res = _PyPegen_make_boolean_strict_assign ( p , a , 0 , b , EXTRA );
+            if (_res == NULL && PyErr_Occurred()) {
+                p->error_indicator = 1;
+                p->level--;
+                return NULL;
+            }
+            goto done;
+        }
+        p->mark = _mark;
+        D(fprintf(stderr, "%*c%s assignment[%d-%d]: %s failed!\n", p->level, ' ',
+                  p->error_indicator ? "ERROR!" : "-", _mark, p->mark, "single_target '--=' ~ annotated_rhs"));
+        if (_cut_var) {
+            p->level--;
+            return NULL;
+        }
+    }
+    { // single_target '||=' ~ annotated_rhs
+        if (p->error_indicator) {
+            p->level--;
+            return NULL;
+        }
+        D(fprintf(stderr, "%*c> assignment[%d-%d]: %s\n", p->level, ' ', _mark, p->mark, "single_target '||=' ~ annotated_rhs"));
+        int _cut_var = 0;
+        Token * _literal;
+        expr_ty a;
+        expr_ty b;
+        if (
+            (a = single_target_rule(p))  // single_target
+            &&
+            (_literal = _PyPegen_expect_token(p, 89))  // token='||='
+            &&
+            (_cut_var = 1)
+            &&
+            (b = annotated_rhs_rule(p))  // annotated_rhs
+        )
+        {
+            D(fprintf(stderr, "%*c+ assignment[%d-%d]: %s succeeded!\n", p->level, ' ', _mark, p->mark, "single_target '||=' ~ annotated_rhs"));
+            Token *_token = _PyPegen_get_last_nonnwhitespace_token(p);
+            if (_token == NULL) {
+                p->level--;
+                return NULL;
+            }
+            int _end_lineno = _token->end_lineno;
+            UNUSED(_end_lineno); // Only used by EXTRA macro
+            int _end_col_offset = _token->end_col_offset;
+            UNUSED(_end_col_offset); // Only used by EXTRA macro
+            _res = _PyAST_Assign ( ( asdl_expr_seq* ) _PyPegen_singleton_seq ( p , a ) , _PyAST_BoolOp ( Or , ( asdl_expr_seq* ) _PyPegen_seq_insert_in_front ( p , _PyPegen_set_expr_context ( p , a , Load ) , _PyPegen_singleton_seq ( p , b ) ) , EXTRA ) , NULL , EXTRA );
+            if (_res == NULL && PyErr_Occurred()) {
+                p->error_indicator = 1;
+                p->level--;
+                return NULL;
+            }
+            goto done;
+        }
+        p->mark = _mark;
+        D(fprintf(stderr, "%*c%s assignment[%d-%d]: %s failed!\n", p->level, ' ',
+                  p->error_indicator ? "ERROR!" : "-", _mark, p->mark, "single_target '||=' ~ annotated_rhs"));
+        if (_cut_var) {
+            p->level--;
+            return NULL;
+        }
+    }
+    { // single_target '&&=' ~ annotated_rhs
+        if (p->error_indicator) {
+            p->level--;
+            return NULL;
+        }
+        D(fprintf(stderr, "%*c> assignment[%d-%d]: %s\n", p->level, ' ', _mark, p->mark, "single_target '&&=' ~ annotated_rhs"));
+        int _cut_var = 0;
+        Token * _literal;
+        expr_ty a;
+        expr_ty b;
+        if (
+            (a = single_target_rule(p))  // single_target
+            &&
+            (_literal = _PyPegen_expect_token(p, 90))  // token='&&='
+            &&
+            (_cut_var = 1)
+            &&
+            (b = annotated_rhs_rule(p))  // annotated_rhs
+        )
+        {
+            D(fprintf(stderr, "%*c+ assignment[%d-%d]: %s succeeded!\n", p->level, ' ', _mark, p->mark, "single_target '&&=' ~ annotated_rhs"));
+            Token *_token = _PyPegen_get_last_nonnwhitespace_token(p);
+            if (_token == NULL) {
+                p->level--;
+                return NULL;
+            }
+            int _end_lineno = _token->end_lineno;
+            UNUSED(_end_lineno); // Only used by EXTRA macro
+            int _end_col_offset = _token->end_col_offset;
+            UNUSED(_end_col_offset); // Only used by EXTRA macro
+            _res = _PyAST_Assign ( ( asdl_expr_seq* ) _PyPegen_singleton_seq ( p , a ) , _PyAST_BoolOp ( And , ( asdl_expr_seq* ) _PyPegen_seq_insert_in_front ( p , _PyPegen_set_expr_context ( p , a , Load ) , _PyPegen_singleton_seq ( p , b ) ) , EXTRA ) , NULL , EXTRA );
+            if (_res == NULL && PyErr_Occurred()) {
+                p->error_indicator = 1;
+                p->level--;
+                return NULL;
+            }
+            goto done;
+        }
+        p->mark = _mark;
+        D(fprintf(stderr, "%*c%s assignment[%d-%d]: %s failed!\n", p->level, ' ',
+                  p->error_indicator ? "ERROR!" : "-", _mark, p->mark, "single_target '&&=' ~ annotated_rhs"));
         if (_cut_var) {
             p->level--;
             return NULL;
@@ -16279,6 +16467,7 @@ expressions_rule(Parser *p)
 //     | rescue_expression
 //     | disjunction if disjunction else expression
 //     | disjunction if disjunction
+//     | disjunction else expression
 //     | lambdef
 //     | disjunction
 static expr_ty expression_raw(Parser *);
@@ -16515,6 +16704,45 @@ expression_raw(Parser *p)
         p->mark = _mark;
         D(fprintf(stderr, "%*c%s expression[%d-%d]: %s failed!\n", p->level, ' ',
                   p->error_indicator ? "ERROR!" : "-", _mark, p->mark, "disjunction if disjunction"));
+    }
+    { // disjunction else expression
+        if (p->error_indicator) {
+            p->level--;
+            return NULL;
+        }
+        D(fprintf(stderr, "%*c> expression[%d-%d]: %s\n", p->level, ' ', _mark, p->mark, "disjunction else expression"));
+        expr_ty a;
+        expr_ty b;
+        void *else_var;
+        if (
+            (a = disjunction_rule(p))  // disjunction
+            &&
+            (else_var = else_rule(p))  // else
+            &&
+            (b = expression_rule(p))  // expression
+        )
+        {
+            D(fprintf(stderr, "%*c+ expression[%d-%d]: %s succeeded!\n", p->level, ' ', _mark, p->mark, "disjunction else expression"));
+            Token *_token = _PyPegen_get_last_nonnwhitespace_token(p);
+            if (_token == NULL) {
+                p->level--;
+                return NULL;
+            }
+            int _end_lineno = _token->end_lineno;
+            UNUSED(_end_lineno); // Only used by EXTRA macro
+            int _end_col_offset = _token->end_col_offset;
+            UNUSED(_end_col_offset); // Only used by EXTRA macro
+            _res = _PyAST_BoolOp ( Or , ( asdl_expr_seq* ) _PyPegen_seq_insert_in_front ( p , _PyPegen_set_expr_context ( p , a , Load ) , _PyPegen_singleton_seq ( p , b ) ) , EXTRA );
+            if (_res == NULL && PyErr_Occurred()) {
+                p->error_indicator = 1;
+                p->level--;
+                return NULL;
+            }
+            goto done;
+        }
+        p->mark = _mark;
+        D(fprintf(stderr, "%*c%s expression[%d-%d]: %s failed!\n", p->level, ' ',
+                  p->error_indicator ? "ERROR!" : "-", _mark, p->mark, "disjunction else expression"));
     }
     { // lambdef
         if (p->error_indicator) {
@@ -17209,6 +17437,7 @@ star_expression_rule(Parser *p)
 //     | pipe_expression_without_ternary
 //     | coalesce_expression_without_ternary
 //     | rescue_expression_without_ternary
+//     | disjunction else expression_without_ternary
 //     | lambdef
 //     | disjunction
 static expr_ty
@@ -17223,6 +17452,15 @@ expression_without_ternary_rule(Parser *p)
     }
     expr_ty _res = NULL;
     int _mark = p->mark;
+    if (p->mark == p->fill && _PyPegen_fill_token(p) < 0) {
+        p->error_indicator = 1;
+        p->level--;
+        return NULL;
+    }
+    int _start_lineno = p->tokens[_mark]->lineno;
+    UNUSED(_start_lineno); // Only used by EXTRA macro
+    int _start_col_offset = p->tokens[_mark]->col_offset;
+    UNUSED(_start_col_offset); // Only used by EXTRA macro
     if (p->call_invalid_rules) { // invalid_expression
         if (p->error_indicator) {
             p->level--;
@@ -17317,6 +17555,45 @@ expression_without_ternary_rule(Parser *p)
         p->mark = _mark;
         D(fprintf(stderr, "%*c%s expression_without_ternary[%d-%d]: %s failed!\n", p->level, ' ',
                   p->error_indicator ? "ERROR!" : "-", _mark, p->mark, "rescue_expression_without_ternary"));
+    }
+    { // disjunction else expression_without_ternary
+        if (p->error_indicator) {
+            p->level--;
+            return NULL;
+        }
+        D(fprintf(stderr, "%*c> expression_without_ternary[%d-%d]: %s\n", p->level, ' ', _mark, p->mark, "disjunction else expression_without_ternary"));
+        expr_ty a;
+        expr_ty b;
+        void *else_var;
+        if (
+            (a = disjunction_rule(p))  // disjunction
+            &&
+            (else_var = else_rule(p))  // else
+            &&
+            (b = expression_without_ternary_rule(p))  // expression_without_ternary
+        )
+        {
+            D(fprintf(stderr, "%*c+ expression_without_ternary[%d-%d]: %s succeeded!\n", p->level, ' ', _mark, p->mark, "disjunction else expression_without_ternary"));
+            Token *_token = _PyPegen_get_last_nonnwhitespace_token(p);
+            if (_token == NULL) {
+                p->level--;
+                return NULL;
+            }
+            int _end_lineno = _token->end_lineno;
+            UNUSED(_end_lineno); // Only used by EXTRA macro
+            int _end_col_offset = _token->end_col_offset;
+            UNUSED(_end_col_offset); // Only used by EXTRA macro
+            _res = _PyAST_BoolOp ( Or , ( asdl_expr_seq* ) _PyPegen_seq_insert_in_front ( p , _PyPegen_set_expr_context ( p , a , Load ) , _PyPegen_singleton_seq ( p , b ) ) , EXTRA );
+            if (_res == NULL && PyErr_Occurred()) {
+                p->error_indicator = 1;
+                p->level--;
+                return NULL;
+            }
+            goto done;
+        }
+        p->mark = _mark;
+        D(fprintf(stderr, "%*c%s expression_without_ternary[%d-%d]: %s failed!\n", p->level, ' ',
+                  p->error_indicator ? "ERROR!" : "-", _mark, p->mark, "disjunction else expression_without_ternary"));
     }
     { // lambdef
         if (p->error_indicator) {
@@ -20675,6 +20952,8 @@ await_primary_rule(Parser *p)
 //     | primary '--'
 //     | primary '~~' '~'
 //     | primary '~~' !expression
+//     | primary '!~'
+//     | primary '!~~'
 //     | primary '~.' NAME
 //     | primary '.' NAME
 //     | primary initializer_block
@@ -20966,6 +21245,78 @@ primary_raw(Parser *p)
         p->mark = _mark;
         D(fprintf(stderr, "%*c%s primary[%d-%d]: %s failed!\n", p->level, ' ',
                   p->error_indicator ? "ERROR!" : "-", _mark, p->mark, "primary '~~' !expression"));
+    }
+    { // primary '!~'
+        if (p->error_indicator) {
+            p->level--;
+            return NULL;
+        }
+        D(fprintf(stderr, "%*c> primary[%d-%d]: %s\n", p->level, ' ', _mark, p->mark, "primary '!~'"));
+        Token * _literal;
+        expr_ty a;
+        if (
+            (a = primary_rule(p))  // primary
+            &&
+            (_literal = _PyPegen_expect_token(p, 85))  // token='!~'
+        )
+        {
+            D(fprintf(stderr, "%*c+ primary[%d-%d]: %s succeeded!\n", p->level, ' ', _mark, p->mark, "primary '!~'"));
+            Token *_token = _PyPegen_get_last_nonnwhitespace_token(p);
+            if (_token == NULL) {
+                p->level--;
+                return NULL;
+            }
+            int _end_lineno = _token->end_lineno;
+            UNUSED(_end_lineno); // Only used by EXTRA macro
+            int _end_col_offset = _token->end_col_offset;
+            UNUSED(_end_col_offset); // Only used by EXTRA macro
+            _res = _PyAST_Compare ( a , _PyPegen_singleton_int_seq ( p , NotEq ) , ( asdl_expr_seq* ) _PyPegen_singleton_seq ( p , _PyAST_Constant ( Py_None , NULL , EXTRA ) ) , EXTRA );
+            if (_res == NULL && PyErr_Occurred()) {
+                p->error_indicator = 1;
+                p->level--;
+                return NULL;
+            }
+            goto done;
+        }
+        p->mark = _mark;
+        D(fprintf(stderr, "%*c%s primary[%d-%d]: %s failed!\n", p->level, ' ',
+                  p->error_indicator ? "ERROR!" : "-", _mark, p->mark, "primary '!~'"));
+    }
+    { // primary '!~~'
+        if (p->error_indicator) {
+            p->level--;
+            return NULL;
+        }
+        D(fprintf(stderr, "%*c> primary[%d-%d]: %s\n", p->level, ' ', _mark, p->mark, "primary '!~~'"));
+        Token * _literal;
+        expr_ty a;
+        if (
+            (a = primary_rule(p))  // primary
+            &&
+            (_literal = _PyPegen_expect_token(p, 86))  // token='!~~'
+        )
+        {
+            D(fprintf(stderr, "%*c+ primary[%d-%d]: %s succeeded!\n", p->level, ' ', _mark, p->mark, "primary '!~~'"));
+            Token *_token = _PyPegen_get_last_nonnwhitespace_token(p);
+            if (_token == NULL) {
+                p->level--;
+                return NULL;
+            }
+            int _end_lineno = _token->end_lineno;
+            UNUSED(_end_lineno); // Only used by EXTRA macro
+            int _end_col_offset = _token->end_col_offset;
+            UNUSED(_end_col_offset); // Only used by EXTRA macro
+            _res = _PyAST_Compare ( a , _PyPegen_singleton_int_seq ( p , IsNot ) , ( asdl_expr_seq* ) _PyPegen_singleton_seq ( p , _PyAST_Constant ( Py_None , NULL , EXTRA ) ) , EXTRA );
+            if (_res == NULL && PyErr_Occurred()) {
+                p->error_indicator = 1;
+                p->level--;
+                return NULL;
+            }
+            goto done;
+        }
+        p->mark = _mark;
+        D(fprintf(stderr, "%*c%s primary[%d-%d]: %s failed!\n", p->level, ' ',
+                  p->error_indicator ? "ERROR!" : "-", _mark, p->mark, "primary '!~~'"));
     }
     { // primary '~.' NAME
         if (p->error_indicator) {

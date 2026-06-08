@@ -162,3 +162,15 @@
      - ``"~~"``
    * - .. data:: DOTDOT
      - ``".."``
+   * - .. data:: EXCLAMATIONTILDE
+     - ``"!~"``
+   * - .. data:: EXCLAMATIONDOUBLETILDE
+     - ``"!~~"``
+   * - .. data:: DOUBLEPLUSEQUAL
+     - ``"++="``
+   * - .. data:: DOUBLEMINUSEQUAL
+     - ``"--="``
+   * - .. data:: DOUBLEVBAREQUAL
+     - ``"||="``
+   * - .. data:: DOUBLEAMPEREQUAL
+     - ``"&&="``

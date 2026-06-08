@@ -3906,3 +3906,34 @@ _PyPegen_desugar_double_dot_stmts(Parser *p, asdl_stmt_seq *stmts) {
     }
     return stmts;
 }
+
+stmt_ty
+_PyPegen_make_boolean_strict_assign(Parser *p, expr_ty target, int is_true, expr_ty value, int lineno, int col_offset, int end_lineno, int end_col_offset, PyArena *arena) {
+    if (!target || !value) return NULL;
+    expr_ty load_target = _PyPegen_set_expr_context(p, target, Load);
+    if (!load_target) return NULL;
+
+    asdl_int_seq *ops = _Py_asdl_int_seq_new(1, arena);
+    if (!ops) return NULL;
+    asdl_seq_SET(ops, 0, Eq);
+    asdl_expr_seq *comps = _Py_asdl_expr_seq_new(1, arena);
+    if (!comps) return NULL;
+    expr_ty const_node = _PyAST_Constant(is_true ? Py_True : Py_False, NULL, lineno, col_offset, end_lineno, end_col_offset, arena);
+    if (!const_node) return NULL;
+    asdl_seq_SET(comps, 0, const_node);
+
+    expr_ty test = _PyAST_Compare(load_target, ops, comps, lineno, col_offset, end_lineno, end_col_offset, arena);
+    if (!test) return NULL;
+
+    expr_ty if_expr = _PyAST_IfExp(test, load_target, value, lineno, col_offset, end_lineno, end_col_offset, arena);
+    if (!if_expr) return NULL;
+
+    expr_ty store_target = _PyPegen_set_expr_context(p, target, Store);
+    if (!store_target) return NULL;
+    asdl_expr_seq *targets = _Py_asdl_expr_seq_new(1, arena);
+    if (!targets) return NULL;
+    asdl_seq_SET(targets, 0, store_target);
+
+    return _PyAST_Assign(targets, if_expr, NULL, lineno, col_offset, end_lineno, end_col_offset, arena);
+}
+
