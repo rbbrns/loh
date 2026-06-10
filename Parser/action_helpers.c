@@ -955,6 +955,17 @@ _PyPegen_check_legacy_stmt(Parser *p, expr_ty name) {
 }
 
 int
+_PyPegen_is_dollar(Parser *p, expr_ty name) {
+    if (name->kind != Name_kind) {
+        return 0;
+    }
+    if (PyUnicode_CompareWithASCIIString(name->v.Name.id, "_dollar_item") == 0) {
+        return 1;
+    }
+    return 0;
+}
+
+int
 _PyPegen_check_barry_as_flufl(Parser *p, Token *t)
 {
     // Loh currently treats "!=" normally even when Barry mode is enabled.

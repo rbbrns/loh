@@ -104,3 +104,16 @@ class Tests(unittest.TestCase):
                 -> (**)
             -> inner(**)
         assert test4(a=5, b=6) == {'a': 5, 'b': 6}
+
+    def test_kwargs_attribute_access(self):
+        def test(**):
+            -> **.keys()
+        self.assertEqual(list(test(a=1, b=2)), ['a', 'b'])
+
+        def test_member_access():
+            class Foo:
+                member = {'a': 1}
+            f = Foo()
+            res = {**f.member}
+            return res
+        self.assertEqual(test_member_access(), {'a': 1})

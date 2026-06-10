@@ -196,3 +196,15 @@ class Tests(unittest.TestCase):
         asyncio.run(run_loop())
         self.assertEqual(res, [0, 2, 4])
 
+    def test_dollar_invalid_expression(self):
+        items = [1, None, 2]
+        res = []
+        $ <~ items ? $ !~:
+            res.append($)
+        self.assertEqual(res, [1, 2])
+
+        res_identity = []
+        $ <~ items ? $ !~~:
+            res_identity.append($)
+        self.assertEqual(res_identity, [1, 2])
+

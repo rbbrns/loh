@@ -905,7 +905,7 @@ expression[expr_ty] (memo):
 
 starred_or_double_starred_expr[expr_ty]:
     | '*' a=expression { _PyPegen_make_star_expr(p, a) }
-    | '**' a=expression { _PyPegen_make_double_star_expr(p, a) }
+    | '**' !'.' a=expression { _PyPegen_make_double_star_expr(p, a) }
 
 rescue_expression[expr_ty]:
     | a=disjunction '?^' '(' b=disjunction as c=NAME ')' '->' d=expression { _PyPegen_rescue_expr(p, a, b, c, d) }
@@ -938,6 +938,7 @@ expression_without_ternary[expr_ty]:
     | pipe_expression_without_ternary
     | coalesce_expression_without_ternary
     | rescue_expression_without_ternary
+    | a=disjunction if b=disjunction else c=expression_without_ternary { _PyAST_IfExp(b, a, c, EXTRA) }
     | a=disjunction else b=expression_without_ternary {
          _PyAST_BoolOp(Or, (asdl_expr_seq*)_PyPegen_seq_insert_in_front(p,
              _PyPegen_set_expr_context(p, a, Load),
@@ -1566,8 +1567,8 @@ invalid_expression:
         "invalid syntax. Is this intended to be part of the string?") }
     # !(NAME STRING) is not matched so we don't show this error with some invalid string prefixes like: kf"dsfsdf"
     # Soft keywords need to also be ignored because they can be parsed as NAME NAME
-   | !(NAME STRING | SOFT_KEYWORD) a=disjunction !('+' | '-' | '~') b=expression_without_invalid {
-        _PyPegen_check_legacy_stmt(p, a) ? NULL : p->tokens[p->mark-1]->level == 0 ? NULL :
+   | !(NAME STRING | SOFT_KEYWORD) a=disjunction !('+' | '-' | '~' | '!' | '$') b=expression_without_invalid {
+        _PyPegen_is_dollar(p, a) ? NULL : _PyPegen_check_legacy_stmt(p, a) ? NULL : p->tokens[p->mark-1]->level == 0 ? NULL :
         RAISE_SYNTAX_ERROR_KNOWN_RANGE(a, b, "invalid syntax. Perhaps you forgot a comma?") }
    | a=disjunction 'if' b=disjunction !(else|':') { RAISE_SYNTAX_ERROR_KNOWN_RANGE(a, b, "expected 'else' after 'if' expression") }
    | a=disjunction if b=disjunction else !expression {

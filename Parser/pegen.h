@@ -408,6 +408,7 @@ expr_ty _PyPegen_empty_subscript(Parser *p, expr_ty a);
 stmt_ty _PyPegen_make_starred_assign(Parser *p, expr_ty target, expr_ty value);
 stmt_ty _PyPegen_make_double_starred_assign(Parser *p, expr_ty target, expr_ty value);
 stmt_ty _PyPegen_make_boolean_strict_assign(Parser *p, expr_ty target, int is_true, expr_ty value, int lineno, int col_offset, int end_lineno, int end_col_offset, PyArena *arena);
+int _PyPegen_is_dollar(Parser *p, expr_ty name);
 
 
 asdl_stmt_seq *_PyPegen_desugar_double_dot_stmts(Parser *p, asdl_stmt_seq *stmts);

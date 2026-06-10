@@ -1698,11 +1698,7 @@ x = (
         self.assertEqual(x, 10)
 
     def test_invalid_syntax_error_message(self):
-        expected_msg = (
-            "invalid syntax"
-            if hasattr(sys, "loh_version") else
-            "f-string: expecting '=', or '!', or ':', or '}'"
-        )
+        expected_msg = "f-string: expecting '=', or '!', or ':', or '}'"
         with self.assertRaisesRegex(SyntaxError, expected_msg):
             compile("f'{a $ b}'", "?", "exec")
 
