@@ -1282,3 +1282,41 @@ Allows pre-binding arguments of a function call to create a new, partially-appli
   # Desugars to: (*args, **kwargs) -> greet(*args, name="Alice", **kwargs)
   ```
 
+---
+
+## 47. Dotted Function Definitions (PEP 542)
+
+### Motivation
+PEP 542 proposes dot notation in function signatures to attach a function directly as a method of an existing object/class, avoiding the boilerplate of defining it locally and assigning it manually.
+
+### Proposed Syntax
+To explicitly distinguish between class methods (which receive the implicit `.` self parameter) and plain functions attached to namespaces:
+
+1. **Class Methods (with `self` / `.`)**:
+   The parameter list explicitly starts with `.`:
+   ```python
+   MyClass.method(., x):
+       .x = x
+   ```
+2. **Plain Namespace Functions (no `self`)**:
+   The parameter list does not start with `.`:
+   ```python
+   config.helper(x):
+       -> x * 2
+   ```
+
+### Compile-Time Desugaring
+At parse-time, the dotted function name is split. The function is defined using the base name, and an attribute assignment is appended immediately after:
+```python
+# MyClass.method(., x) desugars to:
+def method(., x):
+    .x = x
+MyClass.method = method
+
+# config.helper(x) desugars to:
+def helper(x):
+    -> x * 2
+config.helper = helper
+```
+
+
