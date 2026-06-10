@@ -3971,7 +3971,7 @@ _PyPegen_make_alias_names_seq(Parser *p, expr_ty a, expr_ty b) {
     if (!seq) {
         return NULL;
     }
-    return (asdl_expr_seq *)_PyPegen_seq_append_to_end(p, seq, b);
+    return (asdl_expr_seq *)_PyPegen_seq_append_to_end(p, (asdl_seq *)seq, b);
 }
 
 asdl_expr_seq *
@@ -3985,11 +3985,11 @@ _PyPegen_append_alias_name(Parser *p, asdl_expr_seq *a, expr_ty b) {
     if (!first_dot && b_dot) {
         return RAISE_SYNTAX_ERROR_KNOWN_RANGE(first, b, "function alias name cannot have dot prefix unless the primary name has it");
     }
-    return (asdl_expr_seq *)_PyPegen_seq_append_to_end(p, a, b);
+    return (asdl_expr_seq *)_PyPegen_seq_append_to_end(p, (asdl_seq *)a, b);
 }
 
 asdl_expr_seq *
-_PyPegen_make_alias_names_seq_multiple(Parser *p, expr_ty a, expr_ty b, asdl_expr_seq *c) {
+_PyPegen_make_alias_names_seq_multiple(Parser *p, expr_ty a, expr_ty b, asdl_seq *c) {
     asdl_expr_seq *seq = _PyPegen_make_alias_names_seq(p, a, b);
     if (!seq) {
         return NULL;
@@ -3997,7 +3997,7 @@ _PyPegen_make_alias_names_seq_multiple(Parser *p, expr_ty a, expr_ty b, asdl_exp
     if (c) {
         int len = asdl_seq_LEN(c);
         for (int i = 0; i < len; i++) {
-            expr_ty name = asdl_seq_GET(c, i);
+            expr_ty name = asdl_seq_GET((asdl_expr_seq *)c, i);
             seq = _PyPegen_append_alias_name(p, seq, name);
             if (!seq) {
                 return NULL;

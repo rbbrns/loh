@@ -413,7 +413,7 @@ stmt_ty _PyPegen_make_boolean_strict_assign(Parser *p, expr_ty target, int is_tr
 int _PyPegen_is_dollar(Parser *p, expr_ty name);
 asdl_expr_seq *_PyPegen_make_alias_names_seq(Parser *p, expr_ty a, expr_ty b);
 asdl_expr_seq *_PyPegen_append_alias_name(Parser *p, asdl_expr_seq *a, expr_ty b);
-asdl_expr_seq *_PyPegen_make_alias_names_seq_multiple(Parser *p, expr_ty a, expr_ty b, asdl_expr_seq *c);
+asdl_expr_seq *_PyPegen_make_alias_names_seq_multiple(Parser *p, expr_ty a, expr_ty b, asdl_seq *c);
 asdl_stmt_seq *_PyPegen_make_aliased_function_def(Parser *p, asdl_expr_seq *names, arguments_ty params, expr_ty returns, Token *func_type_comment, asdl_type_param_seq *type_params, asdl_stmt_seq *body, int is_async, int lineno, int col_offset, int end_lineno, int end_col_offset, PyArena *arena);
 asdl_stmt_seq *_PyPegen_aliased_function_def_decorators(Parser *p, asdl_expr_seq *decorators, asdl_stmt_seq *aliased_f);
 
