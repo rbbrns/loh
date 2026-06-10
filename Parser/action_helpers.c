@@ -3948,3 +3948,158 @@ _PyPegen_make_boolean_strict_assign(Parser *p, expr_ty target, int is_true, expr
     return _PyAST_Assign(targets, if_expr, NULL, lineno, col_offset, end_lineno, end_col_offset, arena);
 }
 
+static int
+_PyPegen_is_dot_identifier(PyObject *name) {
+    const char *str = PyUnicode_AsUTF8(name);
+    return str && str[0] == '.';
+}
+
+asdl_expr_seq *
+_PyPegen_make_alias_names_seq(Parser *p, expr_ty a, expr_ty b) {
+    if (a->kind != Name_kind || b->kind != Name_kind) {
+        return NULL;
+    }
+    int a_dot = _PyPegen_is_dot_identifier(a->v.Name.id);
+    int b_dot = _PyPegen_is_dot_identifier(b->v.Name.id);
+    if (!a_dot && b_dot) {
+        return RAISE_SYNTAX_ERROR_KNOWN_RANGE(a, b, "function alias name cannot have dot prefix unless the primary name has it");
+    }
+    asdl_expr_seq *seq = (asdl_expr_seq *)_PyPegen_singleton_seq(p, a);
+    if (!seq) {
+        return NULL;
+    }
+    return (asdl_expr_seq *)_PyPegen_seq_append_to_end(p, seq, b);
+}
+
+asdl_expr_seq *
+_PyPegen_append_alias_name(Parser *p, asdl_expr_seq *a, expr_ty b) {
+    if (!a || asdl_seq_LEN(a) == 0 || b->kind != Name_kind) {
+        return NULL;
+    }
+    expr_ty first = (expr_ty)asdl_seq_GET(a, 0);
+    int first_dot = _PyPegen_is_dot_identifier(first->v.Name.id);
+    int b_dot = _PyPegen_is_dot_identifier(b->v.Name.id);
+    if (!first_dot && b_dot) {
+        return RAISE_SYNTAX_ERROR_KNOWN_RANGE(first, b, "function alias name cannot have dot prefix unless the primary name has it");
+    }
+    return (asdl_expr_seq *)_PyPegen_seq_append_to_end(p, a, b);
+}
+
+asdl_expr_seq *
+_PyPegen_make_alias_names_seq_multiple(Parser *p, expr_ty a, expr_ty b, asdl_expr_seq *c) {
+    asdl_expr_seq *seq = _PyPegen_make_alias_names_seq(p, a, b);
+    if (!seq) {
+        return NULL;
+    }
+    if (c) {
+        int len = asdl_seq_LEN(c);
+        for (int i = 0; i < len; i++) {
+            expr_ty name = asdl_seq_GET(c, i);
+            seq = _PyPegen_append_alias_name(p, seq, name);
+            if (!seq) {
+                return NULL;
+            }
+        }
+    }
+    return seq;
+}
+
+asdl_stmt_seq *
+_PyPegen_make_aliased_function_def(Parser *p, asdl_expr_seq *names, arguments_ty params, expr_ty returns,
+                                  Token *func_type_comment, asdl_type_param_seq *type_params,
+                                  asdl_stmt_seq *body, int is_async, int lineno, int col_offset,
+                                  int end_lineno, int end_col_offset, PyArena *arena)
+{
+    if (!names || asdl_seq_LEN(names) < 2) {
+        return NULL;
+    }
+
+    expr_ty primary_name_node = (expr_ty)asdl_seq_GET(names, 0);
+    const char *primary_full_str = PyUnicode_AsUTF8(primary_name_node->v.Name.id);
+    if (!primary_full_str) {
+        return NULL;
+    }
+
+    int has_dot = (primary_full_str[0] == '.');
+    PyObject *primary_id = NULL;
+    if (has_dot) {
+        primary_id = _PyPegen_new_identifier(p, primary_full_str + 1);
+        if (!primary_id) return NULL;
+        // Prepend '.' as self argument
+        PyObject *dot_id = _PyPegen_new_identifier(p, ".");
+        if (!dot_id) return NULL;
+        arg_ty dot_arg = _PyAST_arg(dot_id, NULL, NULL, lineno, col_offset, end_lineno, end_col_offset, arena);
+        if (!dot_arg) return NULL;
+        params = _PyPegen_insert_arg_in_front(p, dot_arg, params);
+        if (!params) return NULL;
+    } else {
+        primary_id = primary_name_node->v.Name.id;
+    }
+
+    if (!params) {
+        params = _PyPegen_empty_arguments(p);
+    }
+
+    // Desugar parameter properties (like default values punning/destructuring alias desugaring etc. if any)
+    asdl_stmt_seq *desugared_body = _PyPegen_desugar_parameter_properties(p, primary_id, params, body);
+
+    stmt_ty func_stmt = NULL;
+    if (is_async) {
+        func_stmt = _PyAST_AsyncFunctionDef(primary_id, params, desugared_body, NULL, returns,
+                                           func_type_comment ? func_type_comment->metadata : NULL,
+                                           type_params, lineno, col_offset, end_lineno, end_col_offset, arena);
+    } else {
+        func_stmt = _PyAST_FunctionDef(primary_id, params, desugared_body, NULL, returns,
+                                       func_type_comment ? func_type_comment->metadata : NULL,
+                                       type_params, lineno, col_offset, end_lineno, end_col_offset, arena);
+    }
+    if (!func_stmt) return NULL;
+
+    int total_aliases = asdl_seq_LEN(names) - 1;
+    asdl_stmt_seq *stmts = _Py_asdl_stmt_seq_new(total_aliases + 1, arena);
+    if (!stmts) return NULL;
+    asdl_seq_SET(stmts, 0, func_stmt);
+
+    // Primary name for right-hand side of assignments (always without dot prefix)
+    expr_ty rhs_name = _PyAST_Name(primary_id, Load, lineno, col_offset, end_lineno, end_col_offset, arena);
+    if (!rhs_name) return NULL;
+
+    for (int i = 0; i < total_aliases; i++) {
+        expr_ty alias_name_node = (expr_ty)asdl_seq_GET(names, i + 1);
+        const char *alias_full_str = PyUnicode_AsUTF8(alias_name_node->v.Name.id);
+        if (!alias_full_str) return NULL;
+        PyObject *alias_id = NULL;
+        if (alias_full_str[0] == '.') {
+            alias_id = _PyPegen_new_identifier(p, alias_full_str + 1);
+        } else {
+            alias_id = alias_name_node->v.Name.id;
+        }
+        if (!alias_id) return NULL;
+
+        expr_ty lhs_name = _PyAST_Name(alias_id, Store, lineno, col_offset, end_lineno, end_col_offset, arena);
+        if (!lhs_name) return NULL;
+        asdl_expr_seq *targets = (asdl_expr_seq *)_PyPegen_singleton_seq(p, lhs_name);
+        if (!targets) return NULL;
+
+        stmt_ty assign_stmt = _PyAST_Assign(targets, rhs_name, NULL, lineno, col_offset, end_lineno, end_col_offset, arena);
+        if (!assign_stmt) return NULL;
+        asdl_seq_SET(stmts, i + 1, assign_stmt);
+    }
+
+    return stmts;
+}
+
+asdl_stmt_seq *
+_PyPegen_aliased_function_def_decorators(Parser *p, asdl_expr_seq *decorators, asdl_stmt_seq *aliased_f)
+{
+    if (aliased_f == NULL || asdl_seq_LEN(aliased_f) == 0) {
+        return aliased_f;
+    }
+    stmt_ty func_def = asdl_seq_GET(aliased_f, 0);
+    stmt_ty decorated_func = _PyPegen_function_def_decorators(p, decorators, func_def);
+    if (!decorated_func) return NULL;
+    asdl_seq_SET(aliased_f, 0, decorated_func);
+    return aliased_f;
+}
+
+

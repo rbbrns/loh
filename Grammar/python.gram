@@ -97,12 +97,14 @@ func_type[mod_ty]: '(' a=[type_expressions] ')' '->' b=expression NEWLINE* ENDMA
 statements[asdl_stmt_seq*]: a=statement+ { (asdl_stmt_seq*)_PyPegen_seq_flatten(p, a) }
 
 statement[asdl_stmt_seq*]:
+    | a=aliased_function_def { a }
     | a=compound_stmt { _PyPegen_register_stmts(p ,
                            (asdl_stmt_seq*)_PyPegen_singleton_seq(p, a)
                         ) }
     | a[asdl_stmt_seq*]=simple_stmts { a }
 
 single_compound_stmt[asdl_stmt_seq*]:
+    | a=aliased_function_def { a }
     | a=compound_stmt {
         _PyPegen_register_stmts(p, (asdl_stmt_seq*)_PyPegen_singleton_seq(p, a)) }
 
@@ -437,6 +439,31 @@ function_def_raw[stmt_ty]:
         _PyAST_AsyncFunctionDef(n->v.Name.id,
                         _PyPegen_insert_arg_in_front(p, _PyAST_arg(d->v.Name.id, NULL, NULL, EXTRA), params),
                         _PyPegen_desugar_parameter_properties(p, n->v.Name.id, params, b), NULL, a, NEW_TYPE_COMMENT(p, tc), t, EXTRA) }
+
+
+# Function Aliasing
+# -----------------
+
+function_alias_name[expr_ty]:
+    | n=NAME { _PyAST_Name(n->v.Name.id, Load, EXTRA) }
+    | d=dot n=NAME { _PyAST_Name(_PyPegen_make_dot_identifier(p, n->v.Name.id), Load, EXTRA) }
+
+function_alias_names[asdl_expr_seq*]:
+    | a=function_alias_name '|' b=function_alias_name c=('|' n=function_alias_name { n })* {
+        _PyPegen_make_alias_names_seq_multiple(p, a, b, c) }
+
+
+aliased_function_def[asdl_stmt_seq*]:
+    | d=decorators f=aliased_function_def_raw { _PyPegen_aliased_function_def_decorators(p, d, f) }
+    | aliased_function_def_raw
+
+aliased_function_def_raw[asdl_stmt_seq*]:
+    | !"match" names=function_alias_names t=[type_params] '(' params=[params] ')' a=['->' z=expression { z }] ':' tc=[func_type_comment] b=block {
+        _PyPegen_make_aliased_function_def(p, names, params, a, tc, t, b, 0, EXTRA) }
+    | 'def' names=function_alias_names t=[type_params] '(' params=[params] ')' a=['->' z=expression { z }] ':' tc=[func_type_comment] b=block {
+        _PyPegen_make_aliased_function_def(p, names, params, a, tc, t, b, 0, EXTRA) }
+    | async ['def'] names=function_alias_names t=[type_params] '(' params=[params] ')' a=['->' z=expression { z }] ':' tc=[func_type_comment] b=block {
+        CHECK_VERSION(asdl_stmt_seq*, 5, "Async functions are", _PyPegen_make_aliased_function_def(p, names, params, a, tc, t, b, 1, EXTRA)) }
 
 # Function parameters
 # -------------------

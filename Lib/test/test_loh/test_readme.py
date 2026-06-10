@@ -554,6 +554,29 @@ x = 10 ? True ?? 20         # x is 10
         self.assertEqual(scope["result"], "Loh")
         self.assertEqual(scope["x"], 10)
 
+    def test_function_aliasing(self):
+        code = """
+foo | bar(x, y):
+    -> x + y
+
+result_foo = foo(10, 20)  # 30
+result_bar = bar(10, 20)  # 30
+
+MyClass::
+    .add | sum(x, y):
+        -> x + y
+
+inst = MyClass()
+res_add = inst.add(10, 20)
+res_sum = inst.sum(10, 20)
+"""
+        scope = {}
+        exec(code, {}, scope)
+        self.assertEqual(scope["result_foo"], 30)
+        self.assertEqual(scope["result_bar"], 30)
+        self.assertEqual(scope["res_add"], 30)
+        self.assertEqual(scope["res_sum"], 30)
+
 if __name__ == "__main__":
     unittest.main()
 

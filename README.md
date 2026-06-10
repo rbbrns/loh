@@ -93,6 +93,7 @@ Loh maps Python's verbose keywords and structures to elegant, symbol-based alter
 | `lambda` | `(args) -> expr` | Lambda function (arrow syntax) |
 | `class` | `Name::` *(or `Name:Parent:`)*| Class declaration |
 | `def` | *(omit)* | Function definition |
+| Function Aliasing | `foo \| bar(x):` | Function and method aliasing |
 | `def __init__(self, ...)` | `.(...)` | Constructor shorthand |
 | `self.param = param` | `.param` in signature | Parameter property binding |
 | Parameter Keyword-Only Alias | `primary \| alias` | Keyword-only parameter alias (e.g. `limit \| l = 100`) |
@@ -1098,5 +1099,37 @@ result = name ?? "default"  # result is "Loh"
 
 # Does not conflict with standard ternary: true_val ? condition ?? else_val
 x = 10 ? True ?? 20         # x is 10
+```
+
+---
+
+### **32. Function Aliasing (`foo | bar`)**
+
+> **Motivation:** Functions and methods often benefit from alias names to support command-like interfaces, offer short keyboard shortcuts, or retain backward compatibility during API changes. Using the pipe `|` separator directly on the signature line allows defining multiple aliases cleanly without writing redundant boilerplate wrapper functions.
+
+* **Function Aliasing (`|`)**: Defines a function or class method under multiple names.
+
+#### **Example**
+```python
+foo | bar(x, y):
+    -> x + y
+
+# Both names are valid callable targets
+result_foo = foo(10, 20)  # 30
+result_bar = bar(10, 20)  # 30
+```
+
+Inside classes, asymmetric method aliasing is fully supported:
+```python
+MyClass::
+    .add | sum(x, y):
+        -> x + y
+```
+This desugars cleanly to:
+```python
+class MyClass:
+    def add(self, x, y):
+        return x + y
+    sum = add
 ```
 
