@@ -832,29 +832,6 @@ def draw_point(_point_obj):
     print(x, y, color)
 ```
 
-## 27. Partial Function Application (`func(args)...`)
-
-### Motivation
-Standard Python requires `functools.partial` or lambda wrapping to pre-bind arguments to a callable. Appending the ellipsis `...` to a call expression provides a highly readable, native syntax to create partially applied function thunks at compile time using standard library mechanisms.
-
-### Proposed Syntax
-```python
-# Create a partial function pre-binding the first argument
-add_ten = add(10)...
-
-# Pre-bind keyword arguments
-configure_local = configure(host="localhost")...
-```
-
-### Compile-Time Desugaring
-At parse-time, any call expression followed by the ellipsis operator `...` is wrapped in a call to `functools.partial`:
-```python
-import functools
-
-add_ten = functools.partial(add, 10)
-configure_local = functools.partial(configure, host="localhost")
-```
-
 
 ## 28. None-Filtering Postfix Operator (`lst ~?`)
 
