@@ -1207,31 +1207,42 @@ french_to_english = {value: key for key, value in english_to_french.items()}
 
 ---
 
-## 44. Pipe Unpacking Operators (`|*>`, `|**>`)
+## 44. Pipe Operator Enhancements (`|>`, `<|`, `~|>`, `<|~`, `|*>`, `<*|`, etc.)
 
 ### Motivation
-Standard pipes (`|>`) feed a single value as the first argument to a function call. However, when a pipeline needs to pass multiple arguments (unpacked from an iterable or sequence) or keyword arguments (unpacked from a dictionary), developers must wrap the function call in a lambda expression (e.g. `args |> lambda x: func(*x)`). Introducing dedicated unpacking pipes—`|*>` for positional argument unpacking and `|**>` for keyword argument unpacking—makes pipeline argument forwarding extremely direct and expressive.
+Loh currently supports the basic forward pipe operator (`|>`) for left-to-right single-argument pipeline flow. To support full functional expression flow, we want to introduce the complete family of pipe operators covering:
+1. **Direction**: Forward (`|>`) and Backward (`<|`) (for parentheses-free nesting).
+2. **Unpacking**: Positional (`*`) and Keyword (`**`) argument forwarding.
+3. **None-Awareness (Safety)**: Using `~` to short-circuit to `None` if the input is `None` (matching Loh's safe-navigation `~.`, `~[]`, `~~`).
 
 ### Proposed Syntax
-```python
-# 1. Positional unpack pipe (|*>)
-(10, 20) |*> math.pow  # Equivalent to: math.pow(10, 20)
-
-# 2. Keyword unpack pipe (|**>)
-{"sep": ", ", "end": "\n"} |**> print("A", "B", ?)
-```
+- **Forward & Backward Single-Argument Pipes**:
+  ```python
+  "   hello   " |> str.strip |> print
+  print <| len <| str.strip <| data  # Avoids print(len(str.strip(data)))
+  ```
+- **Argument Unpacking Pipes**:
+  ```python
+  (2, 5) |*> range |> list |> print  # range(2, 5) -> [2, 3, 4]
+  range <*| (2, 5)                  # range(2, 5)
+  {"sep": ", ", "end": "\n"} |**> print <| "hello"
+  ```
+- **None-Aware (Safe) Pipes**:
+  ```python
+  fetch_user() ~|> (u) -> u.name |> print  # None-safe forward
+  f <|~ x                                  # None-safe backward
+  ```
 
 ### Compile-Time Desugaring
-At parse-time, the unpacking pipes desugar into function calls with standard Python unpacking operators (`*` and `**`):
-```python
-# (10, 20) |*> math.pow translates to:
-math.pow(*(10, 20))
-
-# kwargs |**> func translates to:
-func(**kwargs)
-```
+- `x |> f` $\rightarrow$ `f(x)`
+- `f <| x` $\rightarrow$ `f(x)`
+- `args |*> f` $\rightarrow$ `f(*args)`
+- `kwargs |**> f` $\rightarrow$ `f(**kwargs)`
+- `x ~|> f` $\rightarrow$ `f(x) if x is not None else None`
+- `f <|~ x` $\rightarrow$ `f(x) if x is not None else None`
 
 ---
+
 
 ## 45. Index/Key-Safe Subscripting (`lst[x]~`)
 
