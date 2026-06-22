@@ -71,7 +71,7 @@ Loh maps Python's verbose keywords and structures to elegant, symbol-based alter
 | `a if a else b` | `a ?? b` | Truthy-coalescing expression |
 | `for` | `$` | For loop |
 | Implicit Loop | `$ <~ items:` / `$ := items:` | Implicit loop targeting `$` (e.g. `print($)`) |
-| Filtered Loop | `for t in ex ? cond:` | Loop with inline filter check (e.g. `? item > 2:`) |
+| Filtered Loop | `$ t <~ ex ? cond:` | Loop with inline filter check (e.g. `? item > 2:`) |
 | `while` | `$?` | While loop |
 | `break` | `$>` | Break statement |
 | `continue` | `$<` | Continue statement |
@@ -196,7 +196,7 @@ else:
 #### **Loh**
 ```python
 total = 0
-$ i in range(10):
+$ i <~ 0..10:
     ? i == 5:
         $<
     ? i == 8:
@@ -247,9 +247,9 @@ firsts = [first for first, *rest in data]
 #### **Loh**
 ```python
 # Alternative loop syntax and comprehensions
-$ i := range(10):
+$ i := 0..10:
     pass
-evens = [i $ i <~ range(10) ? i % 2 == 0]
+evens = [i $ i <~ 0..10 ? i % 2 == 0]
 firsts = [first $ first, *rest <~ data]
 ```
 

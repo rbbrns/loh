@@ -37,7 +37,7 @@ class TestReadmeExamples(unittest.TestCase):
 
     def test_loops(self):
         total = 0
-        $ i in range(10):
+        $ i <~ 0..10:
             ? i == 5:
                 $<
             ? i == 8:
@@ -47,7 +47,7 @@ class TestReadmeExamples(unittest.TestCase):
             self.fail("Loop should break and not execute else")
 
         # Alternative loops
-        $ i := range(3):
+        $ i := 0..3:
             pass
 
         # Implicit loops
@@ -70,7 +70,7 @@ class TestReadmeExamples(unittest.TestCase):
         self.assertEqual(res3, [3])
 
         # Comprehensions
-        evens = [i $ i <~ range(10) ? i % 2 == 0]
+        evens = [i $ i <~ 0..10 ? i % 2 == 0]
         self.assertEqual(evens, [0, 2, 4, 6, 8])
 
         data = [(1, 2, 3), (4, 5, 6, 7)]
