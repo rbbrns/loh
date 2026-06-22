@@ -1287,12 +1287,12 @@ Allows matching and destructuring parameters directly in the function signature,
 
 ---
 
-## 49. Flat Match-Case Statements (`expr \n ?== pattern: \n ??== pattern:`)
+## 49. Flat Match-Case Statements (`expr \n == pattern: \n == pattern:`)
 
 ### Motivation
 Standard structural pattern matching (`match` / `?==`) requires a nested block structure, leading to two levels of indentation: one for the case clauses and another for the case bodies. 
 
-By applying match patterns directly as conditional-like branches on the line(s) following the subject expression, we can match a subject while keeping the patterns at the same indentation level. This unifies pattern matching with Loh's `?` / `??` conditional syntax, reducing indentation overhead to a single level.
+By applying match patterns directly as comparison-like branches on the line(s) following the subject expression, we can match a subject while keeping the patterns at the same indentation level. Using the comparison operator `==` at the start of a statement (which is normally a syntax error) allows the parser to unambiguously identify match cases and collapses indentation down to a single level.
 
 ### Proposed Syntax
 The subject expression is evaluated exactly once, and consecutive pattern checks are executed sequentially.
@@ -1301,24 +1301,37 @@ The subject expression is evaluated exactly once, and consecutive pattern checks
 x = get_status_code()
 
 x
-?== 200:
+== 200:
     print("Success")
-??== 404:
+== 404:
     print("Not Found")
-??== 500:
+== 500:
     print("Server Error")
-??:
+== _:
     print("Unknown status code")
 ```
 
 This also supports pattern variable binding and guards:
 ```python
 response
-?== Success(data) if data.valid:
+== Success(data) if data.valid:
     process(data)
-??== Failure(error):
+== Failure(error):
     log_error(error)
 ```
+
+#### Alternative Syntax Options
+- **Conditional Unification (`?==` / `??==` / `??`)**:
+  Using `?==` for the first case and `??==` for subsequent cases to mirror Loh's `?` and `??` conditional syntax:
+  ```python
+  x
+  ?== 200:
+      print("Success")
+  ??== 404:
+      print("Not Found")
+  ??:
+      print("Unknown")
+  ```
 
 ### Compile-Time Desugaring
 At parse-time, the subject expression is stored in a temporary variable, and the flat match structure is compiled into a standard CPython `match` statement:
@@ -1340,11 +1353,11 @@ match _loh_match_subject:
 Under `compound_stmt` in `Grammar/python.gram`, we can define:
 ```peg
 flat_match_stmt:
-    | subject=expression NEWLINE '?==' pattern=pattern ':' body=block handlers=flat_match_handlers?
+    | subject=expression NEWLINE '==' pattern=pattern ':' body=block handlers=flat_match_handlers?
 ```
-Where `flat_match_handlers` recursively parses the `??==` and `??` branches:
+Where `flat_match_handlers` recursively parses the subsequent `==` branches:
 ```peg
 flat_match_handlers:
-    | '??==' pattern=pattern ':' body=block handlers=flat_match_handlers?
-    | '??' ':' body=block
+    | '==' pattern=pattern ':' body=block handlers=flat_match_handlers?
 ```
+
