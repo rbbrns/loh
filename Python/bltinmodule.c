@@ -3830,6 +3830,226 @@ builtin__loh_assign_double_star_subscript(PyObject *self, PyObject *const *args,
 }
 
 
+typedef struct {
+    PyObject_HEAD
+    PyObject *callback;
+    PyObject *value;
+} PyLohLazyObject;
+
+static PyObject *
+lazy_resolve(PyLohLazyObject *self)
+{
+    if (self->value == NULL) {
+        if (self->callback == NULL) {
+            PyErr_SetString(PyExc_RuntimeError, "Lazy object callback is missing");
+            return NULL;
+        }
+        PyObject *val = PyObject_CallNoArgs(self->callback);
+        if (val == NULL) {
+            return NULL;
+        }
+        self->value = val;
+    }
+    return self->value;
+}
+
+static int
+lazy_traverse(PyLohLazyObject *self, visitproc visit, void *arg)
+{
+    Py_VISIT(self->callback);
+    Py_VISIT(self->value);
+    return 0;
+}
+
+static int
+lazy_clear(PyLohLazyObject *self)
+{
+    Py_CLEAR(self->callback);
+    Py_CLEAR(self->value);
+    return 0;
+}
+
+static void
+lazy_dealloc(PyLohLazyObject *self)
+{
+    PyObject_GC_UnTrack(self);
+    Py_XDECREF(self->callback);
+    Py_XDECREF(self->value);
+    Py_TYPE(self)->tp_free((PyObject *)self);
+}
+
+static PyObject *
+lazy_repr(PyLohLazyObject *self)
+{
+    PyObject *val = lazy_resolve(self);
+    if (val == NULL) {
+        return NULL;
+    }
+    return PyObject_Repr(val);
+}
+
+static PyObject *
+lazy_str(PyLohLazyObject *self)
+{
+    PyObject *val = lazy_resolve(self);
+    if (val == NULL) {
+        return NULL;
+    }
+    return PyObject_Str(val);
+}
+
+static PyObject *
+lazy_getattro(PyLohLazyObject *self, PyObject *name)
+{
+    PyObject *val = lazy_resolve(self);
+    if (val == NULL) {
+        return NULL;
+    }
+    return PyObject_GetAttr(val, name);
+}
+
+static int
+lazy_setattro(PyLohLazyObject *self, PyObject *name, PyObject *value)
+{
+    PyObject *val = lazy_resolve(self);
+    if (val == NULL) {
+        return -1;
+    }
+    return PyObject_SetAttr(val, name, value);
+}
+
+static PyObject *
+lazy_richcompare(PyLohLazyObject *self, PyObject *other, int op)
+{
+    PyObject *val = lazy_resolve(self);
+    if (val == NULL) {
+        return NULL;
+    }
+    return PyObject_RichCompare(val, other, op);
+}
+
+static PyObject *
+lazy_iter(PyLohLazyObject *self)
+{
+    PyObject *val = lazy_resolve(self);
+    if (val == NULL) {
+        return NULL;
+    }
+    return PyObject_GetIter(val);
+}
+
+static PyObject *
+lazy_call(PyLohLazyObject *self, PyObject *args, PyObject *kwds)
+{
+    PyObject *val = lazy_resolve(self);
+    if (val == NULL) {
+        return NULL;
+    }
+    return PyObject_Call(val, args, kwds);
+}
+
+static Py_ssize_t
+lazy_mapping_length(PyLohLazyObject *self)
+{
+    PyObject *val = lazy_resolve(self);
+    if (val == NULL) {
+        return -1;
+    }
+    return PyObject_Length(val);
+}
+
+static PyObject *
+lazy_mapping_subscript(PyLohLazyObject *self, PyObject *key)
+{
+    PyObject *val = lazy_resolve(self);
+    if (val == NULL) {
+        return NULL;
+    }
+    return PyObject_GetItem(val, key);
+}
+
+static int
+lazy_mapping_ass_subscript(PyLohLazyObject *self, PyObject *key, PyObject *value)
+{
+    PyObject *val = lazy_resolve(self);
+    if (val == NULL) {
+        return -1;
+    }
+    if (value == NULL) {
+        return PyObject_DelItem(val, key);
+    }
+    return PyObject_SetItem(val, key, value);
+}
+
+static PyMappingMethods lazy_as_mapping = {
+    (lenfunc)lazy_mapping_length,
+    (binaryfunc)lazy_mapping_subscript,
+    (objobjargproc)lazy_mapping_ass_subscript,
+};
+
+static PyObject *
+lazy_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
+{
+    PyObject *callback = NULL;
+    if (!PyArg_ParseTuple(args, "O:_LohLazy", &callback)) {
+        return NULL;
+    }
+    if (!PyCallable_Check(callback)) {
+        PyErr_SetString(PyExc_TypeError, "_LohLazy argument must be callable");
+        return NULL;
+    }
+    PyLohLazyObject *self = (PyLohLazyObject *)type->tp_alloc(type, 0);
+    if (self != NULL) {
+        self->callback = Py_NewRef(callback);
+        self->value = NULL;
+    }
+    return (PyObject *)self;
+}
+
+PyTypeObject PyLohLazy_Type = {
+    PyVarObject_HEAD_INIT(&PyType_Type, 0)
+    "_LohLazy",                         /* tp_name */
+    sizeof(PyLohLazyObject),            /* tp_basicsize */
+    0,                                  /* tp_itemsize */
+    /* methods */
+    (destructor)lazy_dealloc,           /* tp_dealloc */
+    0,                                  /* tp_vectorcall_offset */
+    0,                                  /* tp_getattr */
+    0,                                  /* tp_setattr */
+    0,                                  /* tp_as_async */
+    (reprfunc)lazy_repr,                /* tp_repr */
+    0,                                  /* tp_as_number */
+    0,                                  /* tp_as_sequence */
+    &lazy_as_mapping,                   /* tp_as_mapping */
+    0,                                  /* tp_hash */
+    (ternaryfunc)lazy_call,             /* tp_call */
+    (reprfunc)lazy_str,                 /* tp_str */
+    (getattrofunc)lazy_getattro,        /* tp_getattro */
+    (setattrofunc)lazy_setattro,        /* tp_setattro */
+    0,                                  /* tp_as_buffer */
+    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_HAVE_GC, /* tp_flags */
+    0,                                  /* tp_doc */
+    (traverseproc)lazy_traverse,        /* tp_traverse */
+    (inquiry)lazy_clear,                /* tp_clear */
+    (richcmpfunc)lazy_richcompare,      /* tp_richcompare */
+    0,                                  /* tp_weaklistoffset */
+    (getiterfunc)lazy_iter,             /* tp_iter */
+    0,                                  /* tp_iternext */
+    0,                                  /* tp_methods */
+    0,                                  /* tp_members */
+    0,                                  /* tp_getset */
+    0,                                  /* tp_base */
+    0,                                  /* tp_dict */
+    0,                                  /* tp_descr_get */
+    0,                                  /* tp_descr_set */
+    0,                                  /* tp_dictoffset */
+    0,                                  /* tp_init */
+    PyType_GenericAlloc,                /* tp_alloc */
+    lazy_new,                           /* tp_new */
+    PyObject_GC_Del,                    /* tp_free */
+};
+
+
 static PyMethodDef builtin_methods[] = {
     {"_loh_rescue", _PyCFunction_CAST(builtin__loh_rescue), METH_FASTCALL, NULL},
     {"_loh_star", (PyCFunction)builtin__loh_star, METH_O, NULL},
@@ -3977,6 +4197,10 @@ _PyBuiltin_Init(PyInterpreterState *interp)
     SETBUILTIN("tuple",                 &PyTuple_Type);
     SETBUILTIN("type",                  &PyType_Type);
     SETBUILTIN("zip",                   &PyZip_Type);
+    if (PyType_Ready(&PyLohLazy_Type) < 0) {
+        return NULL;
+    }
+    SETBUILTIN("_LohLazy",              &PyLohLazy_Type);
     debug = PyBool_FromLong(config->optimization_level == 0);
     if (PyDict_SetItemString(dict, "__debug__", debug) < 0) {
         Py_DECREF(debug);

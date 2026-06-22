@@ -174,3 +174,5 @@
      - ``"||="``
    * - .. data:: DOUBLEAMPEREQUAL
      - ``"&&="``
+   * - .. data:: BACKTICK
+     - ``"`"``

@@ -107,6 +107,7 @@ Loh maps Python's verbose keywords and structures to elegant, symbol-based alter
 | None-safe assignment | `obj~.prop = value` | None-safe attribute/subscript assignment |
 | Infinite loop | `$:` | Infinite loop shorthand (while True) |
 | Multi-key slicing & unpacking | `*obj` / `**obj` / `*obj[keys]` / `**obj[keys]` | Multi-key subscript slicing, unpacking, and assignments |
+| Lazy evaluation | `` `expr` `` | Late-bound expressions and lazy evaluation variables |
 
 ---
 
@@ -1132,4 +1133,45 @@ class MyClass:
         return x + y
     sum = add
 ```
+
+---
+
+### **33. Lazy Evaluation & Late-Bound Expressions (`\`expr\``)**
+
+> **Motivation:** Standard Python evaluates default parameter arguments once at function definition time. This causes the infamous mutable-default trap (e.g., `x=[]`) and prevents default values from referencing other parameters or instance receivers (`self` / `.`). Delayed execution of expensive computations also requires verbose boilerplate like wrapping in helper functions. Lazy evaluation backticks (`` `expr` ``) solve this by desugaring code-quote expressions into a highly-performant C-level cached proxy (`_LohLazy`) that resolves on-demand.
+
+* **Lazy Variables**: Creating a lazy object `` lazy_val = `expr` `` defers the evaluation of `expr` until the value is first accessed. The result is then cached for all future accesses.
+* **Late-Bound Signature Defaults**: Parameter defaults wrapped in backticks (e.g., `x = `expr``) are dynamically resolved within the function body's local scope at call-time. This allows defaults to reference preceding arguments or instance receivers (`self` / `.`).
+
+#### **Example**
+```python
+x = 10
+lazy_val = `x + 5`
+
+# Evaluates on first use and resolves to 15
+print(lazy_val) # 15
+
+# Since the result is cached, subsequent outer changes do not affect it
+x = 20
+print(lazy_val) # 15
+```
+
+#### **Late-Bound Parameters Example**
+```python
+def calculate(width, height = `width * 2`, depth = `height * 3`):
+    -> width + height + depth
+
+print(calculate(10)) # 90 (10 + 20 + 60)
+print(calculate(10, 5)) # 30 (10 + 5 + 15)
+```
+
+Inside class methods, receiver attribute lookup is fully supported via late-bound defaults:
+```python
+Circle::
+    .(.radius):
+        ...
+    .diameter(d = `.radius * 2`):
+        -> d
+```
+
 

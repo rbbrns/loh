@@ -104,20 +104,21 @@ extern "C" {
 #define DOUBLEMINUSEQUAL 88
 #define DOUBLEVBAREQUAL 89
 #define DOUBLEAMPEREQUAL 90
-#define OP              91
-#define TYPE_IGNORE     92
-#define TYPE_COMMENT    93
-#define SOFT_KEYWORD    94
-#define FSTRING_START   95
-#define FSTRING_MIDDLE  96
-#define FSTRING_END     97
-#define TSTRING_START   98
-#define TSTRING_MIDDLE  99
-#define TSTRING_END     100
-#define COMMENT         101
-#define NL              102
-#define ERRORTOKEN      103
-#define N_TOKENS        105
+#define BACKTICK        91
+#define OP              92
+#define TYPE_IGNORE     93
+#define TYPE_COMMENT    94
+#define SOFT_KEYWORD    95
+#define FSTRING_START   96
+#define FSTRING_MIDDLE  97
+#define FSTRING_END     98
+#define TSTRING_START   99
+#define TSTRING_MIDDLE  100
+#define TSTRING_END     101
+#define COMMENT         102
+#define NL              103
+#define ERRORTOKEN      104
+#define N_TOKENS        106
 #define NT_OFFSET       256
 
 /* Special definitions for cooperation with parser */

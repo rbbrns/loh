@@ -132,6 +132,8 @@ DOUBLEMINUSEQUAL        '--='
 DOUBLEVBAREQUAL         '||='
 # double ampers equal
 DOUBLEAMPEREQUAL        '&&='
+# backtick
+BACKTICK                '`'
 
 
 OP

@@ -1185,6 +1185,7 @@ atom[expr_ty]:
     | &'[' (list | listcomp)
     | &'{' (dict | set | dictcomp | setcomp)
     | '...' { _PyAST_Constant(Py_Ellipsis, NULL, EXTRA) }
+    | '`' a=expression '`' { _PyPegen_make_lazy_expr(p, a) }
 
 group[expr_ty]:
     | '(' a=(yield_expr | named_expression) ')' { a }

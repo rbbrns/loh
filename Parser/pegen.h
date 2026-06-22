@@ -339,6 +339,8 @@ arguments_ty _PyPegen_empty_arguments(Parser *);
 arguments_ty _PyPegen_insert_arg_in_front(Parser *p, arg_ty arg, arguments_ty args);
 PyObject *_PyPegen_make_dot_identifier(Parser *p, PyObject *name);
 asdl_stmt_seq *_PyPegen_desugar_parameter_properties(Parser *p, PyObject *func_name, arguments_ty args, asdl_stmt_seq *body);
+expr_ty _PyPegen_make_lazy_expr(Parser *p, expr_ty expr);
+asdl_stmt_seq *_PyPegen_desugar_lazy_defaults(Parser *p, arguments_ty args, asdl_stmt_seq *body);
 arg_ty _PyPegen_make_aliased_arg(Parser *p, expr_ty primary, expr_ty alias, expr_ty annotation);
 stmt_ty _PyPegen_make_filtered_for(Parser *p, int is_async, expr_ty target, expr_ty iter, expr_ty cond, asdl_stmt_seq *body, asdl_stmt_seq *orelse, PyObject *type_comment, int lineno, int col, int end_lineno, int end_col, PyArena *arena);
 expr_ty _PyPegen_replace_dot_in_expr(Parser *p, expr_ty expr, PyObject *inst_id);

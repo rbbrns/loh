@@ -577,6 +577,41 @@ res_sum = inst.sum(10, 20)
         self.assertEqual(scope["res_add"], 30)
         self.assertEqual(scope["res_sum"], 30)
 
+    def test_lazy_evaluation(self):
+        code = """
+def run():
+    x = 10
+    lazy_val = `x + 5`
+    res1 = str(lazy_val)
+    x = 20
+    res2 = str(lazy_val)
+    -> res1, res2
+
+res1, res2 = run()
+
+calculate(width, height = `width * 2`, depth = `height * 3`):
+    -> width + height + depth
+
+res3 = calculate(10)
+res4 = calculate(10, 5)
+
+Circle::
+    .(.radius):
+        ...
+    .diameter(d = `.radius * 2`):
+        -> d
+
+c = Circle(5)
+res5 = c.diameter()
+"""
+        scope = {}
+        exec(code, {}, scope)
+        self.assertEqual(scope["res1"], "15")
+        self.assertEqual(scope["res2"], "15")
+        self.assertEqual(scope["res3"], 90)
+        self.assertEqual(scope["res4"], 30)
+        self.assertEqual(scope["res5"], 10)
+
 if __name__ == "__main__":
     unittest.main()
 

@@ -2544,6 +2544,9 @@ desugar_parameter_aliases(Parser *p, PyObject *func_name, arguments_ty args, asd
 asdl_stmt_seq *
 _PyPegen_desugar_parameter_properties(Parser *p, PyObject *func_name, arguments_ty args, asdl_stmt_seq *body)
 {
+    body = _PyPegen_desugar_lazy_defaults(p, args, body);
+    if (!body) return NULL;
+
     body = desugar_parameter_aliases(p, func_name, args, body);
     if (!body) return NULL;
     
@@ -4101,5 +4104,161 @@ _PyPegen_aliased_function_def_decorators(Parser *p, asdl_expr_seq *decorators, a
     asdl_seq_SET(aliased_f, 0, decorated_func);
     return aliased_f;
 }
+
+expr_ty
+_PyPegen_make_lazy_expr(Parser *p, expr_ty expr)
+{
+    if (expr == NULL) {
+        return NULL;
+    }
+    int lineno = expr->lineno;
+    int col = expr->col_offset;
+    int end_lineno = expr->end_lineno;
+    int end_col = expr->end_col_offset;
+    PyArena *arena = p->arena;
+
+    arguments_ty empty_args = _PyPegen_empty_arguments(p);
+    if (empty_args == NULL) {
+        return NULL;
+    }
+    expr_ty lambda_node = _PyAST_Lambda(empty_args, expr, lineno, col, end_lineno, end_col, arena);
+    if (lambda_node == NULL) {
+        return NULL;
+    }
+
+    PyObject *lazy_name_id = _PyPegen_new_identifier(p, "_LohLazy");
+    if (lazy_name_id == NULL) {
+        return NULL;
+    }
+    expr_ty func_name = _PyAST_Name(lazy_name_id, Load, lineno, col, end_lineno, end_col, arena);
+    if (func_name == NULL) {
+        return NULL;
+    }
+
+    asdl_expr_seq *args = (asdl_expr_seq *)_PyPegen_singleton_seq(p, lambda_node);
+    if (args == NULL) {
+        return NULL;
+    }
+    
+    return _PyAST_Call(func_name, args, NULL, lineno, col, end_lineno, end_col, arena);
+}
+
+asdl_stmt_seq *
+_PyPegen_desugar_lazy_defaults(Parser *p, arguments_ty args, asdl_stmt_seq *body)
+{
+    if (args == NULL) {
+        return body;
+    }
+    PyArena *arena = p->arena;
+
+    PyObject *sentinel_id = _PyPegen_new_identifier(p, "_LOH_SENTINEL");
+    if (sentinel_id == NULL) {
+        return NULL;
+    }
+
+    // 1. Process keyword-only arguments (right-to-left)
+    if (args->kwonlyargs && args->kw_defaults) {
+        int kw_len = asdl_seq_LEN(args->kwonlyargs);
+        for (int i = kw_len - 1; i >= 0; i--) {
+            expr_ty def = asdl_seq_GET(args->kw_defaults, i);
+            if (def != NULL && def->kind == Call_kind) {
+                expr_ty func = def->v.Call.func;
+                if (func->kind == Name_kind && strcmp(PyUnicode_AsUTF8(func->v.Name.id), "_LohLazy") == 0) {
+                    if (def->v.Call.args && asdl_seq_LEN(def->v.Call.args) > 0) {
+                        expr_ty lambda_node = asdl_seq_GET(def->v.Call.args, 0);
+                        if (lambda_node->kind == Lambda_kind) {
+                            expr_ty inner_expr = lambda_node->v.Lambda.body;
+                            arg_ty param_arg = asdl_seq_GET(args->kwonlyargs, i);
+
+                            int lineno = param_arg->lineno;
+                            int col = param_arg->col_offset;
+                            int end_lineno = param_arg->end_lineno;
+                            int end_col = param_arg->end_col_offset;
+
+                            expr_ty sentinel_node = _PyAST_Name(sentinel_id, Load, lineno, col, end_lineno, end_col, arena);
+                            asdl_seq_SET(args->kw_defaults, i, sentinel_node);
+
+                            expr_ty param_load = _PyAST_Name(param_arg->arg, Load, lineno, col, end_lineno, end_col, arena);
+                            expr_ty cmp = _PyAST_Compare(param_load, 
+                                                         _PyPegen_singleton_int_seq(p, Is), 
+                                                         (asdl_expr_seq *)_PyPegen_singleton_seq(p, sentinel_node), 
+                                                         lineno, col, end_lineno, end_col, arena);
+                            
+                            expr_ty param_store = _PyAST_Name(param_arg->arg, Store, lineno, col, end_lineno, end_col, arena);
+                            asdl_expr_seq *targets = (asdl_expr_seq *)_PyPegen_singleton_seq(p, param_store);
+                            stmt_ty assign_stmt = _PyAST_Assign(targets, inner_expr, NULL, lineno, col, end_lineno, end_col, arena);
+                            asdl_stmt_seq *if_body = (asdl_stmt_seq *)_PyPegen_singleton_seq(p, assign_stmt);
+                            stmt_ty if_stmt = _PyAST_If(cmp, if_body, NULL, lineno, col, end_lineno, end_col, arena);
+
+                            body = (asdl_stmt_seq *)_PyPegen_seq_insert_in_front(p, if_stmt, (asdl_seq *)body);
+                            if (body == NULL) {
+                                return NULL;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // 2. Process positional/positional-only arguments (right-to-left)
+    if (args->defaults) {
+        int posonly_len = args->posonlyargs ? asdl_seq_LEN(args->posonlyargs) : 0;
+        int positional_len = args->args ? asdl_seq_LEN(args->args) : 0;
+        int total_pos = posonly_len + positional_len;
+        int defaults_len = asdl_seq_LEN(args->defaults);
+
+        for (int i = defaults_len - 1; i >= 0; i--) {
+            expr_ty def = asdl_seq_GET(args->defaults, i);
+            if (def != NULL && def->kind == Call_kind) {
+                expr_ty func = def->v.Call.func;
+                if (func->kind == Name_kind && strcmp(PyUnicode_AsUTF8(func->v.Name.id), "_LohLazy") == 0) {
+                    if (def->v.Call.args && asdl_seq_LEN(def->v.Call.args) > 0) {
+                        expr_ty lambda_node = asdl_seq_GET(def->v.Call.args, 0);
+                        if (lambda_node->kind == Lambda_kind) {
+                            expr_ty inner_expr = lambda_node->v.Lambda.body;
+
+                            int param_idx = total_pos - defaults_len + i;
+                            arg_ty param_arg = NULL;
+                            if (param_idx < posonly_len) {
+                                param_arg = asdl_seq_GET(args->posonlyargs, param_idx);
+                            } else {
+                                param_arg = asdl_seq_GET(args->args, param_idx - posonly_len);
+                            }
+
+                            int lineno = param_arg->lineno;
+                            int col = param_arg->col_offset;
+                            int end_lineno = param_arg->end_lineno;
+                            int end_col = param_arg->end_col_offset;
+
+                            expr_ty sentinel_node = _PyAST_Name(sentinel_id, Load, lineno, col, end_lineno, end_col, arena);
+                            asdl_seq_SET(args->defaults, i, sentinel_node);
+
+                            expr_ty param_load = _PyAST_Name(param_arg->arg, Load, lineno, col, end_lineno, end_col, arena);
+                            expr_ty cmp = _PyAST_Compare(param_load, 
+                                                         _PyPegen_singleton_int_seq(p, Is), 
+                                                         (asdl_expr_seq *)_PyPegen_singleton_seq(p, sentinel_node), 
+                                                         lineno, col, end_lineno, end_col, arena);
+                            
+                            expr_ty param_store = _PyAST_Name(param_arg->arg, Store, lineno, col, end_lineno, end_col, arena);
+                            asdl_expr_seq *targets = (asdl_expr_seq *)_PyPegen_singleton_seq(p, param_store);
+                            stmt_ty assign_stmt = _PyAST_Assign(targets, inner_expr, NULL, lineno, col, end_lineno, end_col, arena);
+                            asdl_stmt_seq *if_body = (asdl_stmt_seq *)_PyPegen_singleton_seq(p, assign_stmt);
+                            stmt_ty if_stmt = _PyAST_If(cmp, if_body, NULL, lineno, col, end_lineno, end_col, arena);
+
+                            body = (asdl_stmt_seq *)_PyPegen_seq_insert_in_front(p, if_stmt, (asdl_seq *)body);
+                            if (body == NULL) {
+                                return NULL;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    return body;
+}
+
 
 
