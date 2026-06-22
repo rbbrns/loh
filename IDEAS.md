@@ -1285,5 +1285,66 @@ Allows matching and destructuring parameters directly in the function signature,
               raise TypeError("No matching signature found")
   ```
 
+---
 
+## 49. Flat Match-Case Statements (`expr \n ?== pattern: \n ??== pattern:`)
 
+### Motivation
+Standard structural pattern matching (`match` / `?==`) requires a nested block structure, leading to two levels of indentation: one for the case clauses and another for the case bodies. 
+
+By applying match patterns directly as conditional-like branches on the line(s) following the subject expression, we can match a subject while keeping the patterns at the same indentation level. This unifies pattern matching with Loh's `?` / `??` conditional syntax, reducing indentation overhead to a single level.
+
+### Proposed Syntax
+The subject expression is evaluated exactly once, and consecutive pattern checks are executed sequentially.
+
+```python
+x = get_status_code()
+
+x
+?== 200:
+    print("Success")
+??== 404:
+    print("Not Found")
+??== 500:
+    print("Server Error")
+??:
+    print("Unknown status code")
+```
+
+This also supports pattern variable binding and guards:
+```python
+response
+?== Success(data) if data.valid:
+    process(data)
+??== Failure(error):
+    log_error(error)
+```
+
+### Compile-Time Desugaring
+At parse-time, the subject expression is stored in a temporary variable, and the flat match structure is compiled into a standard CPython `match` statement:
+
+```python
+_loh_match_subject = get_status_code()
+match _loh_match_subject:
+    case 200:
+        print("Success")
+    case 404:
+        print("Not Found")
+    case 500:
+        print("Server Error")
+    case _:
+        print("Unknown status code")
+```
+
+### Grammar Design
+Under `compound_stmt` in `Grammar/python.gram`, we can define:
+```peg
+flat_match_stmt:
+    | subject=expression NEWLINE '?==' pattern=pattern ':' body=block handlers=flat_match_handlers?
+```
+Where `flat_match_handlers` recursively parses the `??==` and `??` branches:
+```peg
+flat_match_handlers:
+    | '??==' pattern=pattern ':' body=block handlers=flat_match_handlers?
+    | '??' ':' body=block
+```
