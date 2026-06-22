@@ -16,7 +16,7 @@ class TestReadmeExamples(unittest.TestCase):
         # Test not in
         x = 4
         ? x !<~ my_list:
-            pass
+            ...
 
     def test_conditionals(self):
         score = 85
@@ -48,7 +48,7 @@ class TestReadmeExamples(unittest.TestCase):
 
         # Alternative loops
         $ i := 0..3:
-            pass
+            ...
 
         # Implicit loops
         items = [1, 2, 3]
@@ -114,11 +114,11 @@ class TestReadmeExamples(unittest.TestCase):
 
     def test_classes(self):
         BaseAccount::
-            pass
+            ...
 
         Account:BaseAccount:
             .(.owner, .balance):
-                pass
+                ...
 
             .deposit(amount):
                 .balance += amount
@@ -154,7 +154,7 @@ class TestReadmeExamples(unittest.TestCase):
         ?!^:
             self.fail("Should have raised ZeroDivisionError")
         *:
-            pass
+            ...
         self.assertTrue(ran)
 
         # Legacy operator syntax
@@ -166,7 +166,7 @@ class TestReadmeExamples(unittest.TestCase):
         ?!^:
             self.fail("Should have raised ZeroDivisionError")
         *:
-            pass
+            ...
         self.assertTrue(ran)
 
         # Raising exceptions

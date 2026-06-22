@@ -131,7 +131,7 @@ if x not in my_list:
 ? (x+++ && !y---) || z~~~:
     <> val
 ? x !<~ my_list:
-    pass
+    ...
 ```
 
 ---
@@ -248,7 +248,7 @@ firsts = [first for first, *rest in data]
 ```python
 # Alternative loop syntax and comprehensions
 $ i := 0..10:
-    pass
+    ...
 evens = [i $ i <~ 0..10 ? i % 2 == 0]
 firsts = [first $ first, *rest <~ data]
 ```
@@ -371,7 +371,7 @@ class Account(BaseAccount):
 Account:BaseAccount:
     # Constructor shorthand with parameter properties
     .(.owner, .balance):
-        pass
+        ...
 
     .deposit(amount):
         .balance += amount
@@ -598,11 +598,11 @@ foo(a~, b~):
     ...
 
 ? x~~~:      # Or: ? x === ~:
-    pass
+    ...
 ? !y~~~:     # Or: ? y !== ~:
-    pass
+    ...
 ? z~~:       # Or: ? z == ~:
-    pass
+    ...
 
 my_dict = {'a': ~, 'b': ~}
 ```
@@ -680,9 +680,9 @@ x+
 y-
 
 ? x+++:
-    pass
+    ...
 ? y--:
-    pass
+    ...
 ```
 
 ---
