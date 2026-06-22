@@ -1363,101 +1363,62 @@ flat_match_handlers:
 
 ---
 
-## 50. Post-Expression Implicit Blocks (`$`, `&`, `.`, `?^`)
+## 50. Post-Expression Exception Rescue (`expr \n ?^ Exception:`)
 
 ### Motivation
-Following the success of the flat match-case design (`expr \n == pattern:`), we can generalize this "post-expression implicit statement syntax" to other control-flow and block structures in Loh. This allows chaining operations downwards using indentation instead of nesting or introducing intermediate dummy variables, enhancing the clean left-to-right/top-to-bottom flow of data.
+Standard Python exception handling (`try`/`except`) is statement-based and verbose, forcing developers to wrap single lines of code in deeply indented try blocks. 
 
----
+By allowing an exception rescue block (`?^`) to immediately follow an expression statement, we can handle potential errors inline without nesting or introducing block-level boilerplate.
 
-### 1. Post-Expression Iteration (`expr \n $ item:`)
-Loops can target the preceding expression as the collection to iterate over.
+### Proposed Syntax
+The rescue block applies directly to the preceding expression statement.
 
-#### Proposed Syntax
-```python
-get_active_users()
-$ user:
-    send_notification(user)
-```
-Or using the implicit loop sigil `$` target:
-```python
-get_active_users()
-$:
-    send_notification($)
-```
-
-#### Compile-Time Desugaring
-```python
-for user in get_active_users():
-    send_notification(user)
-```
-
----
-
-### 2. Post-Expression Context Management (`expr \n & => var:`)
-Context managers can be opened directly on the preceding expression.
-
-#### Proposed Syntax
-```python
-open_session()
-& => session:
-    session.query()
-```
-Or using an implicit context target:
-```python
-open_session()
-&:
-    $.query()
-```
-
-#### Compile-Time Desugaring
-```python
-with open_session() as session:
-    session.query()
-```
-
----
-
-### 3. Post-Expression Configuration / Initializer Block (`expr \n .:`)
-An alternative block-level syntax for Loh's inline initializer (`obj { .prop = val }`). Any line starting with a dot `.` inside the block targets the preceding expression.
-
-#### Proposed Syntax
-```python
-config = create_default_config()
-.:
-    .host = "127.0.0.1"
-    .port = 9000
-    .enable_logging()
-```
-
-#### Compile-Time Desugaring
-```python
-config = create_default_config()
-config.host = "127.0.0.1"
-config.port = 9000
-config.enable_logging()
-```
-
----
-
-### 4. Post-Expression Exception Rescue (`expr \n ?^ Exception:`)
-Allows attaching a fallback check or recovery block directly below the expression statement that might raise an exception.
-
-#### Proposed Syntax
 ```python
 parse_configuration(data)
-?^ (FileNotFoundError | JSONDecodeError):
-    log_error("Could not parse configuration")
+?^ (FileNotFoundError | JSONDecodeError) => error:
+    log_error("Could not parse configuration:", error)
     load_fallback()
 ```
 
-#### Compile-Time Desugaring
+#### Syntax Variations
+- **Wildcard Rescue**: If no exception type is specified, it implicitly catches `Exception` (just like Loh's inline rescue `expr ?^ fallback` and standard `except:`):
+  ```python
+  parse_configuration(data)
+  ?^:
+      load_fallback()
+  ```
+- **Multiple Handlers**: You can stack multiple handlers sequentially:
+  ```python
+  parse_configuration(data)
+  ?^ FileNotFoundError:
+      load_from_backup()
+  ?^ JSONDecodeError:
+      load_default()
+  ```
+
+### Compile-Time Desugaring
+At parse-time, the expression statement is wrapped inside a `try` block, and the subsequent `?^` blocks are mapped to `except` clauses:
+
 ```python
 try:
     parse_configuration(data)
-except (FileNotFoundError, JSONDecodeError):
-    log_error("Could not parse configuration")
+except (FileNotFoundError, JSONDecodeError) as error:
+    log_error("Could not parse configuration:", error)
     load_fallback()
 ```
+
+### Grammar Design
+In `Grammar/python.gram`, we can define under `compound_stmt`:
+```peg
+rescued_stmt:
+    | body=expression NEWLINE handlers=rescue_handlers
+```
+Where `rescue_handlers` parses one or more `?^` clauses:
+```peg
+rescue_handlers:
+    | '?^' exc=expression? var=rescue_var_binding? ':' body=block rest=rescue_handlers?
+```
+And `rescue_var_binding` parses the `=> var` alias mapping.
+
 
 
