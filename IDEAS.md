@@ -1361,3 +1361,103 @@ flat_match_handlers:
     | '==' pattern=pattern ':' body=block handlers=flat_match_handlers?
 ```
 
+---
+
+## 50. Post-Expression Implicit Blocks (`$`, `&`, `.`, `?^`)
+
+### Motivation
+Following the success of the flat match-case design (`expr \n == pattern:`), we can generalize this "post-expression implicit statement syntax" to other control-flow and block structures in Loh. This allows chaining operations downwards using indentation instead of nesting or introducing intermediate dummy variables, enhancing the clean left-to-right/top-to-bottom flow of data.
+
+---
+
+### 1. Post-Expression Iteration (`expr \n $ item:`)
+Loops can target the preceding expression as the collection to iterate over.
+
+#### Proposed Syntax
+```python
+get_active_users()
+$ user:
+    send_notification(user)
+```
+Or using the implicit loop sigil `$` target:
+```python
+get_active_users()
+$:
+    send_notification($)
+```
+
+#### Compile-Time Desugaring
+```python
+for user in get_active_users():
+    send_notification(user)
+```
+
+---
+
+### 2. Post-Expression Context Management (`expr \n & => var:`)
+Context managers can be opened directly on the preceding expression.
+
+#### Proposed Syntax
+```python
+open_session()
+& => session:
+    session.query()
+```
+Or using an implicit context target:
+```python
+open_session()
+&:
+    $.query()
+```
+
+#### Compile-Time Desugaring
+```python
+with open_session() as session:
+    session.query()
+```
+
+---
+
+### 3. Post-Expression Configuration / Initializer Block (`expr \n .:`)
+An alternative block-level syntax for Loh's inline initializer (`obj { .prop = val }`). Any line starting with a dot `.` inside the block targets the preceding expression.
+
+#### Proposed Syntax
+```python
+config = create_default_config()
+.:
+    .host = "127.0.0.1"
+    .port = 9000
+    .enable_logging()
+```
+
+#### Compile-Time Desugaring
+```python
+config = create_default_config()
+config.host = "127.0.0.1"
+config.port = 9000
+config.enable_logging()
+```
+
+---
+
+### 4. Post-Expression Exception Rescue (`expr \n ?^ Exception:`)
+Allows attaching a fallback check or recovery block directly below the expression statement that might raise an exception.
+
+#### Proposed Syntax
+```python
+parse_configuration(data)
+?^ (FileNotFoundError | JSONDecodeError):
+    log_error("Could not parse configuration")
+    load_fallback()
+```
+
+#### Compile-Time Desugaring
+```python
+try:
+    parse_configuration(data)
+except (FileNotFoundError, JSONDecodeError):
+    log_error("Could not parse configuration")
+    load_fallback()
+```
+
+
