@@ -39,6 +39,7 @@ TAGS
 .vs/
 .vscode/
 .cache/
+.antigravitycli/
 gmon.out
 .coverage
 .mypy_cache/

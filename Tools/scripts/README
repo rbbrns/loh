@@ -6,6 +6,8 @@ checkpip.py               Checks the version of the projects bundled in ensurepi
 combinerefs.py            A helper for analyzing PYTHONDUMPREFS output
 divmod_threshold.py       Determine threshold for switching from longobject.c
                           divmod to _pylong.int_divmod()
+highlight_loh.py          Format and output Loh source code in the terminal
+                          with syntax highlighting
 idle3                     Main program to start IDLE
 pydoc3                    Python documentation browser
 run_tests.py              Run the test suite with more sensible default options
