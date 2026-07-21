@@ -566,6 +566,10 @@ from .. import helper
 | `from . import helper` | `/ . / helper` |
 | `from .. import helper` | `/ .. / helper` |
 
+#### **File Resolution**
+
+When importing a module, Loh searches for files with the `.loh` extension (e.g. `module.loh`) in the module search path (`sys.path`) alongside traditional `.py` files.
+
 ---
 
 ### **13. None Constants & Shorthands**
