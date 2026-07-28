@@ -237,14 +237,14 @@ set_richcompare(PyObject *self, PyObject *w, int op)
 
 ---
 
-## 6. Support Walrus Loop Iteration (`:=`) in Comprehensions
+## 6. Support Explicit and Implicit Walrus Loop Iteration (`:=`) in Comprehensions
 
 ### Motivation
-Loh already supports using the walrus/binding operator `:=` in statement-level `for` loops (e.g. `$ x := items:`). However, comprehension loops (e.g. list, dict, and set comprehensions) still require using `in` or `<~`. 
-
-To make loop syntax fully consistent across the language and allow deprecating the `<~` operator, we will extend comprehension loops to support `:=`.
+Loh already supports using the walrus/binding operator `:=` in statement-level `for` loops (e.g., `$ x := items:`). To make loop syntax fully consistent across the language and allow deprecating the `<~` operator, we will extend comprehensions to support `:=` for both explicit and implicit loop iterations.
 
 ### Proposed Syntax
+
+#### **A. Explicit Loops in Comprehensions**
 ```python
 # List comprehension using :=
 evens = [x $ x := 0..10 ? x % 2 == 0]
@@ -253,16 +253,33 @@ evens = [x $ x := 0..10 ? x % 2 == 0]
 squared = {x: x**2 $ x := 1..5}
 ```
 
+#### **B. Implicit/Inline Loops in Comprehensions**
+If the loop target variable is omitted, the sigil `$` acts as the implicit target, allowing highly concise comprehensions:
+```python
+# Implicit list comprehension
+active_emails = [$.email := users ? $.is_active]
+
+# Implicit dict comprehension
+user_map = {$.id: $ := users}
+
+# Implicit generator as function argument
+total_price = sum($.price := items)
+```
+
 ### Grammar Design
-In `Grammar/python.gram`, update `for_if_clause` to accept either the `in` rule or the `:=` token:
+In `Grammar/python.gram`, update `for_if_clause` to accept either the `in` rule or the `:=` token, and support optional target variables mapping to `$` when omitted:
 ```peg
 for_if_clause[comprehension_ty]:
     | async for a=star_targets (in | ':=') ~ b=disjunction c[asdl_expr_seq*]=(if z=disjunction { z })* {
         CHECK_VERSION(comprehension_ty, 6, "Async comprehensions are", _PyAST_comprehension(a, b, c, 1, p->arena)) }
     | for a=star_targets (in | ':=') ~ b=disjunction c[asdl_expr_seq*]=(if z=disjunction { z })* {
         _PyAST_comprehension(a, b, c, 0, p->arena) }
+    # Implicit loop in comprehensions (omitted target variable defaults to '_dollar_item'):
+    | for (in | ':=') ~ b=disjunction c[asdl_expr_seq*]=(if z=disjunction { z })* {
+        _PyAST_comprehension(_PyAST_Name(_PyPegen_new_identifier(p, "_dollar_item"), Store, EXTRA), b, c, 0, p->arena) }
 ```
 This is free of any parsing conflicts because the `for`/`$` keyword explicitly guards the start of the comprehension clause.
+
 
 
 
