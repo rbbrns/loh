@@ -235,4 +235,34 @@ set_richcompare(PyObject *self, PyObject *w, int op)
 }
 ```
 
+---
+
+## 6. Support Walrus Loop Iteration (`:=`) in Comprehensions
+
+### Motivation
+Loh already supports using the walrus/binding operator `:=` in statement-level `for` loops (e.g. `$ x := items:`). However, comprehension loops (e.g. list, dict, and set comprehensions) still require using `in` or `<~`. 
+
+To make loop syntax fully consistent across the language and allow deprecating the `<~` operator, we will extend comprehension loops to support `:=`.
+
+### Proposed Syntax
+```python
+# List comprehension using :=
+evens = [x $ x := 0..10 ? x % 2 == 0]
+
+# Dict comprehension using :=
+squared = {x: x**2 $ x := 1..5}
+```
+
+### Grammar Design
+In `Grammar/python.gram`, update `for_if_clause` to accept either the `in` rule or the `:=` token:
+```peg
+for_if_clause[comprehension_ty]:
+    | async for a=star_targets (in | ':=') ~ b=disjunction c[asdl_expr_seq*]=(if z=disjunction { z })* {
+        CHECK_VERSION(comprehension_ty, 6, "Async comprehensions are", _PyAST_comprehension(a, b, c, 1, p->arena)) }
+    | for a=star_targets (in | ':=') ~ b=disjunction c[asdl_expr_seq*]=(if z=disjunction { z })* {
+        _PyAST_comprehension(a, b, c, 0, p->arena) }
+```
+This is free of any parsing conflicts because the `for`/`$` keyword explicitly guards the start of the comprehension clause.
+
+
 
