@@ -1421,4 +1421,52 @@ rescue_handlers:
 And `rescue_var_binding` parses the `=> var` alias mapping.
 
 
+---
+
+## 51. Implicit Collection Concatenation & Merging (`[1] [2]`, `{a} {b}`)
+
+### Motivation
+In Python, adjacent string literals implicitly concatenate at compile-time: `'a' 'b'` evaluates to `'ab'`. However, placing collection literals side-by-side exhibits different behavior:
+- `[1] [2]` parses as subscript indexing `[1][2]`, raising a runtime `IndexError`.
+- `(1,) (2,)` parses as a function call `(1,)(2,)`, raising a runtime `TypeError`.
+- `{"a": 1} {"b": 2}` and `{1} {2}` raise a `SyntaxError`.
+
+Introducing implicit concatenation or merging for adjacent collection literals in Loh provides a cohesive, readable way to combine sequences and mappings without requiring explicit `+`, `|`, or `copy` calls.
+
+### Technical Analysis & Ambiguity
+1. **Lists & Tuples**: Because `expr [...]` (subscript) and `expr (...)` (call) are valid postfix expressions, adjacent list/tuple literals collide with indexing and calling grammar rules. For example, `[1, 2, 3] [0]` in standard Python means "index element 0 of `[1, 2, 3]`" (evaluating to `1`), which prevents `[a] [b]` from being parsed as list addition (`[1, 2, 3, 0]`).
+2. **Dicts & Sets**: Because `{...}` is **not** a valid postfix operator following an expression, adjacent dictionary literals `{"a": 1} {"b": 2}` and set literals `{1, 2} {3, 4}` raise `SyntaxError: invalid syntax` in standard Python. This means adjacent `{...} {...}` literals can be repurposed with zero grammar ambiguity!
+
+### Proposed Syntax
+
+#### 1. Dict & Set Literal Merging
+Adjacent dictionary and set literals automatically merge into a single combined container at compile time:
+```python
+# Dict merging (second dict overrides overlapping keys)
+config = {"host": "localhost", "port": 8000} {"port": 8080, "debug": +}
+# Evaluates to: {"host": "localhost", "port": 8080, "debug": True}
+
+# Set merging (unions items)
+tags = {"web", "api"} {"v1", "web"}
+# Evaluates to: {"web", "api", "v1"}
+```
+
+#### 2. Sequence Concatenation in Parenthesized / Multi-Line Contexts
+For lists and tuples, adjacent literal sequences within parenthesized list builder contexts or with explicit multi-line layouts can be parsed as sequence concatenation:
+```python
+# Multi-line list concatenation
+items = [
+    [1, 2, 3]
+    [4, 5, 6]
+]
+# Evaluates to: [1, 2, 3, 4, 5, 6]
+```
+
+### Compile-Time Desugaring
+- Dict merging `d1 d2` desugars to dict unpacking: `{**d1, **d2}`.
+- Set merging `s1 s2` desugars to set unpacking: `{*s1, *s2}`.
+- List merging `l1 l2` desugars to list unpacking: `[*l1, *l2]`.
+
+
+
 
