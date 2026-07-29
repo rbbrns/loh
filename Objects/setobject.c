@@ -2153,43 +2153,75 @@ set_richcompare(PyObject *self, PyObject *w, int op)
     PySetObject *v = _PySet_CAST(self);
     PyObject *r1;
     int r2;
+    PyObject *temp_set = NULL;
+    PyObject *result = NULL;
 
-    if(!PyAnySet_Check(w))
-        Py_RETURN_NOTIMPLEMENTED;
+    if (!PyAnySet_Check(w)) {
+        if (op == Py_EQ || op == Py_NE) {
+            Py_RETURN_NOTIMPLEMENTED;
+        }
+        temp_set = PySet_New(w);
+        if (temp_set == NULL) {
+            PyErr_Clear();
+            Py_RETURN_NOTIMPLEMENTED;
+        }
+        w = temp_set;
+    }
 
     switch (op) {
     case Py_EQ:
         if (PySet_GET_SIZE(v) != PySet_GET_SIZE(w))
-            Py_RETURN_FALSE;
-        Py_hash_t v_hash = FT_ATOMIC_LOAD_SSIZE_RELAXED(v->hash);
-        Py_hash_t w_hash = FT_ATOMIC_LOAD_SSIZE_RELAXED(((PySetObject *)w)->hash);
-        if (v_hash != -1 && w_hash != -1 && v_hash != w_hash)
-            Py_RETURN_FALSE;
-        return set_issubset((PyObject*)v, w);
+            result = Py_NewRef(Py_False);
+        else {
+            Py_hash_t v_hash = FT_ATOMIC_LOAD_SSIZE_RELAXED(v->hash);
+            Py_hash_t w_hash = FT_ATOMIC_LOAD_SSIZE_RELAXED(((PySetObject *)w)->hash);
+            if (v_hash != -1 && w_hash != -1 && v_hash != w_hash)
+                result = Py_NewRef(Py_False);
+            else
+                result = set_issubset((PyObject*)v, w);
+        }
+        break;
     case Py_NE:
         r1 = set_richcompare((PyObject*)v, w, Py_EQ);
-        if (r1 == NULL)
+        if (r1 == NULL) {
+            Py_XDECREF(temp_set);
             return NULL;
+        }
         r2 = PyObject_IsTrue(r1);
         Py_DECREF(r1);
-        if (r2 < 0)
+        if (r2 < 0) {
+            Py_XDECREF(temp_set);
             return NULL;
-        return PyBool_FromLong(!r2);
+        }
+        result = PyBool_FromLong(!r2);
+        break;
     case Py_LE:
-        return set_issubset((PyObject*)v, w);
+        result = set_issubset((PyObject*)v, w);
+        break;
     case Py_GE:
-        return set_issuperset((PyObject*)v, w);
+        result = set_issuperset((PyObject*)v, w);
+        break;
     case Py_LT:
         if (PySet_GET_SIZE(v) >= PySet_GET_SIZE(w))
-            Py_RETURN_FALSE;
-        return set_issubset((PyObject*)v, w);
+            result = Py_NewRef(Py_False);
+        else
+            result = set_issubset((PyObject*)v, w);
+        break;
     case Py_GT:
         if (PySet_GET_SIZE(v) <= PySet_GET_SIZE(w))
-            Py_RETURN_FALSE;
-        return set_issuperset((PyObject*)v, w);
+            result = Py_NewRef(Py_False);
+        else
+            result = set_issuperset((PyObject*)v, w);
+        break;
+    default:
+        result = Py_NewRef(Py_NotImplemented);
+        break;
     }
-    Py_RETURN_NOTIMPLEMENTED;
+
+    Py_XDECREF(temp_set);
+    return result;
 }
+
 
 /*[clinic input]
 @critical_section
