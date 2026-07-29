@@ -4320,13 +4320,184 @@ _PyPegen_make_deep_copy_expr(Parser *p, expr_ty a) {
     );
 }
 
-
 expr_ty
 _PyPegen_make_deep_copy_starred(Parser *p, expr_ty a) {
     expr_ty deep_call = _PyPegen_make_deep_copy_expr(p, a);
     if (deep_call == NULL) return NULL;
     return _PyAST_Starred(deep_call, Load, a->lineno, a->col_offset, a->end_lineno, a->end_col_offset, p->arena);
 }
+
+expr_ty
+_PyPegen_make_implicit_target(Parser *p, int arity)
+
+
+{
+    PyArena *arena = p->arena;
+    if (arity <= 1) {
+        return _PyAST_Name(_PyPegen_new_identifier(p, "_dollar_item"), Store, 1, 0, 1, 0, arena);
+    }
+    if (arity == 2) {
+        asdl_expr_seq *elts = _PyPegen_singleton_seq(p, _PyAST_Name(_PyPegen_new_identifier(p, "_dollar_item"), Store, 1, 0, 1, 0, arena));
+        elts = (asdl_expr_seq *)_PyPegen_seq_append_to_end(p, elts, _PyAST_Name(_PyPegen_new_identifier(p, "_dollar_item_2"), Store, 1, 0, 1, 0, arena));
+        return _PyAST_Tuple(elts, Store, 1, 0, 1, 0, arena);
+    }
+    asdl_expr_seq *elts = _PyPegen_singleton_seq(p, _PyAST_Name(_PyPegen_new_identifier(p, "_dollar_item"), Store, 1, 0, 1, 0, arena));
+    elts = (asdl_expr_seq *)_PyPegen_seq_append_to_end(p, elts, _PyAST_Name(_PyPegen_new_identifier(p, "_dollar_item_2"), Store, 1, 0, 1, 0, arena));
+    elts = (asdl_expr_seq *)_PyPegen_seq_append_to_end(p, elts, _PyAST_Name(_PyPegen_new_identifier(p, "_dollar_item_3"), Store, 1, 0, 1, 0, arena));
+    return _PyAST_Tuple(elts, Store, 1, 0, 1, 0, arena);
+}
+
+static int
+_PyPegen_detect_dollar_arity(expr_ty expr)
+{
+    if (expr == NULL) return 1;
+    switch (expr->kind) {
+    case Name_kind:
+        if (expr->v.Name.id == NULL) return 1;
+        const char *id = PyUnicode_AsUTF8(expr->v.Name.id);
+        if (id != NULL) {
+            if (strcmp(id, "_dollar_item_3") == 0) return 3;
+            if (strcmp(id, "_dollar_item_2") == 0) return 2;
+        }
+        return 1;
+    case BinOp_kind: {
+        int r1 = _PyPegen_detect_dollar_arity(expr->v.BinOp.left);
+        int r2 = _PyPegen_detect_dollar_arity(expr->v.BinOp.right);
+        return r1 > r2 ? r1 : r2;
+    }
+    case UnaryOp_kind:
+        return _PyPegen_detect_dollar_arity(expr->v.UnaryOp.operand);
+    case Attribute_kind:
+        return _PyPegen_detect_dollar_arity(expr->v.Attribute.value);
+    case Subscript_kind: {
+        int r1 = _PyPegen_detect_dollar_arity(expr->v.Subscript.value);
+        int r2 = _PyPegen_detect_dollar_arity(expr->v.Subscript.slice);
+        return r1 > r2 ? r1 : r2;
+    }
+    case Compare_kind: {
+        int max = _PyPegen_detect_dollar_arity(expr->v.Compare.left);
+        if (expr->v.Compare.comparators) {
+            for (int i = 0; i < asdl_seq_LEN(expr->v.Compare.comparators); i++) {
+                int r = _PyPegen_detect_dollar_arity((expr_ty)asdl_seq_GET(expr->v.Compare.comparators, i));
+                if (r > max) max = r;
+            }
+        }
+        return max;
+    }
+    case Call_kind: {
+        int max = _PyPegen_detect_dollar_arity(expr->v.Call.func);
+        if (expr->v.Call.args) {
+            for (int i = 0; i < asdl_seq_LEN(expr->v.Call.args); i++) {
+                int r = _PyPegen_detect_dollar_arity((expr_ty)asdl_seq_GET(expr->v.Call.args, i));
+                if (r > max) max = r;
+            }
+        }
+        return max;
+    }
+    case FormattedValue_kind:
+        return _PyPegen_detect_dollar_arity(expr->v.FormattedValue.value);
+    case JoinedStr_kind: {
+        int max = 1;
+        if (expr->v.JoinedStr.values) {
+            for (int i = 0; i < asdl_seq_LEN(expr->v.JoinedStr.values); i++) {
+                int r = _PyPegen_detect_dollar_arity((expr_ty)asdl_seq_GET(expr->v.JoinedStr.values, i));
+                if (r > max) max = r;
+            }
+        }
+        return max;
+    }
+    case Tuple_kind: {
+        int max = 1;
+        if (expr->v.Tuple.elts) {
+            for (int i = 0; i < asdl_seq_LEN(expr->v.Tuple.elts); i++) {
+                int r = _PyPegen_detect_dollar_arity((expr_ty)asdl_seq_GET(expr->v.Tuple.elts, i));
+                if (r > max) max = r;
+            }
+        }
+        return max;
+    }
+    case List_kind: {
+        int max = 1;
+        if (expr->v.List.elts) {
+            for (int i = 0; i < asdl_seq_LEN(expr->v.List.elts); i++) {
+                int r = _PyPegen_detect_dollar_arity((expr_ty)asdl_seq_GET(expr->v.List.elts, i));
+                if (r > max) max = r;
+            }
+        }
+        return max;
+    }
+    case Dict_kind: {
+        int max = 1;
+        if (expr->v.Dict.keys) {
+            for (int i = 0; i < asdl_seq_LEN(expr->v.Dict.keys); i++) {
+                expr_ty k = (expr_ty)asdl_seq_GET(expr->v.Dict.keys, i);
+                if (k) {
+                    int r = _PyPegen_detect_dollar_arity(k);
+                    if (r > max) max = r;
+                }
+            }
+        }
+        if (expr->v.Dict.values) {
+            for (int i = 0; i < asdl_seq_LEN(expr->v.Dict.values); i++) {
+                expr_ty v = (expr_ty)asdl_seq_GET(expr->v.Dict.values, i);
+                if (v) {
+                    int r = _PyPegen_detect_dollar_arity(v);
+                    if (r > max) max = r;
+                }
+            }
+        }
+        return max;
+    }
+    default:
+        return 1;
+    }
+}
+
+expr_ty
+_PyPegen_make_implicit_target_auto(Parser *p, expr_ty elt)
+{
+    int arity = _PyPegen_detect_dollar_arity(elt);
+    return _PyPegen_make_implicit_target(p, arity);
+}
+
+asdl_comprehension_seq *
+_PyPegen_adjust_comprehension_arity(Parser *p, expr_ty elt, asdl_comprehension_seq *clauses)
+{
+    if (clauses == NULL || asdl_seq_LEN(clauses) == 0) return clauses;
+    comprehension_ty first = (comprehension_ty)asdl_seq_GET(clauses, 0);
+    if (first->target && first->target->kind == Name_kind && first->target->v.Name.id) {
+        const char *id = PyUnicode_AsUTF8(first->target->v.Name.id);
+        if (id && strcmp(id, "_dollar_item") == 0) {
+            int arity = _PyPegen_detect_dollar_arity(elt);
+            if (arity > 1) {
+                first->target = _PyPegen_make_implicit_target(p, arity);
+            }
+        }
+    }
+    return clauses;
+}
+
+asdl_comprehension_seq *
+_PyPegen_adjust_dict_comprehension_arity(Parser *p, expr_ty key, expr_ty val, asdl_comprehension_seq *clauses)
+{
+    if (clauses == NULL || asdl_seq_LEN(clauses) == 0) return clauses;
+    comprehension_ty first = (comprehension_ty)asdl_seq_GET(clauses, 0);
+    if (first->target && first->target->kind == Name_kind && first->target->v.Name.id) {
+        const char *id = PyUnicode_AsUTF8(first->target->v.Name.id);
+        if (id && strcmp(id, "_dollar_item") == 0) {
+            int r1 = _PyPegen_detect_dollar_arity(key);
+            int r2 = _PyPegen_detect_dollar_arity(val);
+            int arity = r1 > r2 ? r1 : r2;
+            if (arity > 1) {
+                first->target = _PyPegen_make_implicit_target(p, arity);
+            }
+        }
+    }
+    return clauses;
+}
+
+
+
 
 
 

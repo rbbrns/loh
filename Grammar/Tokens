@@ -82,8 +82,11 @@ TRIPLECIRCUMFLEX        '^^^'
 EQUALRARROW             '=>'
 # for
 DOLLAR                  '$'
+DOUBLE_DOLLAR            '$$'
+TRIPLE_DOLLAR            '$$$'
 # while
 DOLLARQUESTION          '$?'
+
 # break
 DOLLARGREATER          '$>'
 # continue

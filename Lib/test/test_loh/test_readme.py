@@ -678,12 +678,31 @@ set_check = {"a", "b"} <= ["a", "b", "c"]
 dict_check = {"port": 8080} <= {"env": "prod", "port": 8080}
 """
         scope = {}
+
         exec(code, {}, scope)
         self.assertTrue(scope["set_check"])
         self.assertTrue(scope["dict_check"])
 
+
+    def test_walrus_loops_and_arity_sigils(self):
+        code = """
+doubled = [$ * 2 := [1, 2, 3]]
+totals = [$ * $$ := zip([10, 20], [2, 3])]
+swapped = {$$: $ := {"a": 1, "b": 2}.items()}
+res_pair = []
+$$ := {"x": 100, "y": 200}.items():
+    res_pair.append(($, $$))
+"""
+        scope = {}
+        exec(code, scope)
+        self.assertEqual(scope["doubled"], [2, 4, 6])
+        self.assertEqual(scope["totals"], [20, 60])
+        self.assertEqual(scope["swapped"], {1: "a", 2: "b"})
+        self.assertEqual(scope["res_pair"], [("x", 100), ("y", 200)])
+
 if __name__ == "__main__":
     unittest.main()
+
 
 
 

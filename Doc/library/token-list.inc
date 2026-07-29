@@ -124,6 +124,10 @@
      - ``"=>"``
    * - .. data:: DOLLAR
      - ``"$"``
+   * - .. data:: DOUBLE_DOLLAR
+     - ``"$$"``
+   * - .. data:: TRIPLE_DOLLAR
+     - ``"$$$"``
    * - .. data:: DOLLARQUESTION
      - ``"$?"``
    * - .. data:: DOLLARGREATER

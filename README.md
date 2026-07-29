@@ -1318,6 +1318,48 @@ Comparing two dictionary objects with relational operators checks key-value sub-
 # Check if multiple key-value pairs match:
 ? {"env": "prod", "port": 8443} <= config:
     print("Production environment configuration matched!")
+
+---
+
+### **38. Explicit & Implicit Walrus Loops & Arity Sigils (`:=`, `$`, `$$`, `$$$`, `$?:`)**
+
+> **Motivation:** Loh unifies statement-level loops and comprehensions around the walrus operator (`:=`), arity sigils (`$`, `$$`, `$$$`), and conditional `while` loops (`$?`).
+
+#### **Comprehensions with Implicit Arity Sigils**
+Use `:=` to introduce loop clauses in list, dict, set, and generator comprehensions. Arity sigils `$` (1st item), `$$` (2nd item), and `$$$` (3rd item) automatically set the loop unpacking target at parse-time:
+
+```python
+# List comprehension (single item):
+doubled = [$ * 2 := [1, 2, 3]]  # [2, 4, 6]
+
+# List comprehension (pair zip):
+totals = [$ * $$ := zip([10, 20], [2, 3])]  # [20, 60]
+
+# List comprehension (enumerate):
+labels = [f"#{$ + 1}: {$$}" := enumerate(["Alice", "Bob"])]  # ["#1: Alice", "#2: Bob"]
+
+# Dict comprehension (invert keys & values):
+swapped = {$$: $ := {"a": 1, "b": 2}.items()}  # {1: "a", 2: "b"}
+
+# Generator call:
+total = sum($.price := items)
+```
+
+#### **Statement Loops & Arity Sigils**
+```python
+# Implicit 2-item loop (pair unpacking):
+$$ := {"x": 100, "y": 200}.items():
+    print($, "=>", $$)
+
+# Implicit 3-item loop (triple unpacking):
+$$$ := zip(names, ages, cities):
+    print($, $$, $$$)
+
+# Conditional while loop with walrus:
+$? := file.readline():
+    print($)
+```
+
 ```
 
 
