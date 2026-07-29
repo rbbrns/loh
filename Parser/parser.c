@@ -17836,7 +17836,7 @@ star_expressions_rule(Parser *p)
     return _res;
 }
 
-// star_expression: '*' bitwise_or | expression
+// star_expression: '***' bitwise_or | '*' bitwise_or | expression
 static expr_ty
 star_expression_rule(Parser *p)
 {
@@ -17862,6 +17862,33 @@ star_expression_rule(Parser *p)
     UNUSED(_start_lineno); // Only used by EXTRA macro
     int _start_col_offset = p->tokens[_mark]->col_offset;
     UNUSED(_start_col_offset); // Only used by EXTRA macro
+    { // '***' bitwise_or
+        if (p->error_indicator) {
+            p->level--;
+            return NULL;
+        }
+        D(fprintf(stderr, "%*c> star_expression[%d-%d]: %s\n", p->level, ' ', _mark, p->mark, "'***' bitwise_or"));
+        Token * _literal;
+        expr_ty a;
+        if (
+            (_literal = _PyPegen_expect_token(p, 95))  // token='***'
+            &&
+            (a = bitwise_or_rule(p))  // bitwise_or
+        )
+        {
+            D(fprintf(stderr, "%*c+ star_expression[%d-%d]: %s succeeded!\n", p->level, ' ', _mark, p->mark, "'***' bitwise_or"));
+            _res = _PyPegen_make_deep_copy_starred ( p , a );
+            if (_res == NULL && PyErr_Occurred()) {
+                p->error_indicator = 1;
+                p->level--;
+                return NULL;
+            }
+            goto done;
+        }
+        p->mark = _mark;
+        D(fprintf(stderr, "%*c%s star_expression[%d-%d]: %s failed!\n", p->level, ' ',
+                  p->error_indicator ? "ERROR!" : "-", _mark, p->mark, "'***' bitwise_or"));
+    }
     { // '*' bitwise_or
         if (p->error_indicator) {
             p->level--;
@@ -18430,7 +18457,10 @@ rescue_expression_without_ternary_rule(Parser *p)
     return _res;
 }
 
-// star_expression_without_ternary: '*' bitwise_or | expression_without_ternary
+// star_expression_without_ternary:
+//     | '***' bitwise_or
+//     | '*' bitwise_or
+//     | expression_without_ternary
 static expr_ty
 star_expression_without_ternary_rule(Parser *p)
 {
@@ -18456,6 +18486,33 @@ star_expression_without_ternary_rule(Parser *p)
     UNUSED(_start_lineno); // Only used by EXTRA macro
     int _start_col_offset = p->tokens[_mark]->col_offset;
     UNUSED(_start_col_offset); // Only used by EXTRA macro
+    { // '***' bitwise_or
+        if (p->error_indicator) {
+            p->level--;
+            return NULL;
+        }
+        D(fprintf(stderr, "%*c> star_expression_without_ternary[%d-%d]: %s\n", p->level, ' ', _mark, p->mark, "'***' bitwise_or"));
+        Token * _literal;
+        expr_ty a;
+        if (
+            (_literal = _PyPegen_expect_token(p, 95))  // token='***'
+            &&
+            (a = bitwise_or_rule(p))  // bitwise_or
+        )
+        {
+            D(fprintf(stderr, "%*c+ star_expression_without_ternary[%d-%d]: %s succeeded!\n", p->level, ' ', _mark, p->mark, "'***' bitwise_or"));
+            _res = _PyPegen_make_deep_copy_starred ( p , a );
+            if (_res == NULL && PyErr_Occurred()) {
+                p->error_indicator = 1;
+                p->level--;
+                return NULL;
+            }
+            goto done;
+        }
+        p->mark = _mark;
+        D(fprintf(stderr, "%*c%s star_expression_without_ternary[%d-%d]: %s failed!\n", p->level, ' ',
+                  p->error_indicator ? "ERROR!" : "-", _mark, p->mark, "'***' bitwise_or"));
+    }
     { // '*' bitwise_or
         if (p->error_indicator) {
             p->level--;
@@ -18691,7 +18748,7 @@ star_named_expressions_rule(Parser *p)
     return _res;
 }
 
-// star_named_expression: '*' bitwise_or | named_expression
+// star_named_expression: '***' bitwise_or | '*' bitwise_or | named_expression
 static expr_ty
 star_named_expression_rule(Parser *p)
 {
@@ -18713,6 +18770,33 @@ star_named_expression_rule(Parser *p)
     UNUSED(_start_lineno); // Only used by EXTRA macro
     int _start_col_offset = p->tokens[_mark]->col_offset;
     UNUSED(_start_col_offset); // Only used by EXTRA macro
+    { // '***' bitwise_or
+        if (p->error_indicator) {
+            p->level--;
+            return NULL;
+        }
+        D(fprintf(stderr, "%*c> star_named_expression[%d-%d]: %s\n", p->level, ' ', _mark, p->mark, "'***' bitwise_or"));
+        Token * _literal;
+        expr_ty a;
+        if (
+            (_literal = _PyPegen_expect_token(p, 95))  // token='***'
+            &&
+            (a = bitwise_or_rule(p))  // bitwise_or
+        )
+        {
+            D(fprintf(stderr, "%*c+ star_named_expression[%d-%d]: %s succeeded!\n", p->level, ' ', _mark, p->mark, "'***' bitwise_or"));
+            _res = _PyPegen_make_deep_copy_starred ( p , a );
+            if (_res == NULL && PyErr_Occurred()) {
+                p->error_indicator = 1;
+                p->level--;
+                return NULL;
+            }
+            goto done;
+        }
+        p->mark = _mark;
+        D(fprintf(stderr, "%*c%s star_named_expression[%d-%d]: %s failed!\n", p->level, ' ',
+                  p->error_indicator ? "ERROR!" : "-", _mark, p->mark, "'***' bitwise_or"));
+    }
     { // '*' bitwise_or
         if (p->error_indicator) {
             p->level--;
@@ -25897,7 +25981,7 @@ double_starred_kvpairs_rule(Parser *p)
     return _res;
 }
 
-// double_starred_kvpair: '**' bitwise_or | kvpair
+// double_starred_kvpair: '***' bitwise_or | '**' bitwise_or | kvpair | dictcomp | dict
 static KeyValuePair*
 double_starred_kvpair_rule(Parser *p)
 {
@@ -25910,6 +25994,33 @@ double_starred_kvpair_rule(Parser *p)
     }
     KeyValuePair* _res = NULL;
     int _mark = p->mark;
+    { // '***' bitwise_or
+        if (p->error_indicator) {
+            p->level--;
+            return NULL;
+        }
+        D(fprintf(stderr, "%*c> double_starred_kvpair[%d-%d]: %s\n", p->level, ' ', _mark, p->mark, "'***' bitwise_or"));
+        Token * _literal;
+        expr_ty a;
+        if (
+            (_literal = _PyPegen_expect_token(p, 95))  // token='***'
+            &&
+            (a = bitwise_or_rule(p))  // bitwise_or
+        )
+        {
+            D(fprintf(stderr, "%*c+ double_starred_kvpair[%d-%d]: %s succeeded!\n", p->level, ' ', _mark, p->mark, "'***' bitwise_or"));
+            _res = _PyPegen_key_value_pair ( p , NULL , _PyPegen_make_deep_copy_expr ( p , a ) );
+            if (_res == NULL && PyErr_Occurred()) {
+                p->error_indicator = 1;
+                p->level--;
+                return NULL;
+            }
+            goto done;
+        }
+        p->mark = _mark;
+        D(fprintf(stderr, "%*c%s double_starred_kvpair[%d-%d]: %s failed!\n", p->level, ' ',
+                  p->error_indicator ? "ERROR!" : "-", _mark, p->mark, "'***' bitwise_or"));
+    }
     { // '**' bitwise_or
         if (p->error_indicator) {
             p->level--;
@@ -25956,13 +26067,66 @@ double_starred_kvpair_rule(Parser *p)
         D(fprintf(stderr, "%*c%s double_starred_kvpair[%d-%d]: %s failed!\n", p->level, ' ',
                   p->error_indicator ? "ERROR!" : "-", _mark, p->mark, "kvpair"));
     }
+    { // dictcomp
+        if (p->error_indicator) {
+            p->level--;
+            return NULL;
+        }
+        D(fprintf(stderr, "%*c> double_starred_kvpair[%d-%d]: %s\n", p->level, ' ', _mark, p->mark, "dictcomp"));
+        expr_ty a;
+        if (
+            (a = dictcomp_rule(p))  // dictcomp
+        )
+        {
+            D(fprintf(stderr, "%*c+ double_starred_kvpair[%d-%d]: %s succeeded!\n", p->level, ' ', _mark, p->mark, "dictcomp"));
+            _res = _PyPegen_key_value_pair ( p , NULL , a );
+            if (_res == NULL && PyErr_Occurred()) {
+                p->error_indicator = 1;
+                p->level--;
+                return NULL;
+            }
+            goto done;
+        }
+        p->mark = _mark;
+        D(fprintf(stderr, "%*c%s double_starred_kvpair[%d-%d]: %s failed!\n", p->level, ' ',
+                  p->error_indicator ? "ERROR!" : "-", _mark, p->mark, "dictcomp"));
+    }
+    { // dict
+        if (p->error_indicator) {
+            p->level--;
+            return NULL;
+        }
+        D(fprintf(stderr, "%*c> double_starred_kvpair[%d-%d]: %s\n", p->level, ' ', _mark, p->mark, "dict"));
+        expr_ty a;
+        if (
+            (a = dict_rule(p))  // dict
+        )
+        {
+            D(fprintf(stderr, "%*c+ double_starred_kvpair[%d-%d]: %s succeeded!\n", p->level, ' ', _mark, p->mark, "dict"));
+            _res = _PyPegen_key_value_pair ( p , NULL , a );
+            if (_res == NULL && PyErr_Occurred()) {
+                p->error_indicator = 1;
+                p->level--;
+                return NULL;
+            }
+            goto done;
+        }
+        p->mark = _mark;
+        D(fprintf(stderr, "%*c%s double_starred_kvpair[%d-%d]: %s failed!\n", p->level, ' ',
+                  p->error_indicator ? "ERROR!" : "-", _mark, p->mark, "dict"));
+    }
     _res = NULL;
   done:
     p->level--;
     return _res;
 }
 
-// kvpair: expression ':' expression
+// kvpair:
+//     | expression '+:' expression
+//     | expression '|:' expression
+//     | expression '?:' expression
+//     | expression ':' '<>'
+//     | expression ':' expression
 static KeyValuePair*
 kvpair_rule(Parser *p)
 {
@@ -25975,6 +26139,126 @@ kvpair_rule(Parser *p)
     }
     KeyValuePair* _res = NULL;
     int _mark = p->mark;
+    { // expression '+:' expression
+        if (p->error_indicator) {
+            p->level--;
+            return NULL;
+        }
+        D(fprintf(stderr, "%*c> kvpair[%d-%d]: %s\n", p->level, ' ', _mark, p->mark, "expression '+:' expression"));
+        Token * _literal;
+        expr_ty a;
+        expr_ty b;
+        if (
+            (a = expression_rule(p))  // expression
+            &&
+            (_literal = _PyPegen_expect_token(p, 92))  // token='+:'
+            &&
+            (b = expression_rule(p))  // expression
+        )
+        {
+            D(fprintf(stderr, "%*c+ kvpair[%d-%d]: %s succeeded!\n", p->level, ' ', _mark, p->mark, "expression '+:' expression"));
+            _res = _PyPegen_key_value_pair ( p , a , _PyPegen_make_loh_op ( p , 1 , b ) );
+            if (_res == NULL && PyErr_Occurred()) {
+                p->error_indicator = 1;
+                p->level--;
+                return NULL;
+            }
+            goto done;
+        }
+        p->mark = _mark;
+        D(fprintf(stderr, "%*c%s kvpair[%d-%d]: %s failed!\n", p->level, ' ',
+                  p->error_indicator ? "ERROR!" : "-", _mark, p->mark, "expression '+:' expression"));
+    }
+    { // expression '|:' expression
+        if (p->error_indicator) {
+            p->level--;
+            return NULL;
+        }
+        D(fprintf(stderr, "%*c> kvpair[%d-%d]: %s\n", p->level, ' ', _mark, p->mark, "expression '|:' expression"));
+        Token * _literal;
+        expr_ty a;
+        expr_ty b;
+        if (
+            (a = expression_rule(p))  // expression
+            &&
+            (_literal = _PyPegen_expect_token(p, 93))  // token='|:'
+            &&
+            (b = expression_rule(p))  // expression
+        )
+        {
+            D(fprintf(stderr, "%*c+ kvpair[%d-%d]: %s succeeded!\n", p->level, ' ', _mark, p->mark, "expression '|:' expression"));
+            _res = _PyPegen_key_value_pair ( p , a , _PyPegen_make_loh_op ( p , 2 , b ) );
+            if (_res == NULL && PyErr_Occurred()) {
+                p->error_indicator = 1;
+                p->level--;
+                return NULL;
+            }
+            goto done;
+        }
+        p->mark = _mark;
+        D(fprintf(stderr, "%*c%s kvpair[%d-%d]: %s failed!\n", p->level, ' ',
+                  p->error_indicator ? "ERROR!" : "-", _mark, p->mark, "expression '|:' expression"));
+    }
+    { // expression '?:' expression
+        if (p->error_indicator) {
+            p->level--;
+            return NULL;
+        }
+        D(fprintf(stderr, "%*c> kvpair[%d-%d]: %s\n", p->level, ' ', _mark, p->mark, "expression '?:' expression"));
+        Token * _literal;
+        expr_ty a;
+        expr_ty b;
+        if (
+            (a = expression_rule(p))  // expression
+            &&
+            (_literal = _PyPegen_expect_token(p, 94))  // token='?:'
+            &&
+            (b = expression_rule(p))  // expression
+        )
+        {
+            D(fprintf(stderr, "%*c+ kvpair[%d-%d]: %s succeeded!\n", p->level, ' ', _mark, p->mark, "expression '?:' expression"));
+            _res = _PyPegen_key_value_pair ( p , a , _PyPegen_make_loh_op ( p , 3 , b ) );
+            if (_res == NULL && PyErr_Occurred()) {
+                p->error_indicator = 1;
+                p->level--;
+                return NULL;
+            }
+            goto done;
+        }
+        p->mark = _mark;
+        D(fprintf(stderr, "%*c%s kvpair[%d-%d]: %s failed!\n", p->level, ' ',
+                  p->error_indicator ? "ERROR!" : "-", _mark, p->mark, "expression '?:' expression"));
+    }
+    { // expression ':' '<>'
+        if (p->error_indicator) {
+            p->level--;
+            return NULL;
+        }
+        D(fprintf(stderr, "%*c> kvpair[%d-%d]: %s\n", p->level, ' ', _mark, p->mark, "expression ':' '<>'"));
+        Token * _literal;
+        Token * _literal_1;
+        expr_ty a;
+        if (
+            (a = expression_rule(p))  // expression
+            &&
+            (_literal = _PyPegen_expect_token(p, 11))  // token=':'
+            &&
+            (_literal_1 = _PyPegen_expect_token(p, 81))  // token='<>'
+        )
+        {
+            D(fprintf(stderr, "%*c+ kvpair[%d-%d]: %s succeeded!\n", p->level, ' ', _mark, p->mark, "expression ':' '<>'"));
+            _res = _PyPegen_key_value_pair ( p , a , _PyPegen_make_loh_op ( p , 4 , NULL ) );
+            if (_res == NULL && PyErr_Occurred()) {
+                p->error_indicator = 1;
+                p->level--;
+                return NULL;
+            }
+            goto done;
+        }
+        p->mark = _mark;
+        D(fprintf(stderr, "%*c%s kvpair[%d-%d]: %s failed!\n", p->level, ' ',
+                  p->error_indicator ? "ERROR!" : "-", _mark, p->mark, "expression ':' '<>'"));
+    }
     { // expression ':' expression
         if (p->error_indicator) {
             p->level--;
@@ -26878,6 +27162,7 @@ kwargs_rule(Parser *p)
 
 // starred_expression:
 //     | invalid_starred_expression_unpacking
+//     | '***' expression
 //     | '*' expression
 //     | invalid_starred_expression
 static expr_ty
@@ -26919,6 +27204,33 @@ starred_expression_rule(Parser *p)
         p->mark = _mark;
         D(fprintf(stderr, "%*c%s starred_expression[%d-%d]: %s failed!\n", p->level, ' ',
                   p->error_indicator ? "ERROR!" : "-", _mark, p->mark, "invalid_starred_expression_unpacking"));
+    }
+    { // '***' expression
+        if (p->error_indicator) {
+            p->level--;
+            return NULL;
+        }
+        D(fprintf(stderr, "%*c> starred_expression[%d-%d]: %s\n", p->level, ' ', _mark, p->mark, "'***' expression"));
+        Token * _literal;
+        expr_ty a;
+        if (
+            (_literal = _PyPegen_expect_token(p, 95))  // token='***'
+            &&
+            (a = expression_rule(p))  // expression
+        )
+        {
+            D(fprintf(stderr, "%*c+ starred_expression[%d-%d]: %s succeeded!\n", p->level, ' ', _mark, p->mark, "'***' expression"));
+            _res = _PyPegen_make_deep_copy_starred ( p , a );
+            if (_res == NULL && PyErr_Occurred()) {
+                p->error_indicator = 1;
+                p->level--;
+                return NULL;
+            }
+            goto done;
+        }
+        p->mark = _mark;
+        D(fprintf(stderr, "%*c%s starred_expression[%d-%d]: %s failed!\n", p->level, ' ',
+                  p->error_indicator ? "ERROR!" : "-", _mark, p->mark, "'***' expression"));
     }
     { // '*' expression
         if (p->error_indicator) {
@@ -27298,6 +27610,7 @@ kwarg_or_starred_rule(Parser *p)
 // kwarg_or_double_starred:
 //     | invalid_kwarg
 //     | NAME '=' expression
+//     | '***' expression
 //     | '**' expression
 //     | double_star &(',' | ')')
 static KeywordOrStarred*
@@ -27378,6 +27691,42 @@ kwarg_or_double_starred_rule(Parser *p)
         p->mark = _mark;
         D(fprintf(stderr, "%*c%s kwarg_or_double_starred[%d-%d]: %s failed!\n", p->level, ' ',
                   p->error_indicator ? "ERROR!" : "-", _mark, p->mark, "NAME '=' expression"));
+    }
+    { // '***' expression
+        if (p->error_indicator) {
+            p->level--;
+            return NULL;
+        }
+        D(fprintf(stderr, "%*c> kwarg_or_double_starred[%d-%d]: %s\n", p->level, ' ', _mark, p->mark, "'***' expression"));
+        Token * _literal;
+        expr_ty a;
+        if (
+            (_literal = _PyPegen_expect_token(p, 95))  // token='***'
+            &&
+            (a = expression_rule(p))  // expression
+        )
+        {
+            D(fprintf(stderr, "%*c+ kwarg_or_double_starred[%d-%d]: %s succeeded!\n", p->level, ' ', _mark, p->mark, "'***' expression"));
+            Token *_token = _PyPegen_get_last_nonnwhitespace_token(p);
+            if (_token == NULL) {
+                p->level--;
+                return NULL;
+            }
+            int _end_lineno = _token->end_lineno;
+            UNUSED(_end_lineno); // Only used by EXTRA macro
+            int _end_col_offset = _token->end_col_offset;
+            UNUSED(_end_col_offset); // Only used by EXTRA macro
+            _res = _PyPegen_keyword_or_starred ( p , CHECK ( keyword_ty , _PyAST_keyword ( NULL , _PyPegen_make_deep_copy_expr ( p , a ) , EXTRA ) ) , 1 );
+            if (_res == NULL && PyErr_Occurred()) {
+                p->error_indicator = 1;
+                p->level--;
+                return NULL;
+            }
+            goto done;
+        }
+        p->mark = _mark;
+        D(fprintf(stderr, "%*c%s kwarg_or_double_starred[%d-%d]: %s failed!\n", p->level, ' ',
+                  p->error_indicator ? "ERROR!" : "-", _mark, p->mark, "'***' expression"));
     }
     { // '**' expression
         if (p->error_indicator) {

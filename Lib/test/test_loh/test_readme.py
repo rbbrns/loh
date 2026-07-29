@@ -612,7 +612,81 @@ res5 = c.diameter()
         self.assertEqual(scope["res4"], 30)
         self.assertEqual(scope["res5"], 10)
 
+    def test_extension_key_separators(self):
+        code = """import operator
+base_config = {
+    "host": "localhost",
+    "port": 8000,
+    "tags": ["v1"],
+    "headers": {"Accept": "application/json"},
+    "timeout": 30,
+    "legacy_mode": True
+}
+
+prod_config = operator.or_(base_config, {
+    "port": 8443,
+    "tags" +: ["v2"],
+    "headers" |: {"Authorization": "Bearer"},
+    "timeout" ?: 60,
+    "legacy_mode": <>
+})
+"""
+        scope = {}
+        exec(code, {}, scope)
+        self.assertEqual(scope["prod_config"], {
+            "host": "localhost",
+            "port": 8443,
+            "tags": ["v1", "v2"],
+            "headers": {"Accept": "application/json", "Authorization": "Bearer"},
+            "timeout": 30
+        })
+
+    def test_deep_copy_unpacking(self):
+        code = """
+original_dict = {"items": [1, 2, 3], "meta": {"owner": "Alice"}}
+deep_dict = {***original_dict}
+deep_list = [***original_dict["items"]]
+"""
+        scope = {}
+        exec(code, {}, scope)
+        self.assertEqual(scope["deep_dict"], {"items": [1, 2, 3], "meta": {"owner": "Alice"}})
+        self.assertEqual(scope["deep_list"], [1, 2, 3])
+
+    def test_implicit_dict_unpacking(self):
+        code = """
+app_config = {
+    "env": "prod",
+    "port": 8080,
+    { f"node_{i}": f"http://10.0.0.{i}" for i in range(1, 4) },
+    "tags" +: ["cluster_a"]
+}
+"""
+        scope = {}
+        exec(code, {}, scope)
+        self.assertEqual(scope["app_config"], {
+            "env": "prod",
+            "port": 8080,
+            "node_1": "http://10.0.0.1",
+            "node_2": "http://10.0.0.2",
+            "node_3": "http://10.0.0.3",
+            "tags": ["cluster_a"]
+        })
+
+    def test_set_dict_relational(self):
+        code = """
+set_check = {"a", "b"} <= ["a", "b", "c"]
+dict_check = {"port": 8080} <= {"env": "prod", "port": 8080}
+"""
+        scope = {}
+        exec(code, {}, scope)
+        self.assertTrue(scope["set_check"])
+        self.assertTrue(scope["dict_check"])
+
 if __name__ == "__main__":
     unittest.main()
+
+
+
+
 
 

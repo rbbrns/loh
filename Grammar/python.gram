@@ -956,6 +956,7 @@ star_expressions[expr_ty]:
     | star_expression
 
 star_expression[expr_ty] (memo):
+    | '***' a=bitwise_or { _PyPegen_make_deep_copy_starred(p, a) }
     | '*' a=bitwise_or { _PyAST_Starred(a, Load, EXTRA) }
     | expression
 
@@ -986,6 +987,7 @@ rescue_expression_without_ternary[expr_ty]:
     | a=disjunction '?^' b=expression_without_ternary { _PyPegen_rescue_expr(p, a, NULL, NULL, b) }
 
 star_expression_without_ternary[expr_ty] (memo):
+    | '***' a=bitwise_or { _PyPegen_make_deep_copy_starred(p, a) }
     | '*' a=bitwise_or { _PyAST_Starred(a, Load, EXTRA) }
     | expression_without_ternary
 
@@ -998,6 +1000,7 @@ star_expressions_without_ternary[expr_ty]:
 star_named_expressions[asdl_expr_seq*]: a[asdl_expr_seq*]=','.star_named_expression+ [','] { a }
 
 star_named_expression[expr_ty]:
+    | '***' a=bitwise_or { _PyPegen_make_deep_copy_starred(p, a) }
     | '*' a=bitwise_or { _PyAST_Starred(a, Load, EXTRA) }
     | named_expression
 
@@ -1338,11 +1341,20 @@ dict[expr_ty]:
 double_starred_kvpairs[asdl_seq*]: a=','.double_starred_kvpair+ [','] { a }
 
 double_starred_kvpair[KeyValuePair*]:
+    | '***' a=bitwise_or { _PyPegen_key_value_pair(p, NULL, _PyPegen_make_deep_copy_expr(p, a)) }
     | '**' a=bitwise_or { _PyPegen_key_value_pair(p, NULL, a) }
     | kvpair
+    | a=dictcomp { _PyPegen_key_value_pair(p, NULL, a) }
+    | a=dict { _PyPegen_key_value_pair(p, NULL, a) }
+
 
 kvpair[KeyValuePair*]:
+    | a=expression '+:' b=expression { _PyPegen_key_value_pair(p, a, _PyPegen_make_loh_op(p, 1, b)) }
+    | a=expression '|:' b=expression { _PyPegen_key_value_pair(p, a, _PyPegen_make_loh_op(p, 2, b)) }
+    | a=expression '?:' b=expression { _PyPegen_key_value_pair(p, a, _PyPegen_make_loh_op(p, 3, b)) }
+    | a=expression ':' '<>' { _PyPegen_key_value_pair(p, a, _PyPegen_make_loh_op(p, 4, NULL)) }
     | a=expression ':' b=expression { _PyPegen_key_value_pair(p, a, b) }
+
 # Comprehensions & Generators
 # ---------------------------
 
@@ -1398,6 +1410,7 @@ kwargs[asdl_seq*]:
 
 starred_expression[expr_ty]:
     | invalid_starred_expression_unpacking
+    | '***' a=expression { _PyPegen_make_deep_copy_starred(p, a) }
     | '*' a=expression { _PyAST_Starred(a, Load, EXTRA) }
     | invalid_starred_expression
 
@@ -1421,8 +1434,10 @@ kwarg_or_double_starred[KeywordOrStarred*]:
     | invalid_kwarg
     | a=NAME '=' b=expression {
         _PyPegen_keyword_or_starred(p, CHECK(keyword_ty, _PyAST_keyword(a->v.Name.id, b, EXTRA)), 1) }
+    | '***' a=expression { _PyPegen_keyword_or_starred(p, CHECK(keyword_ty, _PyAST_keyword(NULL, _PyPegen_make_deep_copy_expr(p, a), EXTRA)), 1) }
     | '**' a=expression { _PyPegen_keyword_or_starred(p, CHECK(keyword_ty, _PyAST_keyword(NULL, a, EXTRA)), 1) }
     | a=double_star & (',' | ')' ) { _PyPegen_keyword_or_starred(p, CHECK(keyword_ty, _PyAST_keyword(NULL, a, EXTRA)), 1) }
+
 
 # ASSIGNMENT TARGETS
 # ==================

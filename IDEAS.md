@@ -1420,52 +1420,164 @@ rescue_handlers:
 ```
 And `rescue_var_binding` parses the `=> var` alias mapping.
 
-
 ---
 
-## 51. Implicit Collection Concatenation & Merging (`[1] [2]`, `{a} {b}`)
+## 51. Bare Expression Resolution (`m;`) & Self-Referencing Dicts with Lazy Expressions
 
 ### Motivation
-In Python, adjacent string literals implicitly concatenate at compile-time: `'a' 'b'` evaluates to `'ab'`. However, placing collection literals side-by-side exhibits different behavior:
-- `[1] [2]` parses as subscript indexing `[1][2]`, raising a runtime `IndexError`.
-- `(1,) (2,)` parses as a function call `(1,)(2,)`, raising a runtime `TypeError`.
-- `{"a": 1} {"b": 2}` and `{1} {2}` raise a `SyntaxError`.
+In Loh, backtick expressions `` `expr` `` defer evaluation by creating a zero-argument thunk (`_LohLazy`). When building self-referential dictionaries (e.g. `m = {'a': 1, 'b': 2, 'c': `m['a']`}`), deferring evaluation during dictionary construction prevents `NameError` because `m` is not bound until after dictionary creation finishes. 
 
-Introducing implicit concatenation or merging for adjacent collection literals in Loh provides a cohesive, readable way to combine sequences and mappings without requiring explicit `+`, `|`, or `copy` calls.
+However, after `m` is bound, developers often want to convert all lazy proxies in `m` into concrete, eager values without writing boilerplate iteration loops or calling helper functions.
 
-### Technical Analysis & Ambiguity
-1. **Lists & Tuples**: Because `expr [...]` (subscript) and `expr (...)` (call) are valid postfix expressions, adjacent list/tuple literals collide with indexing and calling grammar rules. For example, `[1, 2, 3] [0]` in standard Python means "index element 0 of `[1, 2, 3]`" (evaluating to `1`), which prevents `[a] [b]` from being parsed as list addition (`[1, 2, 3, 0]`).
-2. **Dicts & Sets**: Because `{...}` is **not** a valid postfix operator following an expression, adjacent dictionary literals `{"a": 1} {"b": 2}` and set literals `{1, 2} {3, 4}` raise `SyntaxError: invalid syntax` in standard Python. This means adjacent `{...} {...}` literals can be repurposed with zero grammar ambiguity!
+In standard Python, a standalone bare expression statement like `m;` or `m` is a no-op. In Loh, executing a bare reference statement `m;` triggers a parse-time resolution pass `_loh_resolve(m)` that evaluates and mutates all `_LohLazy` entries inside `m` in-place!
 
 ### Proposed Syntax
 
-#### 1. Dict & Set Literal Merging
-Adjacent dictionary and set literals automatically merge into a single combined container at compile time:
 ```python
-# Dict merging (second dict overrides overlapping keys)
-config = {"host": "localhost", "port": 8000} {"port": 8080, "debug": +}
-# Evaluates to: {"host": "localhost", "port": 8080, "debug": True}
+# Self-referencing dict constructed with lazy thunks:
+m = {'a': 1, 'b': 2, 'c': `m['a']`}
 
-# Set merging (unions items)
-tags = {"web", "api"} {"v1", "web"}
-# Evaluates to: {"web", "api", "v1"}
-```
+# Bare reference statement resolves 'm' in-place:
+m;
 
-#### 2. Sequence Concatenation in Parenthesized / Multi-Line Contexts
-For lists and tuples, adjacent literal sequences within parenthesized list builder contexts or with explicit multi-line layouts can be parsed as sequence concatenation:
-```python
-# Multi-line list concatenation
-items = [
-    [1, 2, 3]
-    [4, 5, 6]
-]
-# Evaluates to: [1, 2, 3, 4, 5, 6]
+# 'm' now contains plain concrete values!
+print(m)  # {'a': 1, 'b': 2, 'c': 1}
+
+# Inline 1-line style:
+config = {'port': 8080, 'url': `f"http://localhost:{config['port']}"`}; config;
 ```
 
 ### Compile-Time Desugaring
-- Dict merging `d1 d2` desugars to dict unpacking: `{**d1, **d2}`.
-- Set merging `s1 s2` desugars to set unpacking: `{*s1, *s2}`.
-- List merging `l1 l2` desugars to list unpacking: `[*l1, *l2]`.
+In `python.gram`, top-level `expression_stmt` nodes (bare expression statements) are desugared at parse-time to wrap the target variable in a resolution pass:
+
+```python
+# Loh Source:
+m;
+
+# Desugars at parse-time to:
+_loh_resolve(m)
+```
+
+Where `_loh_resolve(obj)` is a C runtime builtin in `bltinmodule.c` that iterates dict/list elements, calls `lazy_resolve()` on any `_LohLazy` objects, and replaces them in-place with concrete resolved values.
+
+---
+
+## 52. Parenthesized Prefix Function Application (`(f) expr`)
+
+### Motivation
+When calling single-argument functions or wrapping expressions in transformations (e.g. `print("User: " + name)`, `int(a + b)`), standard Python requires enclosing the arguments in trailing parentheses `f(...)`. In functional pipelines or nested function compositions, trailing parentheses add syntax noise `f(g(h(x)))`. Writing `(f) expr` provides a concise right-to-left prefix function application syntax that greedily wraps the right-hand side expression as `f(expr)`.
+
+### Proposed Syntax
+By placing a parenthesized function or callable `(f)` immediately before an expression `expr`, `(f)` acts as a greedy prefix application operator, wrapping the entire right-hand expression:
+
+```python
+# Function wrapping single-line expressions:
+(print) "User count: " + str(count)   # -> print("User count: " + str(count))
+val = (int) a + b                     # -> int(a + b)
+dist = (abs) x1 - x2                  # -> abs(x1 - x2)
+name = (str.upper) first + " " + last # -> str.upper(first + " " + last)
+
+# Prefix chaining (evaluates right-to-left):
+result = (int) (abs) a - b            # -> int(abs(a - b))
+```
+
+### Precedence & Scoping Rules
+`(f) expr` operates at the top-level `expression` precedence rule in Python's PEG grammar (matching `lambda` and `if/else` conditional expressions). It greedily consumes the entire expression to its right.
+
+To bound the application to a specific sub-expression, standard grouping parentheses can be used around the call:
+```python
+# Bounded call (only applies x to y, then adds 1):
+((x) y) + 1                           # -> x(y) + 1
+```
+
+### Compile-Time Desugaring
+At parse-time, the PEG parser translates `(f) expr` into a standard CPython function call AST node (`_PyAST_Call`):
+
+```peg
+expression[expr_ty]:
+    | '(' f=disjunction ')' e=expression { _PyAST_Call(f, _PyPegen_singleton_seq(p, e), NULL, NULL, NULL, EXTRA) }
+```
+
+---
+
+## 53. Compile-Time Expression Evaluation (` ``expr`` `)
+
+### Motivation
+In standard Python, constant expressions (such as unit calculations `1024 * 1024 * 64`, static regex compiles `re.compile(...)`, or pre-computed lookup tables) incur runtime evaluation overhead every time a module or function executes. While standard Python performs basic literal folding, complex expressions or function calls cannot be evaluated at compile-time.
+
+Loh introduces double backticks ` ``expr`` ` as a `constexpr` operator that evaluates the enclosed expression at parse-time/compile-time during AST generation, emitting pre-computed constant literals directly into CPython bytecode.
+
+This completes Loh's 3-tier backtick execution continuum:
+* **` ``expr`` `**: **Compile-Time Evaluation** (evaluated early at parse-time)
+* **`expr`**: **Standard Evaluation** (evaluated normally at runtime)
+* **`` `expr` ``**: **Lazy Evaluation** (evaluated late on-demand via zero-argument thunk)
+
+### Proposed Syntax
+```python
+# Pre-calculates 67108864 directly into bytecode constant
+MAX_PAYLOAD = ``64 * 1024 * 1024``
+
+# Pre-calculates 86400 seconds
+DAY_IN_SECONDS = ``24 * 60 * 60``
+
+# Pre-compiles regex pattern at compile-time and stores in module constants
+URL_PATTERN = ``re.compile(r"^https?://[^\s]+$")``
+
+# Pre-builds static lookup table at compile-time
+POWERS_OF_TWO = ``{i: 2**i for i in range(16)}``
+
+# Freezes timestamp/version string at build-time
+BUILD_TIME = ``time.strftime("%Y-%m-%d %H:%M:%S")``
+```
+
+### Technical & AST Desugaring
+1. **Tokens**:
+   Define `DOUBLE_BACKTICK` (` `` `) in [Tokens](file:///Users/robbarnes/Development/loh/Grammar/Tokens).
+
+2. **Grammar Rule in [python.gram](file:///Users/robbarnes/Development/loh/Grammar/python.gram)**:
+   ```peg
+   atom[expr_ty]:
+       | ''``'' e=test ''``'' { _PyPegen_constexpr_eval(p, e) }
+   ```
+
+3. **AST Helper**:
+   At parse-time, `_PyPegen_constexpr_eval` in `action_helpers.c` evaluates `e` using Python's C-API and returns a `_PyAST_Constant` node. If `e` cannot be evaluated at parse-time (e.g., depends on undefined runtime variables), a parse-time `SyntaxError: constexpr expression cannot be evaluated at compile time` is raised.
+
+---
+
+## 54. Symbolic Fold Expressions (`*(items)`, `+(items)`, `|(flags)`)
+
+### Motivation
+Reducing a collection with a binary operator (such as multiplying all numbers in a list, summing elements, or combining bitwise flags) in standard Python requires writing manual loops or importing helper functions like `functools.reduce(operator.mul, factors)`. Borrowing from C++17 fold expressions, Loh allows prefixing a parenthesized collection with a binary operator symbol to fold that operator across all elements in the collection.
+
+### Proposed Syntax
+```python
+# Multiply all numbers in a list -> reduce(operator.mul, factors)
+product = *(factors)
+
+# Sum all numbers in a list -> sum(prices)
+total = +(prices)
+
+# Bitwise OR fold across a list of flags -> reduce(operator.or_, flag_list)
+all_flags = |(flag_list)
+
+# Logical AND fold across booleans -> all(bool_list)
+all_valid = &(bool_list)
+```
+
+### Compile-Time Desugaring
+At parse-time, the PEG parser translates binary operator fold expressions into calls to `functools.reduce` using the corresponding operator function:
+
+```python
+# *(factors) desugars to:
+import functools as _functools, operator as _op
+_functools.reduce(_op.mul, factors)
+
+# +(prices) desugars to:
+sum(prices)
+```
+
+
 
 
 

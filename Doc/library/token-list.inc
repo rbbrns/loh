@@ -176,3 +176,11 @@
      - ``"&&="``
    * - .. data:: BACKTICK
      - ``"`"``
+   * - .. data:: PLUS_COLON
+     - ``"+:"``
+   * - .. data:: PIPE_COLON
+     - ``"|:"``
+   * - .. data:: QUESTION_COLON
+     - ``"?:"``
+   * - .. data:: TRIPLE_STAR
+     - ``"***"``

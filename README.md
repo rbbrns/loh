@@ -108,6 +108,14 @@ Loh maps Python's verbose keywords and structures to elegant, symbol-based alter
 | Infinite loop | `$:` | Infinite loop shorthand (while True) |
 | Multi-key slicing & unpacking | `*obj` / `**obj` / `*obj[keys]` / `**obj[keys]` | Multi-key subscript slicing, unpacking, and assignments |
 | Lazy evaluation | `` `expr` `` | Late-bound expressions and lazy evaluation variables |
+| Extension key separators | `+:`, `|:`, `?:`, `: <>` | Dict extension key separators for appending, merging, fallback defaults, and deletion |
+| Deep-copy container unpacking | `[***x]` / `{***x}` / `{***z}` | Recursive deep-copy unpacking inside container literals and function arguments |
+| Implicit dict unpacking | `{ "a": 1, {"b": 2} }` | Bare dictionary and dict comprehension unpacking inside dict literals without `**` |
+| Set & dict relational comparisons | `set <= iterable` / `dict <= dict` | General set containment checks and dict sub-mapping matching |
+
+
+
+
 
 ---
 
@@ -1177,5 +1185,143 @@ Circle::
     .diameter(d = `.radius * 2`):
         -> d
 ```
+
+---
+
+### **34. Dict & Object Extension Key Separators (`|:`, `+:`, `?:`, `: <>`)**
+
+> **Motivation:** When merging or extending configuration dictionaries (`base | { ... }`), standard assignment (`key: val`) replaces parent keys completely. Adding modifier sigils to the dictionary key-value separator `:` provides fine-grained control over list appending, deep merging, default fallbacks, and key deletion.
+
+Loh introduces four extension key separators:
+
+| Separator | Name | Semantics | Example |
+| :--- | :--- | :--- | :--- |
+| **`key: val`** | **Overwrite** | Standard assignment. Replaces parent value completely. | `"port": 8443` |
+| **`key +: val`** | **Append / Concat** | Appends or concatenates to existing value (`list + list`, `str + str`, `num + num`). | `"tags" +: ["v2"]` |
+| **`key |: val`** | **Union / Merge** | Deep-merges dictionaries (`dict | dict`) or unions sets (`set | set`). | `"headers" |: {"Auth": "Bearer"}` |
+| **`key ?: val`** | **Fallback Default** | Sets `key` to `val` **if and only if** `key` is missing or `None` in target. | `"timeout" ?: 60` |
+| **`key: <>`** | **Delete Key** | Removes `key` entirely from the target dictionary using Loh's `<>` delete symbol. | `"legacy_mode": <>` |
+
+#### **Example**
+```python
+base_config = {
+    "host": "localhost",
+    "port": 8000,
+    "tags": ["v1"],
+    "headers": {"Accept": "application/json"},
+    "timeout": 30,
+    "legacy_mode": True
+}
+
+# Extending base_config:
+prod_config = base_config | {
+    "port": 8443,                              # Overwrite
+    "tags" +: ["v2"],                          # Append -> ["v1", "v2"]
+    "headers" |: {"Authorization": "Bearer"},  # Deep dict merge
+    "timeout" ?: 60,                           # Keeps 30 (exists and non-None)
+    "legacy_mode": <>                          # Deletes 'legacy_mode' from result
+}
+```
+
+Bare dictionary literals containing extension key separators construct patch dictionaries wrapping `_LohOp` marker objects. These patch dictionaries support `pickle.dumps()` / `pickle.loads()`, `dict.copy()`, and `repr()`.
+
+---
+
+### **35. Deep-Copy Container Unpacking (`[***x]`, `{***x}`, `{***z}`)**
+
+> **Motivation:** Python supports 1-level shallow unpacking inside container literals using `[*y]` (lists), `{**x}` (dicts), and `{*z}` (sets). To provide a conflict-free, complementary syntax for deep copies without colliding with function argument unpacking (`func(*args)` or `func(**kwargs)`), Loh introduces `***` (Triple-Star) as a recursive deep-unpacker inside container literals and function arguments.
+
+Loh defines `***` unpacking across all container types and call arguments:
+
+| Unpacking Type | List Literal | Dict Literal | Set Literal |
+| :--- | :--- | :--- | :--- |
+| **Shallow Copy (1-Level)** | `[*y]` | `{**x}` | `{*z}` |
+| **Deep Copy (Recursive)** | **`[***y]`** | **`{***x}`** | **`{***z}`** |
+
+#### **Example**
+```python
+original_dict = {"items": [1, 2, 3], "meta": {"owner": "Alice"}}
+
+# Deep-copies original_dict recursively into a new dictionary literal:
+deep_dict = {***original_dict}
+
+# Deep-copies nested elements into a list:
+deep_list = [***original_dict["items"]]
+
+# Deep-copies sequence elements into function arguments:
+foo(***original_dict["items"])
+```
+
+#### **Compile-Time Desugaring**
+At parse-time, the PEG parser compiles `***x` inside container literals and call arguments by desugaring `x` into a call to `_loh_deepcopy(x)` prior to unpacking.
+
+---
+
+### **36. Implicit Dictionary Unpacking inside Dict Literals (`{}`)**
+
+> **Motivation:** In standard Python, placing an un-keyed dictionary expression or dict comprehension (`{ k: v for ... }`) directly inside another dictionary literal without `**` (e.g. `{ "a": 1, {"b": 2} }`) is a syntax error. In Loh, writing a bare dictionary or dict comprehension as a standalone entry inside a dictionary literal (`{}`) automatically unpacks (`**`) its key-value pairs into the enclosing dictionary.
+
+#### **Example**
+```python
+app_config = {
+    "env": "prod",
+    "port": 8080,
+
+    # Bare dict comprehension inside {} -> AUTOMATICALLY UNPACKED!
+    { f"node_{i}": f"http://10.0.0.{i}" for i in range(1, 4) },
+
+    # Combined with field extension
+    "tags" +: ["cluster_a"]
+}
+
+# Evaluates to:
+# {
+#     "env": "prod",
+#     "port": 8080,
+#     "node_1": "http://10.0.0.1",
+#     "node_2": "http://10.0.0.2",
+#     "node_3": "http://10.0.0.3",
+#     "tags": ["cluster_a"]
+# }
+```
+
+#### **Zero Set Ambiguity**
+Python distinguishes sets from dicts by the presence of colons (`:`). Because dictionaries are unhashable and can never be elements of sets (`{ {"a": 1} }` raises `TypeError`), placing a bare dictionary expression `{ k: v ... }` inside an outer dictionary `{}` is 100% grammatically unambiguous: it can only mean unpacking its key-value pairs (`**`) into the outer dictionary.
+
+---
+
+### **37. Set & Dict Relational Comparisons (`set <= iterable`, `dict <= dict`)**
+
+> **Motivation:** In standard Python, comparing a `set` with a non-set iterable (like a `list` or `dict`) or comparing two `dict` objects using relational operators (`<`, `<=`, `>`, `>=`) raises a `TypeError`. In Loh, set and dictionary relational comparisons are dynamically extended to perform containment and sub-mapping checks at C-level speed.
+
+#### **Set Relational Comparisons (`set <= iterable`)**
+When comparing a `set` with a non-set sequence or dictionary using relational operators, the non-set operand is dynamically converted to a set at runtime:
+
+```python
+# Check if all elements in a set are present in a list:
+? {"a", "b"} <= ["a", "b", "c"]:
+    print("All elements present!")
+
+# Check if keys exist in a dictionary:
+? {"env", "port"} <= config_dict:
+    print("Required keys are configured!")
+```
+
+#### **Dictionary Sub-Mapping Containment (`dict <= dict`)**
+Comparing two dictionary objects with relational operators checks key-value sub-mapping containment:
+
+```python
+# Check if key "port" has value 8080:
+? {"port": 8080} <= config:
+    print("Port is 8080")
+
+# Check if multiple key-value pairs match:
+? {"env": "prod", "port": 8443} <= config:
+    print("Production environment configuration matched!")
+```
+
+
+
+
 
 

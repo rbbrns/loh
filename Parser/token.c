@@ -98,6 +98,10 @@ const char * const _PyParser_TokenNames[] = {
     "DOUBLEVBAREQUAL",
     "DOUBLEAMPEREQUAL",
     "BACKTICK",
+    "PLUS_COLON",
+    "PIPE_COLON",
+    "QUESTION_COLON",
+    "TRIPLE_STAR",
     "OP",
     "TYPE_IGNORE",
     "TYPE_COMMENT",
@@ -189,6 +193,7 @@ _PyToken_TwoChars(int c1, int c2)
     case '+':
         switch (c2) {
         case '+': return DOUBLEPLUS;
+        case ':': return PLUS_COLON;
         case '=': return PLUSEQUAL;
         }
         break;
@@ -240,6 +245,7 @@ _PyToken_TwoChars(int c1, int c2)
         break;
     case '?':
         switch (c2) {
+        case ':': return QUESTION_COLON;
         case '=': return QUESTIONEQUAL;
         case '?': return QUESTIONQUESTION;
         case '^': return QUESTIONCIRCUMFLEX;
@@ -259,6 +265,7 @@ _PyToken_TwoChars(int c1, int c2)
         break;
     case '|':
         switch (c2) {
+        case ':': return PIPE_COLON;
         case '=': return VBAREQUAL;
         case '>': return VBARGREATER;
         case '|': return DOUBLEVBAR;
@@ -306,6 +313,7 @@ _PyToken_ThreeChars(int c1, int c2, int c3)
         switch (c2) {
         case '*':
             switch (c3) {
+            case '*': return TRIPLE_STAR;
             case '=': return DOUBLESTAREQUAL;
             }
             break;
