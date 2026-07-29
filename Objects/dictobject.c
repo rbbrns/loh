@@ -3867,6 +3867,81 @@ dict_dict_merge(PyInterpreterState *interp, PyDictObject *mp, PyDictObject *othe
         int err = 0;
         Py_INCREF(key);
         Py_INCREF(value);
+
+        if (Py_TYPE(value) == &PyLohOp_Type) {
+            PyLohOpObject *op = (PyLohOpObject *)value;
+            if (op->kind == LOH_OP_DELETE) {
+                if (_PyDict_Contains_KnownHash((PyObject *)mp, key, hash) > 0) {
+                    PyDict_DelItem((PyObject *)mp, key);
+                    PyErr_Clear();
+                }
+                Py_DECREF(value);
+                Py_DECREF(key);
+                continue;
+            }
+            else if (op->kind == LOH_OP_APPEND) {
+                PyObject *existing = PyDict_GetItemWithError((PyObject *)mp, key);
+                if (existing == NULL && PyErr_Occurred()) {
+                    Py_DECREF(value);
+                    Py_DECREF(key);
+                    return -1;
+                }
+                if (existing != NULL) {
+                    PyObject *combined = PyNumber_Add(existing, op->val);
+                    if (combined == NULL) {
+                        Py_DECREF(value);
+                        Py_DECREF(key);
+                        return -1;
+                    }
+                    err = insertdict(interp, mp, Py_NewRef(key), hash, combined);
+                } else {
+                    err = insertdict(interp, mp, Py_NewRef(key), hash, Py_NewRef(op->val));
+                }
+                Py_DECREF(value);
+                Py_DECREF(key);
+                if (err != 0) return -1;
+                continue;
+            }
+            else if (op->kind == LOH_OP_UNION) {
+                PyObject *existing = PyDict_GetItemWithError((PyObject *)mp, key);
+                if (existing == NULL && PyErr_Occurred()) {
+                    Py_DECREF(value);
+                    Py_DECREF(key);
+                    return -1;
+                }
+                if (existing != NULL) {
+                    PyObject *combined = PyNumber_Or(existing, op->val);
+                    if (combined == NULL) {
+                        Py_DECREF(value);
+                        Py_DECREF(key);
+                        return -1;
+                    }
+                    err = insertdict(interp, mp, Py_NewRef(key), hash, combined);
+                } else {
+                    err = insertdict(interp, mp, Py_NewRef(key), hash, Py_NewRef(op->val));
+                }
+                Py_DECREF(value);
+                Py_DECREF(key);
+                if (err != 0) return -1;
+                continue;
+            }
+            else if (op->kind == LOH_OP_FALLBACK) {
+                PyObject *existing = PyDict_GetItemWithError((PyObject *)mp, key);
+                if (existing == NULL && PyErr_Occurred()) {
+                    Py_DECREF(value);
+                    Py_DECREF(key);
+                    return -1;
+                }
+                if (existing == NULL || existing == Py_None) {
+                    err = insertdict(interp, mp, Py_NewRef(key), hash, Py_NewRef(op->val));
+                }
+                Py_DECREF(value);
+                Py_DECREF(key);
+                if (err != 0) return -1;
+                continue;
+            }
+        }
+
         if (override == 1) {
             err = insertdict(interp, mp,
                                 Py_NewRef(key), hash, Py_NewRef(value));
@@ -3887,6 +3962,7 @@ dict_dict_merge(PyInterpreterState *interp, PyDictObject *mp, PyDictObject *othe
                 err = 0;
             }
         }
+
         Py_DECREF(value);
         Py_DECREF(key);
         if (err != 0)
@@ -4242,6 +4318,30 @@ dict_equal(PyDictObject *a, PyDictObject *b)
     return res;
 }
 
+static int
+dict_is_submapping(PyDictObject *sub, PyDictObject *parent)
+{
+    if (PyDict_GET_SIZE(sub) > PyDict_GET_SIZE(parent)) {
+        return 0;
+    }
+    Py_ssize_t pos = 0;
+    PyObject *key, *val;
+    while (PyDict_Next((PyObject *)sub, &pos, &key, &val)) {
+        PyObject *parent_val = PyDict_GetItemWithError((PyObject *)parent, key);
+        if (parent_val == NULL) {
+            if (PyErr_Occurred()) {
+                return -1;
+            }
+            return 0;
+        }
+        int cmp = PyObject_RichCompareBool(val, parent_val, Py_EQ);
+        if (cmp <= 0) {
+            return cmp;
+        }
+    }
+    return 1;
+}
+
 static PyObject *
 dict_richcompare(PyObject *v, PyObject *w, int op)
 {
@@ -4257,10 +4357,31 @@ dict_richcompare(PyObject *v, PyObject *w, int op)
             return NULL;
         res = (cmp == (op == Py_EQ)) ? Py_True : Py_False;
     }
+    else if (op == Py_LE) {
+        cmp = dict_is_submapping((PyDictObject *)v, (PyDictObject *)w);
+        if (cmp < 0) return NULL;
+        res = cmp ? Py_True : Py_False;
+    }
+    else if (op == Py_GE) {
+        cmp = dict_is_submapping((PyDictObject *)w, (PyDictObject *)v);
+        if (cmp < 0) return NULL;
+        res = cmp ? Py_True : Py_False;
+    }
+    else if (op == Py_LT) {
+        cmp = dict_is_submapping((PyDictObject *)v, (PyDictObject *)w);
+        if (cmp <= 0) return cmp < 0 ? NULL : Py_NewRef(Py_False);
+        res = (PyDict_GET_SIZE(v) < PyDict_GET_SIZE(w)) ? Py_True : Py_False;
+    }
+    else if (op == Py_GT) {
+        cmp = dict_is_submapping((PyDictObject *)w, (PyDictObject *)v);
+        if (cmp <= 0) return cmp < 0 ? NULL : Py_NewRef(Py_False);
+        res = (PyDict_GET_SIZE(w) < PyDict_GET_SIZE(v)) ? Py_True : Py_False;
+    }
     else
         res = Py_NotImplemented;
     return Py_NewRef(res);
 }
+
 
 /*[clinic input]
 
