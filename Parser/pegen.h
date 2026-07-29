@@ -422,4 +422,10 @@ asdl_stmt_seq *_PyPegen_desugar_double_dot_stmts(Parser *p, asdl_stmt_seq *stmts
 void _PyPegen_desugar_double_dot_stmt(Parser *p, stmt_ty stmt);
 expr_ty _PyPegen_desugar_double_dot_expr(Parser *p, expr_ty expr);
 
+expr_ty _PyPegen_make_loh_op(Parser *p, int kind, expr_ty val);
+expr_ty _PyPegen_make_deep_copy_expr(Parser *p, expr_ty a);
+expr_ty _PyPegen_make_deep_copy_starred(Parser *p, expr_ty a);
+
 #endif
+
+
