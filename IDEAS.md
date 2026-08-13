@@ -1870,38 +1870,6 @@ if not is_valid:
 
 ---
 
-## 66. Postfix Loop Statements (`statement := collection`)
-
-### Motivation
-In standard Python, running a single statement over a collection requires writing a multi-line `for` loop. Loh uses `:=` for walrus loop bindings and comprehensions (`[$.email := users]`). Allowing `:= collection` as a postfix modifier on single statements provides an extremely clean, readable way to iterate over collections without adding multi-line indentation.
-
-### Proposed Syntax
-```python
-# Iterate over items with implicit '$' placeholder
-process($) := items
-
-# With implicit '$' property lookup and inline postfix filter check
-print($.name) := users ? $.is_active
-
-# Control flow and function calls
-send_notification($.email) := pending_users ? $.verified
-```
-
-### Compile-Time Desugaring
-At parse-time, `statement := collection` or `statement := collection ? condition` desugars into a standard CPython `For` (and optional `If`) AST block:
-
-```python
-# 'process($) := items' desugars to:
-for _item in items:
-    process(_item)
-
-# 'print($.name) := users ? $.is_active' desugars to:
-for _item in users:
-    if _item.is_active:
-        print(_item.name)
-```
-
----
 
 ## 67. Call-Site Parameter Auto-Forwarding (`func(=)`)
 
@@ -2358,6 +2326,59 @@ elif _tmp is None:
     return None
 val = _tmp.unwrap() if hasattr(_tmp, 'unwrap') else _tmp
 ```
+
+---
+
+## 78. Parameter-Binding Pipe Operator (`|var>`)
+
+### Motivation
+Piping collections through standard transformations like mapping and filtering (e.g. `users |> filter((u) -> u.is_active) |> map((u) -> u.name)`) is clean but introduces boilerplate by forcing the developer to repeatedly declare arrow functions. 
+
+Loh introduces a **Parameter-Binding Pipe Operator** (`|var>`) that binds the element of the piped collection to `var` in the following expression. This collapses the pipeline and the lambda definitions into a single cohesive structure.
+
+### Proposed Syntax
+Using `|var>` pipes a collection and binds its individual elements to `var` in the expression that follows:
+
+```python
+# 1. Standard filter/map operations:
+active_names = (
+    users 
+    |u> filter(u.is_active)
+    |u> map(u.name)
+)
+
+# 2. Combined filter & map (inline comprehension style):
+active_names = users |u> u.name ? u.is_active
+```
+
+### Compile-Time Desugaring
+At parse-time, the parameter-binding pipe desugars directly into list comprehensions or standard generator expressions, keeping runtime execution extremely fast and avoiding lambda function call overhead:
+
+```python
+# 1. 'users |u> filter(u.is_active)' desugars to:
+[u for u in users if u.is_active]
+
+# 2. 'users |u> map(u.name)' desugars to:
+[u.name for u in users]
+
+# 3. 'users |u> u.name ? u.is_active' desugars to:
+[u.name for u in users if u.is_active]
+```
+
+### Grammar Design
+In `Grammar/python.gram`, we can define a new binary expression node under the pipe precedence level:
+```peg
+binding_pipe_expr:
+    | lhs=expression '|' var=NAME '>' rhs=expression {
+        _PyPegen_make_binding_pipe(p, lhs, var, rhs)
+    }
+```
+The AST helper `_PyPegen_make_binding_pipe` detects the shape of `rhs` and returns a list comprehension (`_PyAST_ListComp`) or generator expression:
+- If `rhs` is `filter(cond)`: `[var for var in lhs if cond]`
+- If `rhs` is `map(expr)`: `[expr for var in lhs]`
+- If `rhs` is `expr ? cond`: `[expr for var in lhs if cond]`
+- If `rhs` is a plain expression: `[rhs for var in lhs]`
+
 
 
 

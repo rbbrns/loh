@@ -39,3 +39,19 @@ items = [1, 2] [3, 4]
 1. **List/Tuple Subscript & Call Collisions**: In standard Python, `[1, 2][0]` is valid subscripting (indexing element 0 of `[1, 2]`), and `(1,)(2,)` is function invocation. Supporting space-separated collection literals for lists/tuples introduces severe syntactic ambiguity with indexing and calls.
 2. **Standard Unpacking and Merge Operators Are Superior**: Python and Loh already provide explicit, unambiguous unpacking (`[*l1, *l2]`, `{**d1, **d2}`) and dedicated merge/extension operators (`|`, `+:`, `|:`). Implicit space-separated merging introduces hidden behavior and low practical utility compared to explicit unpacking.
 
+---
+
+## 3. Postfix Loop Statements (`statement := collection`)
+
+### Proposed Syntax
+```python
+process($) := items
+print($.name) := users ? $.is_active
+```
+
+### Reason for Rejection
+**Syntactic Redundancy & Overlap with List Comprehensions**:
+1. **Overlap with Comprehension Syntax**: Loh uses `:=` for collection binding inside list comprehensions (e.g., `[process($) := items]`). Allowing `statement := collection` outside brackets introduces ambiguity between statement-level side effects and list comprehension expressions.
+2. **Clearer Separation of Concerns**: Reserving `:=` for comprehensions (`[expr := items]`) and using explicit loop blocks (`$ item := items:`) for side effects maintains a clean distinction between functional mapping and control flow.
+
+
