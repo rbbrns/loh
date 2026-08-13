@@ -77,59 +77,7 @@ descriptions = map(-=> (200 -> "OK", 404 -> "Missing", _ -> "Error"), statuses)
 
 ---
 
-## 3. Deprecate `<~` in Favor of `<==` / `!<==` (Membership) and `$ ... :=` (Loops & Comprehensions)
 
-### Motivation
-Previously, Loh used `<~` for both standalone membership testing (`x <~ items`) and loop variable binding (`$ x <~ items:`). This created visual overlap with flow sigils and overloaded `<~`.
-
-This feature deprecates `<~` completely and replaces it with distinct, purpose-built syntaxes:
-1. **`<==` / `!<==`**: Dedicated operators for standalone membership testing (`in`) and negated membership testing (`not in`).
-2. **`$ ... :=`**: Universal variable binding syntax for standard `for` loops and comprehensions.
-3. **`$ pattern =>`**: Specialized pattern-matching filter syntax for loops.
-
-### Proposed Syntax
-
-#### 1. Membership Testing (`<==` and `!<==`)
-- **Membership Check (`<==`)**: Replaces `in` / `<~` in expression contexts.
-  ```python
-  ? 'a' <== 'abc':
-      print("Found")
-  ```
-- **Negated Membership Check (`!<==`)**: Replaces `not in` / `!<~` in expression contexts.
-  ```python
-  ? 'a' !<== 'def':
-      print("Not found")
-  ```
-
-#### 2. Loop Variable Binding (`$ ... :=`) & Pattern Filtering (`$ pattern =>`)
-Standard loop variable binding uses `:=`, while pattern-matching loop filters use `=>`:
-
-```python
-# Standard loop variable binding (:=)
-$ item := items:
-    print(item)
-
-# Implicit loop item binding (:=)
-$ := items:
-    print($)
-
-# Pattern-matching loop filtering (=>) — flows each item into pattern, executing ONLY on match
-$ responses => {"status": 200, "data": payload}:
-    process(payload)
-
-# Standard list comprehension (:=)
-evens = [i $ i := 0..10 ? i % 2 == 0]
-
-# Pattern-matching list comprehension (=>)
-payloads = [data $ responses => {"status": 200, "data": data}]
-```
-
-### Compile-Time Desugaring & Parser Updates
-- Define token `<==` (`LESSEQUALEQUAL`) and `!<==` in parser grammar to map to AST `In` and `NotIn` comparison operators.
-- Update `for_stmt` and comprehension grammar to use `:=` as the standard loop binding operator and `=>` as the pattern-matching filter operator.
-- Deprecate token `<~` (`LESSTILDE`) from grammar rules `in:` and `for_stmt`.
-
----
 
 ## 4. Parameter Pattern Destructuring, Multi-Clause Functions, and Signature Guards
 
