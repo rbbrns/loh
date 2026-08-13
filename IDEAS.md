@@ -64,19 +64,41 @@ This is implemented entirely in the parser, with zero changes required to the by
 
 ---
 
-## 2. Pipe Operator Placeholders (`_`)
+## 2. Unified Expression Placeholders & Partial Application (`$`, `$$`, `$$$`)
 
 ### Motivation
-Allows calling multi-argument functions within a pipe chain without wrapping them in an anonymous lambda.
+In standard Python, writing inline transformation callbacks (`lambda x: x * 2`) or partial function applications (`functools.partial(json.dumps, indent=4)`) requires verbose syntax or extra library imports. Using `_` as a placeholder collides with standard Python internationalization (`gettext` `_("text")`), REPL history, and discard variable conventions (`for _ in items`).
+
+Loh unifies expression placeholders and partial application around its arity sigils (`$`, `$$`, `$$$`). Because walrus loop and comprehension bindings explicitly use `:=` (e.g. `[$ * $$ := zip(a, b)]`), expressions *without* `:=` that contain arity sigils (`$`, `$$`, `$$$`) automatically desugar into anonymous lambdas at compile-time.
 
 ### Proposed Syntax
 ```python
-data |> json.dumps(_, indent=4)
-"log.txt" |> open(_, "w")
+# Unary expression placeholder & piping
+evens = [1..10] |> filter($ % 2 == 0) |> map($ * 2)
+
+# Partial function application
+add10 = add(10, $)
+formatted = data |> json.dumps($, indent=4)
+
+# Multi-argument arity placeholders ($ = 1st arg, $$ = 2nd arg)
+total = numbers |> reduce($ + $$)
+sorted_users = users |> sort_by($.age - $$.age)
+swap_args = divide($$, $)
 ```
 
 ### Compile-Time Desugaring
-If the parser detects a `_` identifier within the call argument list of the piped expression, it replaces `_` with the piped variable.
+When the parser detects arity sigils (`$`, `$$`, `$$$`) inside an expression call site or operator expression without a loop `:=` clause, it wraps the expression in a single- or multi-parameter lambda:
+```python
+# 'data |> json.dumps($, indent=4)' desugars to:
+json.dumps(data, indent=4)
+
+# 'add(10, $)' desugars to:
+lambda _1: add(10, _1)
+
+# 'reduce($ + $$)' desugars to:
+reduce(lambda _1, _2: _1 + _2, numbers)
+```
+
 
 ---
 
@@ -97,33 +119,7 @@ At parse/compile time, this operator desugars into:
 config.timeout = (30 ? config.timeout is None ?? config.timeout)
 ```
 
----
 
-## 4. Inline Match-Case Expressions (`?==`)
-
-### Motivation
-Pattern matching (`?==`) in Loh is currently statement-only. In functional pipelines or variable declarations, developers often need to match a value against patterns and return/assign the result directly, matching the expression-oriented design of other modern programming languages.
-
-### Proposed Syntax
-```python
-status_desc = code ?== {
-    200: "Success",
-    404: "Not Found",
-    500: "Server Error",
-    _: "Unknown Status"
-}
-```
-
-### Compile-Time Desugaring
-This expression parses into an AST that compiles to a nested set of conditional checks or an inline self-evaluating match structure:
-```python
-status_desc = ("Success" ? code == 200 
-               ?? "Not Found" ? code == 404 
-               ?? "Server Error" ? code == 500 
-               ?? "Unknown Status")
-```
-
----
 
 ## 5. Destructuring Assignment with Default Values
 
@@ -398,31 +394,7 @@ match target:
         raise ValueError("Cannot destructure value: object structure does not match pattern")
 ```
 
----
 
-## 15. Pattern Matching Loop Filters (`$ pattern <~ collection`)
-
-### Motivation
-When iterating over collections containing heterogeneous structured data (like list of dicts, tuples, or API responses), developers often need to filter items that match a certain pattern and extract sub-values. In standard Python, this requires a nested `match` block with a conditional `continue`/pass, adding significant indentation and boilerplate.
-
-### Proposed Syntax
-Loh can allow a pattern to be placed directly in the loop header instead of a simple target name/tuple. The loop body will execute only for items that match the pattern, with pattern variables bound in the loop body scope:
-```python
-# Loops only over active admins and prints their username
-$ {"role": "admin", "active": +, "username": name} <~ users:
-    print(name)
-```
-
-### Compile-Time Desugaring
-Translates directly into a standard loop containing a structural pattern match check:
-```python
-for _item in users:
-    match _item:
-        case {"role": "admin", "active": True, "username": name}:
-            print(name)
-```
-
----
 
 ## 16. Margin-Controlled Multiline Strings (Margin Stripping)
 
@@ -1243,125 +1215,8 @@ def helper(x):
 config.helper = helper
 ```
 
----
 
-## 48. Multiple Dispatch using Parameter-Level Match Query (`param ? pattern`)
 
-Allows matching and destructuring parameters directly in the function signature, and merging adjacent function definitions with the same name into a single multiple-dispatch function.
-
-### Proposed Syntax
-- **Parameter Destructuring / Validation**:
-  ```python
-  process_user(u ? User(name, age)):
-      print(name, age)
-  ```
-- **Multiple Dispatch**:
-  ```python
-  collide(c1 ? Circle(r1), c2 ? Circle(r2)):
-      -> r1 + r2
-
-  collide(c1 ? Circle(r), c2 ? Rectangle(w, h)):
-      -> r + w + h
-  ```
-
-### Compile-Time Desugaring
-- For a single function with pattern parameters, checks are inserted sequentially at the beginning of the function:
-  ```python
-  def process_user(u):
-      match u:
-          case User(name, age): pass
-          case _: raise TypeError()
-      print(name, age)
-  ```
-- For adjacent functions with the same name, they are merged into a single function using a `match` on the arguments tuple:
-  ```python
-  def collide(c1, c2):
-      match (c1, c2):
-          case (Circle(r1), Circle(r2)):
-              return r1 + r2
-          case (Circle(r), Rectangle(w, h)):
-              return r + w + h
-          case _:
-              raise TypeError("No matching signature found")
-  ```
-
----
-
-## 49. Flat Match-Case Statements (`expr \n == pattern: \n == pattern:`)
-
-### Motivation
-Standard structural pattern matching (`match` / `?==`) requires a nested block structure, leading to two levels of indentation: one for the case clauses and another for the case bodies. 
-
-By applying match patterns directly as comparison-like branches on the line(s) following the subject expression, we can match a subject while keeping the patterns at the same indentation level. Using the comparison operator `==` at the start of a statement (which is normally a syntax error) allows the parser to unambiguously identify match cases and collapses indentation down to a single level.
-
-### Proposed Syntax
-The subject expression is evaluated exactly once, and consecutive pattern checks are executed sequentially.
-
-```python
-x = get_status_code()
-
-x
-== 200:
-    print("Success")
-== 404:
-    print("Not Found")
-== 500:
-    print("Server Error")
-== _:
-    print("Unknown status code")
-```
-
-This also supports pattern variable binding and guards:
-```python
-response
-== Success(data) if data.valid:
-    process(data)
-== Failure(error):
-    log_error(error)
-```
-
-#### Alternative Syntax Options
-- **Conditional Unification (`?==` / `??==` / `??`)**:
-  Using `?==` for the first case and `??==` for subsequent cases to mirror Loh's `?` and `??` conditional syntax:
-  ```python
-  x
-  ?== 200:
-      print("Success")
-  ??== 404:
-      print("Not Found")
-  ??:
-      print("Unknown")
-  ```
-
-### Compile-Time Desugaring
-At parse-time, the subject expression is stored in a temporary variable, and the flat match structure is compiled into a standard CPython `match` statement:
-
-```python
-_loh_match_subject = get_status_code()
-match _loh_match_subject:
-    case 200:
-        print("Success")
-    case 404:
-        print("Not Found")
-    case 500:
-        print("Server Error")
-    case _:
-        print("Unknown status code")
-```
-
-### Grammar Design
-Under `compound_stmt` in `Grammar/python.gram`, we can define:
-```peg
-flat_match_stmt:
-    | subject=expression NEWLINE '==' pattern=pattern ':' body=block handlers=flat_match_handlers?
-```
-Where `flat_match_handlers` recursively parses the subsequent `==` branches:
-```peg
-flat_match_handlers:
-    | '==' pattern=pattern ':' body=block handlers=flat_match_handlers?
-```
-
----
 
 ## 50. Post-Expression Exception Rescue (`expr \n ?^ Exception:`)
 
@@ -1625,9 +1480,888 @@ with open(_asset_path, "r", encoding="utf-8") as _f:
     config = _json.load(_f)
 ```
 
+---
+
+## 42. Class-Body Dot Properties & Auto-Dataclass Synthesis (`.foo = 1`)
+
+### Motivation
+Creating record classes, value objects, and dataclasses in standard Python requires importing and applying the `@dataclass` decorator, writing type hints, or manually implementing `__init__`, `__repr__`, `__eq__`, and pattern-matching `__match_args__`.
+
+In Loh, declaring dot-prefixed fields directly inside a class body (e.g. `.name: str`, `.role = "guest"`) explicitly identifies instance attributes of the class. When a class contains dot-prefixed fields at class scope without a custom constructor, Loh automatically synthesizes dataclass / record behavior at compile-time.
+
+### Proposed Syntax
+```python
+# Multi-field record / dataclass
+User::
+    .name: str
+    .role = "guest"
+    .active = +
+
+    .is_admin() -> .role == "admin"
+
+# Single-line pure value record
+Point:: .x: float; .y: float
+```
+
+### Compile-Time Desugaring
+When the parser encounters dot-prefixed attribute declarations `.field` directly inside a class block (`Class::`):
+1. **Auto-Generates `__init__`**: Synthesizes `.(.name, .role = "guest", .active = +)` setting `self.name`, `self.role`, and `self.active`.
+2. **Auto-Generates `__repr__`**: Returns `User(name='Alice', role='guest', active=True)`.
+3. **Auto-Generates `__eq__`**: Compares value equality across all declared fields.
+4. **Auto-Generates `__match_args__`**: Sets `__match_args__ = ("name", "role", "active")`, enabling positional structural pattern matching (`?== User("Alice", r):`).
+
+---
+
+## 55. Side-Effect Pipeline Tapping (`|>!`) / `also` Scope Function
+
+### Motivation
+In functional data transformation chains, inspecting, logging, or executing side-effects on intermediate values currently requires breaking the pipeline to assign a temporary variable or using verbose wrapper lambdas. Inspired by Kotlin's `also` scope function, Loh introduces the **Tap Pipe Operator** `|>!`.
+
+### Proposed Syntax
+`expr |>! action` evaluates the right-hand action for side-effects (with `$` bound to `expr` or passing `expr` as an argument), but always evaluates to the original left-hand value `expr`, allowing pipeline processing to continue unimpeded.
+
+```python
+result = (
+    fetch_raw_payload()
+    |>! print("Raw payload:", $)        # Inspects data, returns raw payload
+    |> parse_json
+    |>! logger.info("Parsed user: {}", $.id)
+    |> save_to_db
+)
+```
+
+### Compile-Time Desugaring
+At parse-time, the `|>!` operator compiles to an inline helper call that executes the side-effect and returns the left-hand receiver value:
+
+```python
+def _loh_tap(val, func):
+    func(val)
+    return val
+
+result = save_to_db(_loh_tap(parse_json(_loh_tap(fetch_raw_payload(), lambda _: print("Raw payload:", _))), lambda _: logger.info(...)))
+```
+
+---
+
+## 56. Smart Type Guard & Alias Unpacking (`? x : Type => var:`)
+
+### Motivation
+In standard Python, narrowing down dynamic types requires writing verbose `isinstance(x, Type)` checks followed by redundant variable assignments or manual casts. Inspired by Kotlin's smart casts, Loh integrates type verification, safe casting (`~:`), and local alias binding directly into branch condition headers.
+
+### Proposed Syntax
+By placing a type check `: Type` and alias binding `=> var` inside a conditional header `?`, Loh verifies the type at runtime and binds the validated instance to the specified variable inside the conditional block:
+
+```python
+# Verifies isinstance(payload, dict), binds to 'd', and executes block
+? payload : dict => d:
+    print("User ID:", d~['id'])
+
+?? payload : str => s:
+    print("String length:", len(s))
+
+??:
+    print("Unknown payload type")
+```
+
+### Compile-Time Desugaring
+At parse-time, the PEG parser compiles the type guard header into standard `isinstance` checks and local variable assignments:
+
+```python
+if isinstance(payload, dict):
+    d = payload
+    print("User ID:", d.get('id') if d is not None else None)
+elif isinstance(payload, str):
+    s = payload
+    print("String length:", len(s))
+else:
+    print("Unknown payload type")
+```
+
+---
+
+## 57. Conditional Value Filtering (`takeIf` / `takeUnless`) (`?|` / `?!|`)
+
+### Motivation
+Filtering or validating a scalar expression without declaring temporary variables, writing multi-line `if`/`else` blocks, or repeating the variable name in a ternary expression is a frequent requirement in data processing pipelines. Inspired by Kotlin's `takeIf` and `takeUnless`, Loh introduces the conditional value filter operators `?|` and `?!|`.
+
+### Proposed Syntax
+- **`expr ?| condition`** (`takeIf`): Evaluates to `expr` if `condition` (or predicate with `$`) is truthy, otherwise evaluates to `None` (`~`).
+- **`expr ?!| condition`** (`takeUnless`): Evaluates to `expr` unless `condition` (or predicate with `$`) is truthy, otherwise evaluates to `None` (`~`).
+
+```python
+# Evaluates to score if score >= 70, otherwise None (~)
+passed_score = raw_score ?| ($ >= 70)
+
+# Seamlessly chain with None-coalescing (~~)
+grade = student.score ?| ($ >= 70) ~~ "Failing"
+
+# takeUnless variant: reject blank strings
+clean_name = raw_name ?!| ($.strip() == "") ~~ "Guest"
+```
+
+### Compile-Time Desugaring
+At parse-time, the filter expression compiles to a single-evaluation ternary check:
+
+```python
+_val = raw_score
+passed_score = _val if (_val >= 70) else None
+
+_val2 = student.score
+grade = (_val2 if (_val2 >= 70) else None)
+if grade is None: grade = "Failing"
+```
+
+---
+
+## 58. Scope `defer` Block for Automatic Cleanup (`defer:` / `*:`)
+
+### Motivation
+Resource cleanup (closing file handles, releasing locks, restoring previous environment settings) in standard Python requires wrapping code in explicit `try ... finally` blocks. When multiple resources are opened sequentially, nested `try/finally` blocks lead to deep indentation ("pyramid of doom"). Inspired by Swift and Go, Loh can support scope-level `defer:` (or standalone `*:`) blocks that automatically schedule cleanup execution when the enclosing function or lexical block exits, regardless of whether it exits via `return`, `break`, `continue`, or an exception.
+
+### Proposed Syntax
+```python
+open_connection(url):
+    conn = connect(url)
+    defer: conn.close()  # Executed automatically when function exits
+    
+    # Or using Loh's cleanup sigil (*:)
+    *: conn.close()
+    
+    data = conn.fetch_data()
+    -> process(data)
+```
+
+### Compile-Time Desugaring
+At parse-time, the PEG parser rewrites the statements following a `defer:` block into a CPython `try...finally` AST node (`_PyAST_Try`), placing the `defer:` statements inside the `finally` block:
+```python
+def open_connection(url):
+    conn = connect(url)
+    try:
+        data = conn.fetch_data()
+        return process(data)
+    finally:
+        conn.close()
+```
+
+---
+
+## 59. Key-Path Attribute Extractors (`.property`)
+
+### Motivation
+Extracting attribute values across collections (e.g. `[user.name for user in users]` or `list(map(lambda u: u.name, users))`) is a common pattern that requires writing verbose anonymous functions or comprehensions. Swift introduces key-path syntax (`\.name`) to treat property paths as first-class functions. In Loh, using a standalone leading-dot `.property` in expression contexts (like pipe pipelines or function arguments) creates an anonymous getter lambda.
+
+### Proposed Syntax
+```python
+# Extract attribute 'name' from each element in users
+names = users |> map(.name)
+
+# Sort users by 'age'
+sorted_users = users |> sort_by(.age)
+
+# Multi-level nested key-path lookup
+zip_codes = users |> map(.address.zip_code)
+```
+
+### Compile-Time Desugaring
+At parse-time, a standalone dot-prefixed property access in expression position desugars into an anonymous single-parameter lambda:
+```python
+# 'users |> map(.name)' desugars to:
+map(lambda _x: _x.name, users)
+
+# '.address.zip_code' desugars to:
+lambda _x: _x.address.zip_code
+```
+
+---
+
+## 60. Half-Open and Closed Range Literals (`a..<b`, `a...b`)
+
+### Motivation
+Standard Python uses `range(start, stop)` for iteration, which is half-open (exclusive of `stop`). Loh currently supports `a..b` range literals ([README.md](file:///Users/robbarnes/Development/loh/README.md#L791-L800)). Borrowing explicit range operators from Swift makes range boundaries crystal clear:
+- `a..<b`: Half-open range (includes `a`, excludes `b`).
+- `a...b`: Closed range (includes both `a` and `b`).
+
+### Proposed Syntax
+```python
+# Half-open range: iterates 0, 1, 2, 3, 4 (range(0, 5))
+$ i <~ 0..<5:
+    print(i)
+
+# Closed range: iterates 0, 1, 2, 3, 4, 5 (range(0, 6))
+$ i <~ 0...5:
+    print(i)
+```
+
+### Compile-Time Desugaring
+At parse-time, the PEG parser translates range operators directly into `range()` calls:
+```python
+# 0..<5 desugars to:
+range(0, 5)
+
+# 0...5 desugars to:
+range(0, 5 + 1)
+```
+
+---
+
+## 61. Trailing Closure Syntax (`func(...) (args) ->:`)
+
+### Motivation
+When passing anonymous callbacks or inline handler blocks to higher-order functions (such as asynchronous tasks, animation wrappers, event handlers, or transaction runners), placing multi-line lambdas inside function call parentheses `func(arg, lambda: ...)` creates awkward nesting and visually cluttered syntax. Borrowing from Swift, Loh can support **Trailing Closure Syntax**, allowing a trailing lambda parameter to be written outside the call parentheses as an attached block. This enables custom higher-order functions to feel like native language control structures.
+
+### Proposed Syntax
+When the final parameter of a function call is a callable/closure, the lambda expression can be placed after the closing parenthesis `)` as a trailing block:
+
+```python
+# Standard inline lambda inside parentheses:
+fetch_user(user_id=42, callback=(user) -> print(user.name))
+
+# Trailing closure block attached to call:
+fetch_user(user_id=42) (user) ->:
+    print(f"Loaded user: {user.name}")
+    save_to_cache(user)
+
+# Zero-argument trailing closure block:
+animate(duration=2.0) () ->:
+    view.alpha = 1.0
+```
+
+### Compile-Time Desugaring
+At parse-time, the PEG parser in [python.gram](file:///Users/robbarnes/Development/loh/Grammar/python.gram) detects a function call followed by a trailing arrow lambda block `(args) ->:` and appends the lambda AST node to the function call's positional argument list (`_PyAST_Call`):
+
+```python
+# 'fetch_user(user_id=42) (user) ->:' desugars to:
+fetch_user((user) -> (
+    print(f"Loaded user: {user.name}"),
+    save_to_cache(user)
+), user_id=42)
+```
+
+---
+
+## 62. Indented Multiline String Literals (`i"""..."""` / `i'''...'''`)
+
+### Motivation
+Multiline string literals in Python (`"""..."""` or `'''...'''`) preserve all leading whitespace and indentation of the source file. To keep code indentation clean and readable within functions or nested blocks, developers are often forced to write multiline strings flush-left (which breaks visual indentation hierarchy) or call runtime helpers like `textwrap.dedent`.
+
+Loh introduces the `i` string prefix (**i**ndented / **i**ndent-stripped). At compile-time, the parser automatically measures the minimum common leading indentation of all non-empty lines in an `i"""..."""` string literal and strips it, producing a clean, properly formatted string with zero runtime overhead.
+
+### Proposed Syntax
+```python
+fetch_users() -> str:
+    # The 'i' prefix strips the leading 8 spaces of indentation at compile-time
+    query = i"""
+        SELECT id, username, email
+        FROM users
+        WHERE active = +
+        ORDER BY id DESC
+    """
+    -> query
+
+# Also works with single quotes i'''...''' and f-string combinations (if"""...""")
+message = if"""
+    Hello {.name},
+    Your order #{.order_id} has been processed!
+    Total: ${.total:.2f}
+"""
+```
+
+### Compile-Time Desugaring
+During AST construction, the parser inspects `i"""..."""` tokens, calculates the common leading whitespace of non-empty lines, strips that whitespace, and returns a standard CPython string constant (`_PyAST_Constant`).
+
+```python
+# Compiles into static string constant in bytecode:
+query = "SELECT id, username, email\nFROM users\nWHERE active = True\nORDER BY id DESC\n"
+```
+
+---
+
+## 63. Dictionary Deep Merge Operator (`dictA / dictB`, `dictA /= dictB`)
+
+### Motivation
+Standard Python 3.9 dictionary union (`dictA | dictB`) performs a **shallow** top-level merge. If both dictionaries contain nested sub-dictionaries, `dictA | dictB` completely replaces the nested dictionary from `dictA` with the one from `dictB`, discarding any non-conflicting nested keys.
+
+Inspired by Nix's configuration overlay system, Loh repurposes the binary division operator `/` on dictionary operands (`dictA / dictB`) to perform a **recursive (deep) dictionary merge**. Sub-dictionaries are merged recursively, preserving nested key-value pairs from both sides while overriding matching keys with values from the right-hand dictionary.
+
+### Proposed Syntax
+```python
+base_config = {
+    "server": {"host": "localhost", "port": 8080},
+    "logging": {"level": "INFO", "file": "app.log"}
+}
+
+override_config = {
+    "server": {"port": 9000},
+    "logging": {"level": "DEBUG"}
+}
+
+# Deep merge using '/': preserves 'host' and 'file' while overriding 'port' and 'level'
+merged = base_config / override_config
+
+print(merged)
+# Outputs:
+# {
+#     "server": {"host": "localhost", "port": 9000},
+#     "logging": {"level": "DEBUG", "file": "app.log"}
+# }
+
+# In-place deep merge assignment:
+config /= override_config
+```
+
+### Compile-Time Desugaring / C Runtime Helper
+Because standard CPython dict objects do not implement `__truediv__` (`/`), Loh implements deep merge at the runtime C level in `Objects/dictobject.c` or desugars `dictA / dictB` into a call to a built-in C helper function `_loh_dict_deep_merge(dictA, dictB)`:
+
+```python
+def _loh_dict_deep_merge(d1, d2):
+    result = d1.copy()
+    for k, v in d2.items():
+        if k in result and isinstance(result[k], dict) and isinstance(v, dict):
+            result[k] = _loh_dict_deep_merge(result[k], v)
+        else:
+            result[k] = v
+    return result
+
+merged = _loh_dict_deep_merge(base_config, override_config)
+```
+
+---
 
 
 
+## 65. Postfix Conditional Statements (`statement ? condition`)
+
+### Motivation
+In standard Python, executing a single statement conditionally requires wrapping it in a full `if condition:` block on a new line, adding vertical height and block nesting for simple early returns, guard assertions, or logging calls.
+
+By leveraging Loh's question mark sigil `?` for `if` and `?!` for `if not`, single-statement guard checks can be appended to the end of a statement row as a postfix modifier.
+
+### Proposed Syntax
+```python
+# Early returns / exits
+-> ? error_occurred
+-> default_val ?! is_valid
+
+# Control flow guards
+$> ? i == 10       # Break loop if i == 10
+$< ?! active       # Continue loop if not active
+
+# Single statement calls & assignments
+cleanup() ? finished
+log("Warning") ? debug_mode
+```
+
+### Compile-Time Desugaring
+At parse-time, a statement followed by `? condition` or `?! condition` desugars directly into a standard CPython `If` AST node:
+
+```python
+# '-> ? error_occurred' desugars to:
+if error_occurred:
+    return
+
+# 'cleanup() ? finished' desugars to:
+if finished:
+    cleanup()
+
+# '-> default_val ?! is_valid' desugars to:
+if not is_valid:
+    return default_val
+```
+
+---
+
+## 66. Postfix Loop Statements (`statement := collection`)
+
+### Motivation
+In standard Python, running a single statement over a collection requires writing a multi-line `for` loop. Loh uses `:=` for walrus loop bindings and comprehensions (`[$.email := users]`). Allowing `:= collection` as a postfix modifier on single statements provides an extremely clean, readable way to iterate over collections without adding multi-line indentation.
+
+### Proposed Syntax
+```python
+# Iterate over items with implicit '$' placeholder
+process($) := items
+
+# With implicit '$' property lookup and inline postfix filter check
+print($.name) := users ? $.is_active
+
+# Control flow and function calls
+send_notification($.email) := pending_users ? $.verified
+```
+
+### Compile-Time Desugaring
+At parse-time, `statement := collection` or `statement := collection ? condition` desugars into a standard CPython `For` (and optional `If`) AST block:
+
+```python
+# 'process($) := items' desugars to:
+for _item in items:
+    process(_item)
+
+# 'print($.name) := users ? $.is_active' desugars to:
+for _item in users:
+    if _item.is_active:
+        print(_item.name)
+```
+
+---
+
+## 67. Call-Site Parameter Auto-Forwarding (`func(=)`)
+
+### Motivation
+In standard Python, passing local variables to a function call with matching parameter names requires repeating each variable name explicitly (`func(host=host, port=port, username=username)`). 
+
+Loh expands its property punning syntax (`=var`) to support a naked call-site punning operator `=`. Placing `=` inside a function call tells the compiler to automatically inspect the target function's parameter names and bind any matching local variables from the caller scope.
+
+### Proposed Syntax
+```python
+def configure_db(host, port, username, password, timeout=30):
+    ...
+
+def setup_app():
+    host = "localhost"
+    port = 5432
+    username = "admin"
+    password = "secret"
+    
+    # Auto-matches host, port, username, password from local scope:
+    db = configure_db(=)
+
+    # Explicit override combined with auto-forwarding:
+    test_db = configure_db(timeout=5, =)
+```
+
+### Compile-Time Desugaring
+At parse-time, the compiler resolves `=` by matching the target function's parameter signature against variables available in the local scope, desugaring to standard keyword arguments:
+
+```python
+# 'configure_db(=)' desugars to:
+configure_db(host=host, port=port, username=username, password=password)
+
+# 'configure_db(timeout=5, =)' desugars to:
+configure_db(timeout=5, host=host, port=port, username=username, password=password)
+```
+
+---
+
+## 68. Value-Returning Loops & Break with Value (`$: ... $> val`)
+
+### Motivation
+In languages like Rust, infinite loops (`loop`) can act as expressions that evaluate to a value when terminated with `break value;`. This pattern is extremely common when polling an API, retrying operations until success, or searching data structures. 
+
+In Loh, infinite loops are represented concisely by `$:` (while True) and loop break is `$>`. Extending `$>` to accept an expression payload (`$> expr`) allows `$:` loops to yield an evaluation result directly to variable assignments or function parameters without declaring mutable accumulator variables outside the loop.
+
+### Proposed Syntax
+```python
+# Retries an API request until successful and yields the result
+data = $:
+    res = fetch_api()
+    ? res.status == 200:
+        $> res.json()  # Breaks out of loop and evaluates the '$:' block to res.json()
+    time.sleep(1)
+
+# Polling a queue until an item arrives
+item = $:
+    val = queue.pop()
+    ? val !~~:
+        $> val
+```
+
+### Compile-Time Desugaring
+At parse-time, an expression-assigned `$:` loop is wrapped in a compiler-generated immediately invoked helper function:
+
+```python
+def _loop_expr():
+    while True:
+        res = fetch_api()
+        if res.status == 200:
+            return res.json()
+        time.sleep(1)
+
+data = _loop_expr()
+```
+
+---
+
+## 69. Dynamic Built-in Type Modification (Clearing `Py_TPFLAGS_IMMUTABLETYPE`)
+
+### Motivation
+In standard CPython (3.10+), core built-in types such as `str`, `int`, `float`, `list`, `dict`, and `tuple` set the `Py_TPFLAGS_IMMUTABLETYPE` flag on their `PyTypeObject` definitions. This flag causes `type_setattro` in the VM to block dynamic attribute or method assignment, raising `TypeError: can't set attributes of built-in/extension type 'str'`.
+
+Because Python string literals (`"hello"`), numbers (`42`), and collections (`[1, 2]`) are directly instantiated as built-in types by the C runtime, developers cannot extend core types with utility methods at runtime. By clearing `Py_TPFLAGS_IMMUTABLETYPE` (and adjusting `tp_setattro`) during Loh runtime startup, core built-in types become dynamically extensible.
+
+### Proposed Architecture & C Changes
+During Loh interpreter initialization in `pythonrun.c` / `pylifecycle.c`, Loh iterates over core built-in types and modifies their type flags:
+
+1. **Clear Immutable Flag**:
+   ```c
+   PyUnicode_Type.tp_flags &= ~Py_TPFLAGS_IMMUTABLETYPE;
+   PyLong_Type.tp_flags &= ~Py_TPFLAGS_IMMUTABLETYPE;
+   PyList_Type.tp_flags &= ~Py_TPFLAGS_IMMUTABLETYPE;
+   PyDict_Type.tp_flags &= ~Py_TPFLAGS_IMMUTABLETYPE;
+   ```
+2. **Enable Dynamic Attribute Assignment**:
+   Update `tp_setattro` on target built-in types to allow setting methods and attributes directly on built-in type dictionaries (`PyUnicode_Type.tp_dict`).
+
+### Loh Usage
+This enables defining extension blocks directly on built-in types:
+
+```python
+# Extending built-in str directly at runtime
+str::
+    .shout():
+        -> .upper() + "!"
+
+# Standard string literals immediately gain the new method:
+print("hello".shout())  # Outputs: "HELLO!"
+```
+
+---
+
+## 70. Expression Early Return via Return Sigil in Coalescing Operators (`~~ ->` & `?? ->`)
+
+### Motivation
+In languages like Rust, unwrapping an optional value or returning early from a function when a value is missing or invalid is a fundamental flow-control pattern (`let val = option?;`). In Loh, returning from a function uses the arrow sigil `->` (e.g. `-> val`).
+
+Instead of introducing special postfix operators, allowing the return statement/expression `->` to appear as an expression on the right-hand side of Loh's existing None-coalescing (`~~`) and truthy-coalescing (`??`) operators enables zero-boilerplate early returns for missing or falsy values.
+
+### Proposed Syntax
+```python
+get_user_avatar(user_id):
+    # If fetch_user returns None (~), immediately return None (-> ~) from function
+    user = fetch_user(user_id) ~~ -> ~
+
+    # If avatar is None (~), return fallback string early
+    avatar = user.avatar ~~ -> "default_avatar.png"
+
+    # If validate returns falsy, return error message early
+    status = validate(user) ?? -> "invalid status"
+
+    -> avatar
+```
+
+### Compile-Time Desugaring
+At parse-time, when the RHS of a `~~` or `??` operator is a return expression `-> val`, the compiler desugars the binary expression into an inline conditional statement:
+
+```python
+# 'user = fetch_user(user_id) ~~ -> ~' desugars to:
+_tmp = fetch_user(user_id)
+if _tmp is None:
+    return None
+user = _tmp
+
+# 'avatar = user.avatar ~~ -> "default_avatar.png"' desugars to:
+_tmp = user.avatar
+if _tmp is None:
+    return "default_avatar.png"
+avatar = _tmp
+
+---
+
+## 71. Relational Constants (`% VAR == val`), Container Freezing (`% expr`), and Class Invariants (`% condition`)
+
+### Motivation
+Standard Python lacks first-class language constructs for compile-time/runtime constants, frozen data structures, and state invariants. Enforcing immutability or validation requires verbose annotations (`typing.Final`), wrapper calls (`MappingProxyType`, `tuple()`), or manual assertions scattered throughout methods.
+
+Loh unifies immutability, constant declarations, and contract enforcement under the `%` sigil. By using comparison operators (`==` for value equality binding, `===` for deep identity lock) instead of assignment (`=`), constant declarations read as immutable relational assertions, completely unifying constant declarations with class state invariants (`% condition`).
+
+### Proposed Syntax
+
+#### 1. Immutable Constant Declarations (`% VAR == value` / `%% VAR === value`)
+Prefixing a variable binding with `%` and using relational comparison `==` (or `===`) marks the binding as an immutable equality assertion. Reassigning to `% VAR` raises a compiler or runtime error:
+
+```python
+# Standard Immutable Constant (value equality assertion)
+% MAX_CONNECTIONS == 100
+% API_BASE_URL == "https://api.example.com"
+
+# Deep Immutable Constant (identity equality lock, recursively freezing container contents)
+%% CONFIG === {
+    "db": {"host": "localhost", "port": 5432},
+    "roles": ["admin", "user"]
+}
+```
+
+#### 2. Container Freezing (`% expr` / `%% expr`)
+Using `%` as a prefix operator on a container literal or expression freezes it into an immutable structure:
+
+```python
+# Shallow freeze (converts top-level list to tuple)
+immutable_list = % [1, 2, 3]
+
+# Deep freeze (recursively converts all nested dicts/lists to immutable proxies/tuples)
+deep_frozen_config = %% {"server": {"host": "localhost"}}
+```
+
+#### 3. Class State Invariants (`% condition` / `%% condition`)
+Placing `% condition` directly inside a class body declares a class state invariant using relational comparison operators (`==`, `>=`, `<=`, `!=`). The compiler automatically verifies this condition:
+- **`% condition` (Exit Invariant)**: Verified upon completing `.(...)` (constructor) and exiting every public instance method.
+- **`%% condition` (Strict Invariant)**: Verified on both entry and exit of every method.
+
+```python
+BankAccount::
+    .(.balance: float = 0.0):
+        ...
+
+    .deposit(amount: float):
+        .balance += amount
+
+    .withdraw(amount: float):
+        .balance -= amount
+
+    # CLASS INVARIANT: balance must NEVER be negative
+    % .balance >= 0.0, "Account balance cannot be negative"
+```
+
+### Compile-Time Desugaring
+- `% VAR == val` $\rightarrow$ Evaluates assignment `VAR = val` at definition and marks `VAR` as read-only in the AST symbol table.
+- `%% VAR === val` $\rightarrow$ Evaluates assignment with deep container freeze and marks `VAR` as read-only.
+- `% [1, 2]` $\rightarrow$ `tuple([1, 2])`
+- `%% {"a": 1}` $\rightarrow$ `types.MappingProxyType(...)`
+- `% .balance >= 0` $\rightarrow$ Injects `assert self.balance >= 0` check calls at the exit of `__init__` and all public class methods.
+
+---
+
+## 72. Unary `**` Object-to-Dict Coercion Operator (`**obj`)
+
+### Motivation
+Converting a class instance, object, dataclass, or custom structure into a plain dictionary in standard Python requires calling `vars(obj)`, accessing `obj.__dict__`, using `dataclasses.asdict(obj)`, or writing custom serialization helpers.
+
+Since `**` is Python's native operator for keyword dict unpacking inside function calls and dict literals (e.g. `{"a": 1, **other_dict}`), extending `**` to act as a unary prefix operator in general expression contexts provides a zero-boilerplate, unified syntax for coercing any object's state into a dictionary.
+
+### Proposed Syntax
+```python
+# Unary ** on a class instance converts its instance dictionary to a dict
+acc = Account("Alice", 500)
+d = **acc
+print(d)  # {"owner": "Alice", "balance": 500}
+
+# Direct dictionary merging with object attributes
+full_profile = {"status": "active", **user_instance}
+```
+
+### Compile-Time Desugaring
+At parse-time, a unary `**` expression `**expr` desugars into a runtime helper call `_loh_to_dict(expr)`:
+```python
+def _loh_to_dict(obj):
+    if isinstance(obj, dict):
+        return obj
+    if hasattr(obj, "__dict__"):
+        return dict(obj.__dict__)
+    if hasattr(obj, "__slots__"):
+        return {k: getattr(obj, k) for k in obj.__slots__ if hasattr(obj, k)}
+    return dict(obj)
+
+---
+
+## 73. Hybrid Array-Dict Table Literals (`{ 10, key: "val" }`)
+
+### Motivation
+In standard Python, list literals `[1, 2]` store ordered positional elements, while dictionary literals `{"a": 1}` store key-value pairs. Mixing unkeyed elements and key-value pairs inside a single brace literal `{}` is a syntax error (or parsed as a set if no keys are present).
+
+Inspired by Lua tables, Loh can allow unkeyed positional elements to be interleaved with key-value entries inside `{}` dictionary literals. Unkeyed elements are automatically assigned zero-indexed integer keys (`0, 1, 2, ...`) in order of appearance.
+
+### Proposed Syntax
+Unkeyed positional values and keyed entries can be freely interleaved inside dict literals:
+```python
+# Unkeyed positional elements auto-index starting at 0:
+request = { "GET", auth_type: "bearer", "/api/v1/users", timeout: 5000, "payload" }
+
+# Desugars at parse-time to standard dict:
+# { 0: "GET", "auth_type": "bearer", 1: "/api/v1/users", "timeout": 5000, 2: "payload" }
+
+print(request[0])          # "GET"
+print(request[1])          # "/api/v1/users"
+print(request[2])          # "payload"
+print(request["timeout"])  # 5000
+```
+
+### Technical Note on Implicit Dict Merging
+Allowing unkeyed values inside `{}` dictionary literals creates a parsing overlap with implicit dict unpacking (where `{ "a": 1, {"b": 2} }` auto-merges nested dicts without `**`). To resolve this grammar ambiguity, adopting hybrid array-dict table literals may require removing or restricting implicit dict merging in favor of explicit unpacking `{ "a": 1, **{"b": 2} }`.
+
+### Compile-Time Desugaring
+The PEG parser tracks the count of unkeyed positional items in the dict literal and wraps them in integer key-value AST `Dict` pairs (`0: item1`, `1: item2`, etc.).
+
+---
+
+## 74. Flexible Positional Wildcard Unpacking (`*, y, z` / `a, *, z` / `a, b, *`)
+
+### Motivation
+Standard Python unpacking allows `a, *rest, c = seq`, requiring a named variable like `rest` or `_` to capture unneeded elements. When developers only care about specific positional elements (e.g. head & tail, or last N elements), using a bare wildcard `*` at the beginning, middle, or end of unpacking targets provides a clean, self-documenting way to discard unused positional items.
+
+Note: Unlike soft-default unpacking, wildcard `*` unpacking strictly enforces sequence bounds; if the sequence contains fewer items than the required non-wildcard targets, a `ValueError` is raised (identical to standard Python unpacking).
+
+### Proposed Syntax
+```python
+# 1. Beginning wildcard (*, y, z): Right-aligned unpacking (discards leading items)
+*, y, z = (10, 20, 30, 40)   # y = 30, z = 40
+*, y, z = (10, 20)           # y = 10, z = 20 (exact match)
+*, y, z = (10,)              # Raises ValueError: not enough values to unpack
+
+# 2. Middle wildcard (a, *, z): Head & Tail unpacking (discards intermediate items)
+a, *, z = (1, 2, 3, 4, 5)   # a = 1, z = 5
+a, *, z = (1, 2)            # a = 1, z = 2 (exact match)
+
+# 3. End wildcard (a, b, *): Left-aligned unpacking (discards trailing items)
+a, b, * = (100, 200, 300, 400) # a = 100, b = 200
+```
+
+### Compile-Time Desugaring
+At parse-time, a bare `*` target in an assignment target tuple/list desugars into an anonymous compiler-generated discard variable (e.g. `_` or `_discard`):
+```python
+# 'a, *, z = seq' desugars to:
+a, *_discard, z = seq
+del _discard
+```
+
+---
+
+## 75. Inline Postfix Expression Decorators (`expr @ dec1 @ dec2`)
+
+### Motivation
+In standard Python, decorators `@decorator` are placed vertically on lines preceding function, method, or class declarations. Applying wrappers or monadic transformers to individual expressions inline (such as timing, retrying, caching, or logging) currently requires wrapping expressions in nested function calls `dec2(dec1(expr))` or verbose helper functions.
+
+Introducing an inline postfix decorator operator `@` allows decorators to be chained from left to right directly after expressions.
+
+### Proposed Syntax
+```python
+# Inline decorator application
+result = heavy_computation(data) @ timed
+
+# Chained inline decorators
+user = fetch_user(user_id) @ retry(attempts=3) @ cached(ttl=60)
+```
+
+### Alignment with Vertically Stacked Decorators
+In Python, vertically stacked `@` decorators execute bottom-up (inside-out):
+```python
+@dec2
+@dec1
+def foo(): ...
+
+# Evaluates to: dec2(dec1(foo))
+```
+
+Inline postfix expression decorators (`expr @ dec1 @ dec2`) evaluate left-to-right (`(expr @ dec1) @ dec2`), ensuring that `dec1` wraps `expr` first and `dec2` wraps `dec1`. This creates a 1:1 syntactic alignment between vertical stacked `@` decorators and horizontal inline `@` decorators:
+
+$$\text{\texttt{expr @ dec1 @ dec2}} \quad \equiv \quad \begin{array}{l} \text{\texttt{@dec2}} \\ \text{\texttt{@dec1}} \\ \text{\texttt{expr}} \end{array} \quad \equiv \quad \text{\texttt{dec2(dec1(expr))}}$$
+
+### Compile-Time Desugaring
+At parse-time, `expr @ dec` desugars into passing `expr` as a zero-argument lambda to `dec`:
+```python
+# 'fetch_user(id) @ retry(3) @ cached(60)' desugars to:
+cached(60)(retry(3)(lambda: fetch_user(id)))
+```
+
+---
+
+## 76. Universal Smart Resolution Operator (`%%`) for Auto-Await & Lazy Evaluation
+
+### Motivation
+Standard Python `await` raises a runtime `TypeError: object X can't be used in 'await' expression` when applied to non-awaitable values (e.g. `await 42` or `await "hello"`). Furthermore, evaluating deferred lazy expressions (`` lazy_val = `x + 5` ``) currently requires accessing the proxy variable or invoking its evaluation helper.
+
+By reserving `%` for declaring `async` functions (`% func():`) and establishing `%%` as the expression-level **Universal Smart Resolution Operator**, Loh unifies async futures, lazy evaluation proxies, and scalar values into a single, failure-proof resolution model.
+
+### Proposed Syntax
+```python
+# 1. Async Function Definition (Single '%')
+% fetch_user_data(user_id):
+    # 2. Smart Await on Coroutine (Double '%%')
+    raw_json = %% api.get_async(f"/users/{user_id}")
+    
+    # Deferred Lazy Expression
+    lazy_profile = `build_profile(raw_json)`
+    
+    # 3. Smart Resolution of Lazy Expression (Double '%%')
+    profile = %% lazy_profile
+    
+    # 4. Safe Passthrough on Scalars (Double '%%') - Returns 42 directly without TypeError!
+    val = %% 42
+    
+    -> profile
+```
+
+### Resolution Rules & Operational Semantics
+
+$$\text{\texttt{\%\% expr}} = \begin{cases} 
+\text{await } \textit{expr} & \text{if awaitable (coroutine / Task / Future)} \\ 
+\textit{expr}\text{.eval()} & \text{if lazy backtick proxy (`` `expr` ``)} \\ 
+\textit{expr} & \text{if plain value (42, "hello", dict, etc.)} 
+\end{cases}$$
+
+### Compile-Time & Runtime Desugaring
+At parse-time, `%% expr` compiles to an internal runtime helper `_loh_smart_resolve(expr)`:
+
+```c
+PyObject* _loh_smart_resolve(PyObject* obj) {
+    if (PyCoro_CheckExact(obj) || PyGen_CheckExact(obj) || _PyCoro_GetAwaitableIter(obj)) {
+        return await(obj); // Executes CPython await opcode logic
+    }
+    if (LohLazy_CheckExact(obj)) {
+        return LohLazy_Force(obj); // Evaluates lazy backtick proxy
+    }
+    Py_INCREF(obj);
+    return obj; // Safe passthrough for scalars
+}
+```
+
+---
+
+## 77. Native `Result` / `Option` Types and Postfix `?` Unwrap Operator
+
+### Motivation
+In Rust, `Result<T, E>` (`Ok(val)` / `Err(err)`) and `Option<T>` (`Some(val)` / `None`) combined with the postfix `?` operator provide type-safe, explicit error handling without exception overhead or deep conditional nesting.
+
+Standard Python relies heavily on exception raising or verbose manual type checking (`if isinstance(res, Err): return res`). Bringing a zero-dependency C-level `Result` type (`Ok`, `Err`) alongside a postfix `?` unwrap operator to Loh introduces Rust-grade error propagation directly into Python code.
+
+### Proposed Syntax & Semantics
+
+1. **Constructing `Result` Values**:
+   - `Ok(val)` represents a successful result wrapping `val`.
+   - `Err(err)` represents a failed result wrapping `err`.
+
+2. **Postfix `?` Unwrap & Early Return**:
+   Evaluating `expr?`:
+   - If `expr` is `Ok(val)` or `Some(val)` $\rightarrow$ unwraps and evaluates to `val`.
+   - If `expr` is `Err(err)` $\rightarrow$ immediately early-returns `Err(err)` from the current function.
+   - If `expr` is `~` (`None`) $\rightarrow$ immediately early-returns `~` (`None`) from the current function.
+
+3. **Exception Conversion (`expr ?^ ExceptionClass`)**:
+   Catches the specified exception if raised, automatically wrapping it in `Err(e)` and returning it early.
+
+### Example Code
+
+```python
+# Function returning Result[dict, str]
+fetch_user_data(user_id: int) -> Result:
+    ? user_id <= 0:
+        -> Err("Invalid user ID")
+    
+    # Postfix '?' unwraps Ok(data) or early-returns Err(...) from fetch_user_data
+    raw = http_get(f"/users/{user_id}")?
+    user = parse_json(raw)?
+    
+    -> Ok(user)
+
+main():
+    res = fetch_user_data(42)
+    ?== res:
+        Ok(user): print(f"User loaded: {user.name}")
+        Err(err): print(f"Failed to load user: {err}")
+```
+
+### Compile-Time & Runtime Desugaring
+At parse-time, `val = expr?` desugars into an inline evaluation check:
+
+```python
+_tmp = expr
+if isinstance(_tmp, Err):
+    return _tmp
+elif _tmp is None:
+    return None
+val = _tmp.unwrap() if hasattr(_tmp, 'unwrap') else _tmp
+```
+
+
+
+```
 
 
 

@@ -30,6 +30,7 @@ EQUAL                   '='
 DOT                     '.'
 PERCENT                 '%'
 LBRACE                  '{'
+
 RBRACE                  '}'
 EQEQUAL                 '=='
 NOTEQUAL                '!='
@@ -143,6 +144,8 @@ PIPE_COLON              '|:'
 QUESTION_COLON          '?:'
 # triple star
 TRIPLE_STAR             '***'
+DOUBLEPERCENT           '%%'
+
 
 
 

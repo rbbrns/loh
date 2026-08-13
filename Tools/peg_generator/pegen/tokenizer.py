@@ -1,10 +1,17 @@
+import sys
+import os
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../Lib")))
 import token
 import tokenize
+tokenize.EXACT_TOKEN_TYPES = token.EXACT_TOKEN_TYPES
+tokenize.tok_name = token.tok_name
 from collections.abc import Iterator
 
 Mark = int  # NewType('Mark', int)
 
 exact_token_types = token.EXACT_TOKEN_TYPES
+
+
 
 
 def shorttok(tok: tokenize.TokenInfo) -> str:

@@ -188,3 +188,5 @@
      - ``"?:"``
    * - .. data:: TRIPLE_STAR
      - ``"***"``
+   * - .. data:: DOUBLEPERCENT
+     - ``"%%"``

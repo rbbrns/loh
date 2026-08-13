@@ -89,8 +89,10 @@ Loh maps Python's verbose keywords and structures to elegant, symbol-based alter
 | `import` / `from` | `/` | Import symbol |
 | `return` | `->` | Return statement |
 | `yield` | `~>` | Yield statement |
-| `async` / `await` | `%` | Asynchronous operations |
+| `async` / `create_task` | `%` | Async function declaration / non-blocking task spawn |
+| `await` / `gather` | `%%` | Await completion / multi-task gather (`%% [t1, t2]`) |
 | `lambda` | `(args) -> expr` | Lambda function (arrow syntax) |
+
 | `class` | `Name::` *(or `Name:Parent:`)*| Class declaration |
 | `def` | *(omit)* | Function definition |
 | Function Aliasing | `foo \| bar(x):` | Function and method aliasing |
@@ -1359,6 +1361,36 @@ $$$ := zip(names, ages, cities):
 $? := file.readline():
     print($)
 ```
+
+---
+
+### **39. Async Task Spawning (`%`) & Completion Await / Gathering (`%%`)**
+
+> **Motivation:** Loh unifies asynchronous operations around the `%` sigil with a symmetric rule: single `%` means non-blocking background execution or declaration, and double `%%` means awaiting completion or gathering concurrent tasks.
+
+#### **Async Function & Background Spawning (`%`)**
+```python
+# Declare async function:
+% fetch_data(url):
+    -> api.get(url)
+
+# Non-blocking background task spawn (asyncio.create_task):
+task1 = % fetch_data("https://api.a.com")
+task2 = % fetch_data("https://api.b.com")
+```
+
+#### **Awaiting & Concurrent Gathering (`%%`)**
+```python
+# Await single task:
+data1 = %% task1
+
+# Concurrently gather multiple tasks (asyncio.gather):
+res1, res2 = %% [task1, task2]
+
+# Starred task list gathering:
+results = %% *task_list
+```
+
 
 ```
 

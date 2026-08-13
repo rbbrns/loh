@@ -429,8 +429,11 @@ expr_ty _PyPegen_make_implicit_target(Parser *p, int arity);
 expr_ty _PyPegen_make_implicit_target_auto(Parser *p, expr_ty elt);
 asdl_comprehension_seq *_PyPegen_adjust_comprehension_arity(Parser *p, expr_ty elt, asdl_comprehension_seq *clauses);
 asdl_comprehension_seq *_PyPegen_adjust_dict_comprehension_arity(Parser *p, expr_ty key, expr_ty val, asdl_comprehension_seq *clauses);
+expr_ty _PyPegen_make_task_spawn(Parser *p, expr_ty expr);
+expr_ty _PyPegen_make_task_gather(Parser *p, expr_ty expr);
 
 #endif
+
 
 
 

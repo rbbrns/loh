@@ -104,6 +104,7 @@ const char * const _PyParser_TokenNames[] = {
     "PIPE_COLON",
     "QUESTION_COLON",
     "TRIPLE_STAR",
+    "DOUBLEPERCENT",
     "OP",
     "TYPE_IGNORE",
     "TYPE_COMMENT",
@@ -178,6 +179,7 @@ _PyToken_TwoChars(int c1, int c2)
         break;
     case '%':
         switch (c2) {
+        case '%': return DOUBLEPERCENT;
         case '=': return PERCENTEQUAL;
         }
         break;

@@ -4496,6 +4496,85 @@ _PyPegen_adjust_dict_comprehension_arity(Parser *p, expr_ty key, expr_ty val, as
     return clauses;
 }
 
+expr_ty
+_PyPegen_make_task_spawn(Parser *p, expr_ty expr)
+{
+    if (expr == NULL) return NULL;
+    PyArena *arena = p->arena;
+    int lineno = expr->lineno;
+    int col = expr->col_offset;
+    int end_lineno = expr->end_lineno;
+    int end_col = expr->end_col_offset;
+
+    expr_ty asyncio_name = _PyAST_Name(
+        _PyPegen_new_identifier(p, "asyncio"),
+        Load,
+        lineno, col, end_lineno, end_col, arena
+    );
+    expr_ty func_attr = _PyAST_Attribute(
+        asyncio_name,
+        _PyPegen_new_identifier(p, "create_task"),
+        Load,
+        lineno, col, end_lineno, end_col, arena
+    );
+    asdl_expr_seq *args = (asdl_expr_seq *)_PyPegen_singleton_seq(p, expr);
+    return _PyAST_Call(
+        func_attr,
+        args,
+        NULL,
+        lineno, col, end_lineno, end_col, arena
+    );
+}
+
+expr_ty
+_PyPegen_make_task_gather(Parser *p, expr_ty expr)
+{
+    if (expr == NULL) return NULL;
+    PyArena *arena = p->arena;
+    int lineno = expr->lineno;
+    int col = expr->col_offset;
+    int end_lineno = expr->end_lineno;
+    int end_col = expr->end_col_offset;
+
+    if (expr->kind == List_kind || expr->kind == Tuple_kind || expr->kind == Starred_kind) {
+        expr_ty asyncio_name = _PyAST_Name(
+            _PyPegen_new_identifier(p, "asyncio"),
+            Load,
+            lineno, col, end_lineno, end_col, arena
+        );
+        expr_ty func_attr = _PyAST_Attribute(
+            asyncio_name,
+            _PyPegen_new_identifier(p, "gather"),
+            Load,
+            lineno, col, end_lineno, end_col, arena
+        );
+
+        asdl_expr_seq *args = NULL;
+        if (expr->kind == List_kind) {
+            args = expr->v.List.elts;
+        }
+        else if (expr->kind == Tuple_kind) {
+            args = expr->v.Tuple.elts;
+        }
+        else {
+            args = (asdl_expr_seq *)_PyPegen_singleton_seq(p, expr);
+        }
+
+        expr_ty call = _PyAST_Call(
+            func_attr,
+            args,
+            NULL,
+            lineno, col, end_lineno, end_col, arena
+        );
+        return _PyAST_Await(call, lineno, col, end_lineno, end_col, arena);
+    }
+    else {
+        return _PyAST_Await(expr, lineno, col, end_lineno, end_col, arena);
+    }
+}
+
+
+
 
 
 

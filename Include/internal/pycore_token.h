@@ -111,20 +111,21 @@ extern "C" {
 #define PIPE_COLON      95
 #define QUESTION_COLON  96
 #define TRIPLE_STAR     97
-#define OP              98
-#define TYPE_IGNORE     99
-#define TYPE_COMMENT    100
-#define SOFT_KEYWORD    101
-#define FSTRING_START   102
-#define FSTRING_MIDDLE  103
-#define FSTRING_END     104
-#define TSTRING_START   105
-#define TSTRING_MIDDLE  106
-#define TSTRING_END     107
-#define COMMENT         108
-#define NL              109
-#define ERRORTOKEN      110
-#define N_TOKENS        112
+#define DOUBLEPERCENT   98
+#define OP              99
+#define TYPE_IGNORE     100
+#define TYPE_COMMENT    101
+#define SOFT_KEYWORD    102
+#define FSTRING_START   103
+#define FSTRING_MIDDLE  104
+#define FSTRING_END     105
+#define TSTRING_START   106
+#define TSTRING_MIDDLE  107
+#define TSTRING_END     108
+#define COMMENT         109
+#define NL              110
+#define ERRORTOKEN      111
+#define N_TOKENS        113
 #define NT_OFFSET       256
 
 /* Special definitions for cooperation with parser */

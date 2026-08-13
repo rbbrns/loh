@@ -1,8 +1,12 @@
 """Generate Lib/keyword.py from the Grammar and Tokens files using pgen"""
 
 import argparse
+import sys
+import os
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../Lib")))
 
 from .build import build_parser, generate_token_definitions
+
 from .c_generator import CParserGenerator
 
 TEMPLATE = r'''

@@ -700,8 +700,29 @@ $$ := {"x": 100, "y": 200}.items():
         self.assertEqual(scope["swapped"], {1: "a", 2: "b"})
         self.assertEqual(scope["res_pair"], [("x", 100), ("y", 200)])
 
+    def test_async_spawning_and_gathering(self):
+        code = """
+import asyncio
+
+% async_add(a, b):
+    await asyncio.sleep(0.001)
+    -> a + b
+
+% main():
+    t1 = % async_add(10, 20)
+    t2 = % async_add(30, 40)
+    r1, r2 = %% [t1, t2]
+    -> r1 + r2
+
+res = asyncio.run(main())
+"""
+        scope = {}
+        exec(code, scope)
+        self.assertEqual(scope["res"], 100)
+
 if __name__ == "__main__":
     unittest.main()
+
 
 
 
