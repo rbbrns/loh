@@ -1201,7 +1201,7 @@ atom[expr_ty]:
     | none { _PyAST_Constant(Py_None, NULL, EXTRA) }
     | &(STRING|FSTRING_START|TSTRING_START) strings
     | NUMBER
-    | &'(' (genexp | tuple | group)
+    | &'(' (tuple | group | genexp)
     | &'[' (listcomp | list)
     | &'{' (dictcomp | setcomp | dict | set)
 
@@ -1367,10 +1367,6 @@ double_starred_kvpair[KeyValuePair*]:
 
 
 kvpair[KeyValuePair*]:
-    | a=expression '+:' b=expression { _PyPegen_key_value_pair(p, a, _PyPegen_make_loh_op(p, 1, b)) }
-    | a=expression '|:' b=expression { _PyPegen_key_value_pair(p, a, _PyPegen_make_loh_op(p, 2, b)) }
-    | a=expression '?:' b=expression { _PyPegen_key_value_pair(p, a, _PyPegen_make_loh_op(p, 3, b)) }
-    | a=expression ':' '<>' { _PyPegen_key_value_pair(p, a, _PyPegen_make_loh_op(p, 4, NULL)) }
     | a=expression ':' b=expression { _PyPegen_key_value_pair(p, a, b) }
 
 # Comprehensions & Generators
@@ -1395,23 +1391,17 @@ for_if_clause[comprehension_ty]:
     | invalid_for_if_clause
     | invalid_for_target
 
-
 listcomp[expr_ty]:
     | '[' a=expression b=for_if_clauses ']' { _PyAST_ListComp(a, _PyPegen_adjust_comprehension_arity(p, a, b), EXTRA) }
-    | invalid_comprehension
 
 setcomp[expr_ty]:
     | '{' a=expression b=for_if_clauses '}' { _PyAST_SetComp(a, _PyPegen_adjust_comprehension_arity(p, a, b), EXTRA) }
-    | invalid_comprehension
 
 genexp[expr_ty]:
-    | !(expression !('$'|'$$'|'$$$') ':=') '(' a=expression b=for_if_clauses ')' { _PyAST_GeneratorExp(a, _PyPegen_adjust_comprehension_arity(p, a, b), EXTRA) }
-    | invalid_comprehension
-
+    | '(' a=expression b=for_if_clauses ')' { _PyAST_GeneratorExp(a, _PyPegen_adjust_comprehension_arity(p, a, b), EXTRA) }
 
 dictcomp[expr_ty]:
     | '{' a=kvpair b=for_if_clauses '}' { _PyAST_DictComp(a->key, a->value, _PyPegen_adjust_dict_comprehension_arity(p, a->key, a->value, b), EXTRA) }
-    | invalid_dict_comprehension
 
 
 

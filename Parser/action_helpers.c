@@ -4260,39 +4260,7 @@ _PyPegen_desugar_lazy_defaults(Parser *p, arguments_ty args, asdl_stmt_seq *body
     return body;
 }
 
-expr_ty
-_PyPegen_make_loh_op(Parser *p, int kind, expr_ty val) {
-    PyArena *arena = p->arena;
-    int lineno = val ? val->lineno : p->tok->lineno;
-    int col = val ? val->col_offset : p->tok->col_offset;
-    int end_lineno = val ? val->end_lineno : lineno;
-    int end_col = val ? val->end_col_offset : col;
 
-
-    expr_ty func_name = _PyAST_Name(
-        _PyPegen_new_identifier(p, "_LohOp"),
-        Load,
-        lineno, col, end_lineno, end_col, arena
-    );
-
-    expr_ty kind_constant = _PyAST_Constant(
-        PyLong_FromLong(kind),
-        NULL,
-        lineno, col, end_lineno, end_col, arena
-    );
-
-    expr_ty val_node = val ? val : _PyAST_Constant(Py_None, NULL, lineno, col, end_lineno, end_col, arena);
-
-    asdl_expr_seq *args = (asdl_expr_seq *)_PyPegen_singleton_seq(p, kind_constant);
-    args = (asdl_expr_seq *)_PyPegen_seq_append_to_end(p, (asdl_seq *)args, val_node);
-
-    return _PyAST_Call(
-        func_name,
-        args,
-        NULL,
-        lineno, col, end_lineno, end_col, arena
-    );
-}
 
 expr_ty
 _PyPegen_make_deep_copy_expr(Parser *p, expr_ty a) {
@@ -4337,13 +4305,13 @@ _PyPegen_make_implicit_target(Parser *p, int arity)
         return _PyAST_Name(_PyPegen_new_identifier(p, "_dollar_item"), Store, 1, 0, 1, 0, arena);
     }
     if (arity == 2) {
-        asdl_expr_seq *elts = _PyPegen_singleton_seq(p, _PyAST_Name(_PyPegen_new_identifier(p, "_dollar_item"), Store, 1, 0, 1, 0, arena));
-        elts = (asdl_expr_seq *)_PyPegen_seq_append_to_end(p, elts, _PyAST_Name(_PyPegen_new_identifier(p, "_dollar_item_2"), Store, 1, 0, 1, 0, arena));
+        asdl_expr_seq *elts = (asdl_expr_seq *)_PyPegen_singleton_seq(p, _PyAST_Name(_PyPegen_new_identifier(p, "_dollar_item"), Store, 1, 0, 1, 0, arena));
+        elts = (asdl_expr_seq *)_PyPegen_seq_append_to_end(p, (asdl_seq *)elts, _PyAST_Name(_PyPegen_new_identifier(p, "_dollar_item_2"), Store, 1, 0, 1, 0, arena));
         return _PyAST_Tuple(elts, Store, 1, 0, 1, 0, arena);
     }
-    asdl_expr_seq *elts = _PyPegen_singleton_seq(p, _PyAST_Name(_PyPegen_new_identifier(p, "_dollar_item"), Store, 1, 0, 1, 0, arena));
-    elts = (asdl_expr_seq *)_PyPegen_seq_append_to_end(p, elts, _PyAST_Name(_PyPegen_new_identifier(p, "_dollar_item_2"), Store, 1, 0, 1, 0, arena));
-    elts = (asdl_expr_seq *)_PyPegen_seq_append_to_end(p, elts, _PyAST_Name(_PyPegen_new_identifier(p, "_dollar_item_3"), Store, 1, 0, 1, 0, arena));
+    asdl_expr_seq *elts = (asdl_expr_seq *)_PyPegen_singleton_seq(p, _PyAST_Name(_PyPegen_new_identifier(p, "_dollar_item"), Store, 1, 0, 1, 0, arena));
+    elts = (asdl_expr_seq *)_PyPegen_seq_append_to_end(p, (asdl_seq *)elts, _PyAST_Name(_PyPegen_new_identifier(p, "_dollar_item_2"), Store, 1, 0, 1, 0, arena));
+    elts = (asdl_expr_seq *)_PyPegen_seq_append_to_end(p, (asdl_seq *)elts, _PyAST_Name(_PyPegen_new_identifier(p, "_dollar_item_3"), Store, 1, 0, 1, 0, arena));
     return _PyAST_Tuple(elts, Store, 1, 0, 1, 0, arena);
 }
 
