@@ -2407,8 +2407,8 @@ doubled = numbers |> map(<> * 2)
 # Desugars to: map((x) -> x * 2, numbers)
 ```
 
-#### 2. Partial Function Application
-Passing `<>` as an argument to a function call pre-binds specific parameters, yielding a partially applied function:
+#### 2. Partial Function Application & Argument Forwarding (`*<>` / `**<>`)
+Passing `<>` as an argument to a function call pre-binds specific parameters, yielding a partially applied function. Using the splat operators `*<>` or `**<>` forwards arbitrary positional (`*args`) or keyword (`**kwargs`) arguments:
 ```python
 # Bind the second argument of divide to 2:
 divide_by_two = divide(<>, 2)
@@ -2417,6 +2417,18 @@ divide_by_two = divide(<>, 2)
 # Bind keyword arguments:
 greet_alice = greet(name="Alice", message=<>)
 # Desugars to: (msg) -> greet(name="Alice", message=msg)
+
+# Forward arbitrary positional arguments:
+add_five = add(5, *<>)
+# Desugars to: (*args) -> add(5, *args)
+
+# Forward arbitrary keyword arguments:
+config = configure(timeout=30, **<>)
+# Desugars to: (**kwargs) -> configure(timeout=30, **kwargs)
+
+# Full forwarding (functools.partial replacement):
+log_error = log("ERROR", *<>, **<>)
+# Desugars to: (*args, **kwargs) -> log("ERROR", *args, **kwargs)
 ```
 
 #### 3. Multi-Parameter Lambdas
@@ -2430,14 +2442,16 @@ lambda _1, _2: foo(_1, 2, 3, z=_2)
 ```
 
 ### Compile-Time Desugaring
-At parse-time, the PEG parser detects occurrences of the `<>` token inside expressions. It calculates the boundary of the lambda scope (typically the nearest enclosing function argument or expression statement) and wraps it in a CPython `Lambda` AST node (`_PyAST_Lambda`) with compiler-generated arguments (`_1`, `_2`, etc.):
+At parse-time, the PEG parser detects occurrences of the `<>` token inside expressions. It calculates the boundary of the lambda scope (typically the nearest enclosing function argument or expression statement) and wraps it in a CPython `Lambda` AST node (`_PyAST_Lambda`) with compiler-generated arguments (`_1`, `_2`, `*_args`, `**_kwargs`, etc.):
 
 ```python
 # Source
 doubled = map(<> * 2, numbers)
+log_error = log("ERROR", *<>, **<>)
 
 # Compiles to CPython AST equivalent to:
 doubled = map(lambda _1: _1 * 2, numbers)
+log_error = lambda *_args, **_kwargs: log("ERROR", *_args, **_kwargs)
 ```
 
 ### Grammar Design
@@ -2446,7 +2460,13 @@ In `Grammar/python.gram`, we can define `<>` as a primary term:
 hole_expr[expr_ty]:
     | '<>' { _PyPegen_make_hole(p) }
 ```
-And add `hole_expr` to the `primary` rule. The compiler's parser AST phase then propagates these holes upward to the enclosing call or expression boundary to synthesize the lambda node.
+And add `hole_expr` to the `primary` rule. The compiler's parser AST phase then propagates these holes upward to the enclosing call or expression boundary to synthesize the lambda node. For splatted holes, `*` followed by `<>` is parsed as a starred expression where the child is a hole:
+```peg
+starred_hole[expr_ty]:
+    | '*' a=hole_expr { _PyPegen_make_starred_hole(p, a) }
+    | '**' a=hole_expr { _PyPegen_make_double_starred_hole(p, a) }
+```
+
 
 
 
