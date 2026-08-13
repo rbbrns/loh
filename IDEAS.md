@@ -2378,11 +2378,76 @@ The AST helper `_PyPegen_make_binding_pipe` detects the shape of `rhs` and retur
 - If `rhs` is `map(expr)`: `[expr for var in lhs]`
 - If `rhs` is `expr ? cond`: `[expr for var in lhs if cond]`
 - If `rhs` is a plain expression: `[rhs for var in lhs]`
-
-
-
-
 ```
+
+---
+
+## 79. Expression Holes and Implicit Lambdas via Diamond Operator (`<>`)
+
+### Motivation
+Writing inline lambda callbacks (`(x) -> x * 2`) or partially applying functions (`functools.partial`) in Python/Loh requires verbose syntax and parameter naming. 
+
+Loh unifies implicit lambdas and partial function application around the **Diamond Operator** (`<>`) used as an expression placeholder (or "hole"). Any expression containing `<>` is automatically desugared into a single- or multi-parameter lambda at compile-time.
+
+### Proposed Syntax
+
+#### 1. Unary Lambda Shorthand (Member Access & Operators)
+Using `<>` as a placeholder inside an expression automatically wraps it in a single-argument lambda:
+```python
+# Member property / predicate check
+active = users |> filter(<>.is_active)
+# Desugars to: filter((x) -> x.is_active, users)
+
+# Method calls
+admins = users |> filter(<>.has_role("admin"))
+# Desugars to: filter((x) -> x.has_role("admin"), users)
+
+# Operators
+doubled = numbers |> map(<> * 2)
+# Desugars to: map((x) -> x * 2, numbers)
+```
+
+#### 2. Partial Function Application
+Passing `<>` as an argument to a function call pre-binds specific parameters, yielding a partially applied function:
+```python
+# Bind the second argument of divide to 2:
+divide_by_two = divide(<>, 2)
+# Desugars to: (x) -> divide(x, 2)
+
+# Bind keyword arguments:
+greet_alice = greet(name="Alice", message=<>)
+# Desugars to: (msg) -> greet(name="Alice", message=msg)
+```
+
+#### 3. Multi-Parameter Lambdas
+If multiple `<>` holes are present in the same expression or function call, they compile to a multi-parameter lambda matching the left-to-right order of appearance:
+```python
+# Source
+foo(<>, 2, 3, z=<>)
+
+# Desugars to:
+lambda _1, _2: foo(_1, 2, 3, z=_2)
+```
+
+### Compile-Time Desugaring
+At parse-time, the PEG parser detects occurrences of the `<>` token inside expressions. It calculates the boundary of the lambda scope (typically the nearest enclosing function argument or expression statement) and wraps it in a CPython `Lambda` AST node (`_PyAST_Lambda`) with compiler-generated arguments (`_1`, `_2`, etc.):
+
+```python
+# Source
+doubled = map(<> * 2, numbers)
+
+# Compiles to CPython AST equivalent to:
+doubled = map(lambda _1: _1 * 2, numbers)
+```
+
+### Grammar Design
+In `Grammar/python.gram`, we can define `<>` as a primary term:
+```peg
+hole_expr[expr_ty]:
+    | '<>' { _PyPegen_make_hole(p) }
+```
+And add `hole_expr` to the `primary` rule. The compiler's parser AST phase then propagates these holes upward to the enclosing call or expression boundary to synthesize the lambda node.
+
 
 
 
