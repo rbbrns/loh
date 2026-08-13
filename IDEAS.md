@@ -208,6 +208,10 @@ The parser translates this into keyword-style dict literals or standard key-valu
 coord = {"x": x, "y": y}
 ```
 
+### Design Note: `{=x, =y}` vs `{:x, :y}`
+- **Call-Site Consistency**: Loh already uses `=var` for call-site parameter punning (e.g., `foo(=name)` desugars to `foo(name=name)`). Using `{=x, =y}` extends this exact `=var` sigil to dictionary key-value punning, maintaining visual consistency across function calls and dictionary construction.
+- **Colon (`:`) Sigil Preservation**: In Loh, `:` is reserved for Type Annotations (`x: int`), Type Aliases (`: MyType`), Type Casts (`x : int`), and key-value separation inside dictionary literals (`{key: value}`). Using `{:x}` inside `{}` would introduce parsing collisions with dictionary keys and type hints.
+
 ---
 
 ## 9. None-Safe Callable Invocation (`func~()`)
@@ -421,32 +425,6 @@ query = "SELECT name, role\nFROM users\nWHERE active = True\n"
 
 ---
 
-## 17. Implicit Receiver Context Blocks (`with obj:`)
-
-### Motivation
-When configuring an object or performing a sequence of method calls/attribute updates on a single target, standard Python forces you to repeat the object name (e.g., `plt.plot()`, `plt.title()`, `plt.xlabel()`). Repurposing the `with` statement to implicitly bind Loh's leading-dot receiver context `.` to the target object inside the block eliminates this repetition.
-
-### Proposed Syntax
-Using `with obj:` to run a block where any leading-dot reference resolves against `obj`:
-```python
-with matplotlib.pyplot:
-    .plot(x, y)
-    .title("Sales Over Time")
-    .xlabel("Month")
-    .show()
-```
-
-### Compile-Time Desugaring
-The parser creates a temporary variable referencing the target and prefix-rewrites any leading-dot attribute/method nodes inside the block:
-```python
-_receiver = matplotlib.pyplot
-_receiver.plot(x, y)
-_receiver.title("Sales Over Time")
-_receiver.xlabel("Month")
-_receiver.show()
-```
-
----
 
 ## 18. Function Pipeline Composition Operator (`f >> g`)
 
@@ -1543,41 +1521,7 @@ result = save_to_db(_loh_tap(parse_json(_loh_tap(fetch_raw_payload(), lambda _: 
 
 ---
 
-## 56. Smart Type Guard & Alias Unpacking (`? x : Type => var:`)
 
-### Motivation
-In standard Python, narrowing down dynamic types requires writing verbose `isinstance(x, Type)` checks followed by redundant variable assignments or manual casts. Inspired by Kotlin's smart casts, Loh integrates type verification, safe casting (`~:`), and local alias binding directly into branch condition headers.
-
-### Proposed Syntax
-By placing a type check `: Type` and alias binding `=> var` inside a conditional header `?`, Loh verifies the type at runtime and binds the validated instance to the specified variable inside the conditional block:
-
-```python
-# Verifies isinstance(payload, dict), binds to 'd', and executes block
-? payload : dict => d:
-    print("User ID:", d~['id'])
-
-?? payload : str => s:
-    print("String length:", len(s))
-
-??:
-    print("Unknown payload type")
-```
-
-### Compile-Time Desugaring
-At parse-time, the PEG parser compiles the type guard header into standard `isinstance` checks and local variable assignments:
-
-```python
-if isinstance(payload, dict):
-    d = payload
-    print("User ID:", d.get('id') if d is not None else None)
-elif isinstance(payload, str):
-    s = payload
-    print("String length:", len(s))
-else:
-    print("Unknown payload type")
-```
-
----
 
 ## 57. Conditional Value Filtering (`takeIf` / `takeUnless`) (`?|` / `?!|`)
 
@@ -2465,6 +2409,87 @@ And add `hole_expr` to the `primary` rule. The compiler's parser AST phase then 
 starred_hole[expr_ty]:
     | '*' a=hole_expr { _PyPegen_make_starred_hole(p, a) }
     | '**' a=hole_expr { _PyPegen_make_double_starred_hole(p, a) }
+```
+
+---
+
+## 80. Read-Only Property Arrow Definitions (`.property -> expr`)
+
+### Motivation
+In standard Python, defining read-only class properties requires writing the `@property` decorator above a standard method definition. In Loh, omitting the parameter parentheses `()` in an instance method definition and directly using the return arrow `->` explicitly declares a read-only instance property, saving boilerplate and making class property definitions extremely clean.
+
+### Proposed Syntax
+```python
+Circle::
+    .radius: float
+    
+    # Read-only property (no parentheses in signature)
+    .diameter -> .radius * 2
+    
+    # Standard method (requires parentheses)
+    .scale(factor):
+        .radius *= factor
+```
+
+### Compile-Time Desugaring
+At parse-time, a class body entry with a dot prefix, an identifier, no parentheses, and a return arrow `->` is compiled as a getter function decorated with `@property`:
+
+```python
+class Circle:
+    def __init__(self, radius: float):
+        self.radius = radius
+        
+    @property
+    def diameter(self):
+        return self.radius * 2
+        
+    def scale(self, factor):
+        self.radius *= factor
+```
+
+---
+
+## 81. Safe Subscript Default Indexing (`lst~[idx, default]`)
+
+### Motivation
+Dictionary indexing supports `.get(key, default)` to avoid raising errors for missing keys. List indexing lacks a native fallback method, raising a loud `IndexError` when indices are out of bounds. Loh expands its none-safe subscript operator `~[` to support a second fallback argument, safely returning the default value if the index is out of bounds or if the list is `None`.
+
+### Proposed Syntax
+```python
+# Safe list index with fallback
+item = names~[5, "unknown"]
+```
+
+### Compile-Time Desugaring
+At parse-time, the two-argument none-safe subscript compiles into an inline boundary check:
+```python
+_lst = names
+item = _lst[5] if (_lst is not None and 0 <= 5 < len(_lst)) else "unknown"
+```
+
+---
+
+## 82. Bracket-Based Generator Call Shorthand (`func[expr $ var := items]`)
+
+### Motivation
+Calling aggregation functions (like `sum()`, `any()`, `all()`, or `", ".join()`) with generator comprehensions requires typing enclosing parentheses twice (e.g. `sum(x for x in items)`). Using square brackets `[]` directly on a callable with a loop expression converts it into an inline generator comprehension.
+
+### Proposed Syntax
+```python
+# Sum of ages
+total_age = sum[ $.age $ := users ]
+
+# Check if any user is admin
+has_admin = any[ $.is_admin $ := users ]
+```
+
+### Compile-Time Desugaring
+At parse-time, calling a function with square brackets containing a loop sigil `$` is compiled into a standard CPython function call with a generator expression:
+```python
+total_age = sum(_item.age for _item in users)
+has_admin = any(_item.is_admin for _item in users)
+```
+
 ```
 
 
