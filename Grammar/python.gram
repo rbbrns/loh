@@ -1140,7 +1140,7 @@ power[expr_ty]:
 # Primary elements are things like "obj.something.something", "obj[something]", "obj(something)", "obj" ...
 
 await_primary[expr_ty] (memo):
-    | await a=(star_expression | primary) { CHECK_VERSION(expr_ty, 5, "Await expressions are", _PyPegen_make_task_gather(p, a)) }
+    | a=await b=(star_expression | primary) { CHECK_VERSION(expr_ty, 5, "Await expressions are", _PyPegen_make_task_gather(p, a, b)) }
     | primary
 
 
@@ -1405,7 +1405,7 @@ setcomp[expr_ty]:
     | invalid_comprehension
 
 genexp[expr_ty]:
-    | '(' a=expression b=for_if_clauses ')' { _PyAST_GeneratorExp(a, _PyPegen_adjust_comprehension_arity(p, a, b), EXTRA) }
+    | !(expression !('$'|'$$'|'$$$') ':=') '(' a=expression b=for_if_clauses ')' { _PyAST_GeneratorExp(a, _PyPegen_adjust_comprehension_arity(p, a, b), EXTRA) }
     | invalid_comprehension
 
 

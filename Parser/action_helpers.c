@@ -4350,16 +4350,17 @@ _PyPegen_make_implicit_target(Parser *p, int arity)
 static int
 _PyPegen_detect_dollar_arity(expr_ty expr)
 {
-    if (expr == NULL) return 1;
+    if (expr == NULL) return 0;
     switch (expr->kind) {
     case Name_kind:
-        if (expr->v.Name.id == NULL) return 1;
+        if (expr->v.Name.id == NULL) return 0;
         const char *id = PyUnicode_AsUTF8(expr->v.Name.id);
         if (id != NULL) {
             if (strcmp(id, "_dollar_item_3") == 0) return 3;
             if (strcmp(id, "_dollar_item_2") == 0) return 2;
+            if (strcmp(id, "_dollar_item") == 0) return 1;
         }
-        return 1;
+        return 0;
     case BinOp_kind: {
         int r1 = _PyPegen_detect_dollar_arity(expr->v.BinOp.left);
         int r2 = _PyPegen_detect_dollar_arity(expr->v.BinOp.right);
@@ -4397,7 +4398,7 @@ _PyPegen_detect_dollar_arity(expr_ty expr)
     case FormattedValue_kind:
         return _PyPegen_detect_dollar_arity(expr->v.FormattedValue.value);
     case JoinedStr_kind: {
-        int max = 1;
+        int max = 0;
         if (expr->v.JoinedStr.values) {
             for (int i = 0; i < asdl_seq_LEN(expr->v.JoinedStr.values); i++) {
                 int r = _PyPegen_detect_dollar_arity((expr_ty)asdl_seq_GET(expr->v.JoinedStr.values, i));
@@ -4407,7 +4408,7 @@ _PyPegen_detect_dollar_arity(expr_ty expr)
         return max;
     }
     case Tuple_kind: {
-        int max = 1;
+        int max = 0;
         if (expr->v.Tuple.elts) {
             for (int i = 0; i < asdl_seq_LEN(expr->v.Tuple.elts); i++) {
                 int r = _PyPegen_detect_dollar_arity((expr_ty)asdl_seq_GET(expr->v.Tuple.elts, i));
@@ -4417,7 +4418,7 @@ _PyPegen_detect_dollar_arity(expr_ty expr)
         return max;
     }
     case List_kind: {
-        int max = 1;
+        int max = 0;
         if (expr->v.List.elts) {
             for (int i = 0; i < asdl_seq_LEN(expr->v.List.elts); i++) {
                 int r = _PyPegen_detect_dollar_arity((expr_ty)asdl_seq_GET(expr->v.List.elts, i));
@@ -4427,7 +4428,7 @@ _PyPegen_detect_dollar_arity(expr_ty expr)
         return max;
     }
     case Dict_kind: {
-        int max = 1;
+        int max = 0;
         if (expr->v.Dict.keys) {
             for (int i = 0; i < asdl_seq_LEN(expr->v.Dict.keys); i++) {
                 expr_ty k = (expr_ty)asdl_seq_GET(expr->v.Dict.keys, i);
@@ -4449,7 +4450,7 @@ _PyPegen_detect_dollar_arity(expr_ty expr)
         return max;
     }
     default:
-        return 1;
+        return 0;
     }
 }
 
@@ -4457,7 +4458,7 @@ expr_ty
 _PyPegen_make_implicit_target_auto(Parser *p, expr_ty elt)
 {
     int arity = _PyPegen_detect_dollar_arity(elt);
-    return _PyPegen_make_implicit_target(p, arity);
+    return _PyPegen_make_implicit_target(p, arity > 0 ? arity : 1);
 }
 
 asdl_comprehension_seq *
@@ -4467,7 +4468,14 @@ _PyPegen_adjust_comprehension_arity(Parser *p, expr_ty elt, asdl_comprehension_s
     comprehension_ty first = (comprehension_ty)asdl_seq_GET(clauses, 0);
     if (first->target && first->target->kind == Name_kind && first->target->v.Name.id) {
         const char *id = PyUnicode_AsUTF8(first->target->v.Name.id);
-        if (id && strcmp(id, "_dollar_item") == 0) {
+        if (id && strcmp(id, "_dollar_item_bare") == 0) {
+            int arity = _PyPegen_detect_dollar_arity(elt);
+            if (arity == 0) {
+                return NULL;
+            }
+            first->target = _PyPegen_make_implicit_target(p, arity);
+        }
+        else if (id && strcmp(id, "_dollar_item") == 0) {
             int arity = _PyPegen_detect_dollar_arity(elt);
             if (arity > 1) {
                 first->target = _PyPegen_make_implicit_target(p, arity);
@@ -4484,7 +4492,16 @@ _PyPegen_adjust_dict_comprehension_arity(Parser *p, expr_ty key, expr_ty val, as
     comprehension_ty first = (comprehension_ty)asdl_seq_GET(clauses, 0);
     if (first->target && first->target->kind == Name_kind && first->target->v.Name.id) {
         const char *id = PyUnicode_AsUTF8(first->target->v.Name.id);
-        if (id && strcmp(id, "_dollar_item") == 0) {
+        if (id && strcmp(id, "_dollar_item_bare") == 0) {
+            int r1 = _PyPegen_detect_dollar_arity(key);
+            int r2 = _PyPegen_detect_dollar_arity(val);
+            int arity = r1 > r2 ? r1 : r2;
+            if (arity == 0) {
+                return NULL;
+            }
+            first->target = _PyPegen_make_implicit_target(p, arity > 0 ? arity : 1);
+        }
+        else if (id && strcmp(id, "_dollar_item") == 0) {
             int r1 = _PyPegen_detect_dollar_arity(key);
             int r2 = _PyPegen_detect_dollar_arity(val);
             int arity = r1 > r2 ? r1 : r2;
@@ -4527,12 +4544,12 @@ _PyPegen_make_task_spawn(Parser *p, expr_ty expr)
 }
 
 expr_ty
-_PyPegen_make_task_gather(Parser *p, expr_ty expr)
+_PyPegen_make_task_gather(Parser *p, Token *tok, expr_ty expr)
 {
     if (expr == NULL) return NULL;
     PyArena *arena = p->arena;
-    int lineno = expr->lineno;
-    int col = expr->col_offset;
+    int lineno = tok ? tok->lineno : expr->lineno;
+    int col = tok ? tok->col_offset : expr->col_offset;
     int end_lineno = expr->end_lineno;
     int end_col = expr->end_col_offset;
 
