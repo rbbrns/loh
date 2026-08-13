@@ -14,18 +14,7 @@ extern "C" {
 
 PyAPI_DATA(PyTypeObject) PyDict_Type;
 
-#define LOH_OP_APPEND   1
-#define LOH_OP_UNION    2
-#define LOH_OP_FALLBACK 3
-#define LOH_OP_DELETE   4
 
-typedef struct {
-    PyObject_HEAD
-    int kind;
-    PyObject *val;
-} PyLohOpObject;
-
-PyAPI_DATA(PyTypeObject) PyLohOp_Type;
 
 
 #define PyDict_Check(op) \

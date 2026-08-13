@@ -138,10 +138,6 @@ DOUBLEVBAREQUAL         '||='
 DOUBLEAMPEREQUAL        '&&='
 # backtick
 BACKTICK                '`'
-# extension key separators
-PLUS_COLON              '+:'
-PIPE_COLON              '|:'
-QUESTION_COLON          '?:'
 # triple star
 TRIPLE_STAR             '***'
 DOUBLEPERCENT           '%%'

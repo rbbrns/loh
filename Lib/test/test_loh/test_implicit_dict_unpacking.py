@@ -22,13 +22,7 @@ class TestImplicitDictUnpacking(unittest.TestCase):
         }
         self.assertEqual(res, {"x": 10, "y": 20, "k_0": 0, "k_1": 2})
 
-    def test_extension_key_separators_with_implicit_unpacking(self):
-        base = {"tags": ["v1"], "port": 8000}
-        patch = base | {
-            "tags" +: ["v2"],
-            {"port": 8443, "status": "active"}
-        }
-        self.assertEqual(patch, {"tags": ["v1", "v2"], "port": 8443, "status": "active"})
+
 
 if __name__ == "__main__":
     unittest.main()

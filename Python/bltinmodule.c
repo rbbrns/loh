@@ -4070,113 +4070,7 @@ PyTypeObject PyLohLazy_Type = {
     PyObject_GC_Del,                    /* tp_free */
 };
 
-static void
-loh_op_dealloc(PyLohOpObject *self)
-{
-    PyObject_GC_UnTrack(self);
-    Py_XDECREF(self->val);
-    Py_TYPE(self)->tp_free((PyObject *)self);
-}
 
-static int
-loh_op_traverse(PyLohOpObject *self, visitproc visit, void *arg)
-{
-    Py_VISIT(self->val);
-    return 0;
-}
-
-static int
-loh_op_clear(PyLohOpObject *self)
-{
-    Py_CLEAR(self->val);
-    return 0;
-}
-
-static PyObject *
-loh_op_repr(PyLohOpObject *self)
-{
-    switch (self->kind) {
-        case LOH_OP_APPEND:
-            return PyUnicode_FromFormat("<+ %R>", self->val ? self->val : Py_None);
-        case LOH_OP_UNION:
-            return PyUnicode_FromFormat("<| %R>", self->val ? self->val : Py_None);
-        case LOH_OP_FALLBACK:
-            return PyUnicode_FromFormat("<? %R>", self->val ? self->val : Py_None);
-        case LOH_OP_DELETE:
-            return PyUnicode_FromString("<delete>");
-        default:
-            return PyUnicode_FromString("<_LohOp>");
-    }
-}
-
-static PyObject *
-loh_op_reduce(PyLohOpObject *self, PyObject *Py_UNUSED(ignored))
-{
-    return Py_BuildValue("(O(iO))", &PyLohOp_Type, self->kind, self->val ? self->val : Py_None);
-}
-
-static PyMethodDef loh_op_methods[] = {
-    {"__reduce__", (PyCFunction)loh_op_reduce, METH_NOARGS, NULL},
-    {NULL, NULL, 0, NULL}
-};
-
-static PyObject *
-loh_op_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
-{
-    int kind = 0;
-    PyObject *val = NULL;
-    if (!PyArg_ParseTuple(args, "i|O:_LohOp", &kind, &val)) {
-        return NULL;
-    }
-    PyLohOpObject *self = (PyLohOpObject *)type->tp_alloc(type, 0);
-    if (self != NULL) {
-        self->kind = kind;
-        self->val = val ? Py_NewRef(val) : Py_NewRef(Py_None);
-    }
-    return (PyObject *)self;
-}
-
-PyTypeObject PyLohOp_Type = {
-    PyVarObject_HEAD_INIT(&PyType_Type, 0)
-    "_LohOp",                           /* tp_name */
-    sizeof(PyLohOpObject),              /* tp_basicsize */
-    0,                                  /* tp_itemsize */
-    (destructor)loh_op_dealloc,         /* tp_dealloc */
-    0,                                  /* tp_vectorcall_offset */
-    0,                                  /* tp_getattr */
-    0,                                  /* tp_setattr */
-    0,                                  /* tp_as_async */
-    (reprfunc)loh_op_repr,              /* tp_repr */
-    0,                                  /* tp_as_number */
-    0,                                  /* tp_as_sequence */
-    0,                                  /* tp_as_mapping */
-    0,                                  /* tp_hash */
-    0,                                  /* tp_call */
-    0,                                  /* tp_str */
-    0,                                  /* tp_getattro */
-    0,                                  /* tp_setattro */
-    0,                                  /* tp_as_buffer */
-    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_HAVE_GC, /* tp_flags */
-    0,                                  /* tp_doc */
-    (traverseproc)loh_op_traverse,      /* tp_traverse */
-    (inquiry)loh_op_clear,              /* tp_clear */
-    0,                                  /* tp_richcompare */
-    0,                                  /* tp_weaklistoffset */
-    0,                                  /* tp_iter */
-    0,                                  /* tp_iternext */
-    loh_op_methods,                     /* tp_methods */
-    0,                                  /* tp_members */
-    0,                                  /* tp_getset */
-    0,                                  /* tp_base */
-    0,                                  /* tp_dict */
-    0,                                  /* tp_descr_get */
-    0,                                  /* tp_descr_set */
-    0,                                  /* tp_dictoffset */
-    0,                                  /* tp_init */
-    PyType_GenericAlloc,                /* tp_alloc */
-    loh_op_new,                         /* tp_new */
-    PyObject_GC_Del,                    /* tp_free */
-};
 
 
 
@@ -4333,10 +4227,6 @@ _PyBuiltin_Init(PyInterpreterState *interp)
         return NULL;
     }
     SETBUILTIN("_LohLazy",              &PyLohLazy_Type);
-    if (PyType_Ready(&PyLohOp_Type) < 0) {
-        return NULL;
-    }
-    SETBUILTIN("_LohOp",                &PyLohOp_Type);
 
     debug = PyBool_FromLong(config->optimization_level == 0);
     if (PyDict_SetItemString(dict, "__debug__", debug) < 0) {
