@@ -15,7 +15,7 @@ class TestReadmeExamples(unittest.TestCase):
         
         # Test not in
         x = 4
-        ? x !<~ my_list:
+        ? x !<== my_list:
             ...
 
     def test_conditionals(self):
@@ -37,7 +37,7 @@ class TestReadmeExamples(unittest.TestCase):
 
     def test_loops(self):
         total = 0
-        $ i <~ 0..10:
+        $ i := 0..10:
             ? i == 5:
                 $<
             ? i == 8:
@@ -53,28 +53,28 @@ class TestReadmeExamples(unittest.TestCase):
         # Implicit loops
         items = [1, 2, 3]
         res = []
-        $ <~ items:
+        $ := items:
             res.append($)
         self.assertEqual(res, [1, 2, 3])
 
         # Loop filters
         res2 = []
-        $ item <~ items ? item > 1:
+        $ item := items ? item > 1:
             res2.append(item)
         self.assertEqual(res2, [2, 3])
 
         # Combined implicit and filter
         res3 = []
-        $ <~ items ? $ > 2:
+        $ := items ? $ > 2:
             res3.append($)
         self.assertEqual(res3, [3])
 
         # Comprehensions
-        evens = [i $ i <~ 0..10 ? i % 2 == 0]
+        evens = [i $ i := 0..10 ? i % 2 == 0]
         self.assertEqual(evens, [0, 2, 4, 6, 8])
 
         data = [(1, 2, 3), (4, 5, 6, 7)]
-        firsts = [first $ first, *rest <~ data]
+        firsts = [first $ first, *rest := data]
         self.assertEqual(firsts, [1, 4])
 
     def test_functions_and_lambdas(self):
@@ -319,8 +319,10 @@ class TestReadmeExamples(unittest.TestCase):
         self.assertEqual(user~.name, "Alice")
         self.assertIsNone(none_user~.name)
 
-        self.assertEqual(None ~~ "default", "default")
-        self.assertEqual("value" ~~ "default", "value")
+        res1 = None ~~ "default"
+        self.assertEqual(res1, "default")
+        res2 = "value" ~~ "default"
+        self.assertEqual(res2, "value")
 
         data = {"items": [10, 20]}
         none_data = None
@@ -341,14 +343,14 @@ class TestReadmeExamples(unittest.TestCase):
     def test_range_literals(self):
         # Loop 0 to 9
         res = []
-        $ i <~ 0..10:
+        $ i := 0..10:
             res.append(i)
         self.assertEqual(res, list(range(10)))
 
         # Check if value in range
         x = 50
         in_bounds = -
-        ? x <~ 1..100:
+        ? x <== 1..100:
             in_bounds = +
         self.assertTrue(in_bounds)
 

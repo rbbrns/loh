@@ -4,6 +4,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../.
 import token
 import tokenize
 tokenize.EXACT_TOKEN_TYPES = token.EXACT_TOKEN_TYPES
+tokenize._tok_exact_type = {v: k for k, v in token.EXACT_TOKEN_TYPES.items()}
 tokenize.tok_name = token.tok_name
 from collections.abc import Iterator
 

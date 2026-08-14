@@ -141,6 +141,7 @@ BACKTICK                '`'
 # triple star
 TRIPLE_STAR             '***'
 DOUBLEPERCENT           '%%'
+LESSEQUALEQUAL          '<=='
 
 
 

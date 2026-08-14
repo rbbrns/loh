@@ -3,11 +3,11 @@ import unittest
 class TestMembershipOperators(unittest.TestCase):
     def test_basic_membership(self):
         code = """
-res1 = 'a' <~ 'abc'
-res2 = 'x' !<~ 'abc'
-res3 = 1 <~ [1, 2, 3]
-res4 = 4 !<~ [1, 2, 3]
-res5 = "key" <~ {"key": "val"}
+res1 = 'a' <== 'abc'
+res2 = 'x' !<== 'abc'
+res3 = 1 <== [1, 2, 3]
+res4 = 4 !<== [1, 2, 3]
+res5 = "key" <== {"key": "val"}
 """
         scope = {}
         exec(code, scope)
@@ -19,12 +19,12 @@ res5 = "key" <~ {"key": "val"}
 
     def test_membership_combined_operators(self):
         code = """
-b1 = ('a' <~ 'abc') && ('x' !<~ 'abc')
-b2 = ('a' <~ 'abc') ?? False
-b3 = "yes" ? ('a' <~ 'abc') ?? "no"
-b4 = ('a' <~ 'abc') == True
-b5 = !('a' <~ 'abc')
-b6 = ({"a"} <= {"a", "b"}) && ('a' <~ {"a", "b"})
+b1 = ('a' <== 'abc') && ('x' !<== 'abc')
+b2 = ('a' <== 'abc') ?? False
+b3 = "yes" ? ('a' <== 'abc') ?? "no"
+b4 = ('a' <== 'abc') == True
+b5 = !('a' <== 'abc')
+b6 = ({"a"} <= {"a", "b"}) && ('a' <== {"a", "b"})
 """
         scope = {}
         exec(code, scope)

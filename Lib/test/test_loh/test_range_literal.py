@@ -9,15 +9,15 @@ class TestRangeLiteral(unittest.TestCase):
 
         # Iteration loops
         result = []
-        $ i <~ 0..5:
+        $ i := 0..5:
             result.append(i)
         self.assertEqual(result, [0, 1, 2, 3, 4])
 
     def test_range_literal_membership(self):
-        # Membership checking with <~ (in) and !<~ (not in)
-        self.assertTrue(3 <~ 0..10)
-        self.assertFalse(10 <~ 0..10)
-        self.assertTrue(11 !<~ 0..10)
+        # Membership checking with <== (in) and !<== (not in)
+        self.assertTrue(3 <== 0..10)
+        self.assertFalse(10 <== 0..10)
+        self.assertTrue(11 !<== 0..10)
 
     def test_range_literal_variables(self):
         # Using variables as start and stop bounds

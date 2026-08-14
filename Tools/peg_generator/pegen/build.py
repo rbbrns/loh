@@ -1,14 +1,13 @@
-import itertools
-import logging
+import sys
 import os
 import pathlib
-import sys
-import sysconfig
-import tempfile
-import tokenize
-import os
-import sys
+import itertools
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../Lib")))
+import token
+import tokenize
+tokenize.EXACT_TOKEN_TYPES = token.EXACT_TOKEN_TYPES
+tokenize._tok_exact_type = {v: k for k, v in token.EXACT_TOKEN_TYPES.items()}
+tokenize.tok_name = token.tok_name
 from typing import IO, Any
 
 from pegen.c_generator import CParserGenerator

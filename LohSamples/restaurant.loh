@@ -129,13 +129,13 @@ Order::
 
     .get_total() -> float:
         # Pipe operator feeding items into sum generator
-        -> .items |> (lst) -> sum([x.price $ x <~ lst])
+        -> .items |> (lst) -> sum([x.price $ x := lst])
 
     .get_prep_time() -> int:
         # Pipe operator finding max prep time among ordered items
         ? !.items:
             -> 0
-        -> .items |> (lst) -> max([x.prep_time $ x <~ lst])
+        -> .items |> (lst) -> max([x.prep_time $ x := lst])
 
 # Config Class for Implicit Attribute Binding demo
 SystemConfig::
@@ -168,9 +168,9 @@ RestaurantManager::
     .get_waiter_for_table(table_num: int) -> Waiter:
         # Find waiter assigned to the section containing this table using loop break
         waiter = ~
-        $ emp <~ .employees.values():
+        $ emp := .employees.values():
             ? emp.role == "Waiter" && emp.clocked_in:
-                ? table_num <~ emp.assigned_tables:
+                ? table_num <== emp.assigned_tables:
                     waiter = emp
                     $>
         -> waiter
@@ -178,7 +178,7 @@ RestaurantManager::
     .assign_order_to_chef(order: Order) -> Chef:
         # Find clocked-in chef with the least active orders
         best_chef = ~
-        $ emp <~ .employees.values():
+        $ emp := .employees.values():
             ? emp.role == "Chef" && emp.clocked_in:
                 ? best_chef === ~ || emp.active_orders_count < best_chef.active_orders_count:
                     best_chef = emp
@@ -243,7 +243,7 @@ RestaurantManager::
     .perform_system_diagnostics() -> str:
         # Run building diagnostics. Requires technician
         tech ~
-        $ emp <~ .employees.values():
+        $ emp := .employees.values():
             ? emp.role == "Technician" && emp.clocked_in:
                 tech = emp
                 $>
@@ -253,7 +253,7 @@ RestaurantManager::
 
         # Check HVAC temperature, range bounds
         temp = 72
-        ? temp !<~ 68..76:
+        ? temp !<== 68..76:
             ^^^ SystemDiagnosticFailed("HVAC temperature is out of range!")
 
         -> f"System diagnostics passed by Technician {tech.name}. HVAC: {temp}°F."
@@ -335,7 +335,7 @@ RestaurantManager::
     item_missing = manager.menu.get(999)  # Safe dictionary lookup returning None
 
     # Add items safely checking for None identity
-    $ item <~ [item_app, item_main1, item_main2, item_missing]:
+    $ item := [item_app, item_main1, item_main2, item_missing]:
         ?! item~~~:
             order.add_item(item)
 

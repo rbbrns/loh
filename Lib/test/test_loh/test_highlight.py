@@ -56,11 +56,11 @@ class TestLohHighlighting(unittest.TestCase):
         self.assertIn(self.theme.syntax.keyword, highlighted)
         self.assertIn("->", highlighted)
 
-        code = "$ item <~ items:"
+        code = "$ item := items:"
         highlighted = highlight_loh(code, self.theme)
         self.assertIn(self.theme.syntax.keyword, highlighted)
         self.assertIn("$", highlighted)
-        self.assertIn("<~", highlighted)
+        self.assertIn(":=", highlighted)
 
     def test_shorthand_self_dot(self):
         # Shorthand self dots should be highlighted as keyword_constant

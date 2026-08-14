@@ -31,8 +31,8 @@ LifeManager::
         ??:
             "Mood: " + .current_mood |> print
 
-        # Loop over tasks using the $ sigil and <~ membership
-        $ t <~ .tasks:
+        # Loop over tasks using the $ sigil and := for loop binding
+        $ t := .tasks:
             ? .energy < t.energy_cost:
                 "Not enough energy for: " + t.name |> print
                 $> # Break out of the loop

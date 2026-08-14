@@ -99,7 +99,7 @@ SmartHomeManager::
         ?== scene:
             "Away":
                 # Lock all locks, turn off all lights
-                $ d <~ .devices.values():
+                $ d := .devices.values():
                     ?== d.type:
                         "Lock":
                             d.lock()
@@ -107,7 +107,7 @@ SmartHomeManager::
                             d.online = -
             "Evening":
                 # Lock locks, dim lights
-                $ d <~ .devices.values():
+                $ d := .devices.values():
                     ?== d.type:
                         "Lock":
                             d.lock()
@@ -131,12 +131,12 @@ SmartHomeManager::
 
     .calculate_total_power() -> float:
         # Pipe operator evaluating total power
-        -> .devices.values() |> (lst) -> sum([d.get_power() $ d <~ lst])
+        -> .devices.values() |> (lst) -> sum([d.get_power() $ d := lst])
 
     .audit_connectivity() -> str:
         # Audit offline devices. Loop else check
         offline_id = ~
-        $ d <~ .devices.values():
+        $ d := .devices.values():
             ? d.online---: # Postfix identity check to False
                 offline_id = d.id
                 $>
@@ -195,7 +195,7 @@ SmartHomeManager::
 
     # Verify audit reports offline device
     audit_report = manager.audit_connectivity()
-    ^?! "Diagnostic Alert" <~ audit_report, "Connectivity audit failed to detect offline device"
+    ^?! "Diagnostic Alert" <== audit_report, "Connectivity audit failed to detect offline device"
 
     # Run "Away" scene using structural pattern matching ?==
     manager.execute_scene("Away")

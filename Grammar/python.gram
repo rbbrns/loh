@@ -153,7 +153,7 @@ from: ( 'from' | '/' )
 import: ( 'import' | '/' )
 lambda_postfix: ( '->' )
 type: ( "type" | ':' )
-in: ( 'in' | '<~' )
+in: ( 'in' | '<==' )
 match: ( "match" | '?==' )
 
 
@@ -203,7 +203,7 @@ compound_stmt[stmt_ty]:
 # =================
 
 assignment_none[stmt_ty]:
-    | a=NAME '~' &(';' | NEWLINE | ENDMARKER) {
+    | a=NAME '~' !'.' &(';' | NEWLINE | ENDMARKER) {
          _PyAST_Assign(CHECK(asdl_expr_seq*, _PyPegen_singleton_seq(p, _PyPegen_set_expr_context(p, a, Store))),  _PyAST_Constant(Py_None, NULL, EXTRA), NULL, EXTRA) }
     | a=t_primary '.' b=NAME '~' &(';' | NEWLINE | ENDMARKER) {
          _PyAST_Assign(CHECK(asdl_expr_seq*, _PyPegen_singleton_seq(p, _PyAST_Attribute(a, b->v.Name.id, Store, EXTRA))),  _PyAST_Constant(Py_None, NULL, EXTRA), NULL, EXTRA) }
@@ -603,24 +603,24 @@ for_stmt[stmt_ty]:
     | invalid_for_stmt
     | '$' ':' b=block el=[loop_else_block] {
         _PyAST_While(_PyAST_Constant(Py_True, NULL, EXTRA), b, el, EXTRA) }
-    | '$$$' (in | ':=') ~ ex=star_expressions_without_ternary cond=[loop_filter] ':' tc=[TYPE_COMMENT] b=block el=[loop_else_block] {
+    | '$$$' ('in' | ':=') ~ ex=star_expressions_without_ternary cond=[loop_filter] ':' tc=[TYPE_COMMENT] b=block el=[loop_else_block] {
         _PyPegen_make_filtered_for(p, 0, _PyPegen_make_implicit_target(p, 3), ex, cond, b, el, NEW_TYPE_COMMENT(p, tc), EXTRA) }
-    | '$$' (in | ':=') ~ ex=star_expressions_without_ternary cond=[loop_filter] ':' tc=[TYPE_COMMENT] b=block el=[loop_else_block] {
+    | '$$' ('in' | ':=') ~ ex=star_expressions_without_ternary cond=[loop_filter] ':' tc=[TYPE_COMMENT] b=block el=[loop_else_block] {
         _PyPegen_make_filtered_for(p, 0, _PyPegen_make_implicit_target(p, 2), ex, cond, b, el, NEW_TYPE_COMMENT(p, tc), EXTRA) }
-    | '$' (in | ':=') ~ ex=star_expressions_without_ternary cond=[loop_filter] ':' tc=[TYPE_COMMENT] b=block el=[loop_else_block] {
+    | '$' ('in' | ':=') ~ ex=star_expressions_without_ternary cond=[loop_filter] ':' tc=[TYPE_COMMENT] b=block el=[loop_else_block] {
         _PyPegen_make_filtered_for(p, 0, _PyPegen_make_implicit_target(p, 1), ex, cond, b, el, NEW_TYPE_COMMENT(p, tc), EXTRA) }
     | for ':=' ~ ex=star_expressions_without_ternary cond=[loop_filter] ':' tc=[TYPE_COMMENT] b=block el=[loop_else_block] {
         _PyPegen_make_filtered_for(p, 0, _PyAST_Name(_PyPegen_new_identifier(p, "_dollar_item"), Store, EXTRA), ex, cond, b, el, NEW_TYPE_COMMENT(p, tc), EXTRA) }
-    | for in ~ ex=star_expressions_without_ternary cond=[loop_filter] ':' tc=[TYPE_COMMENT] b=block el=[loop_else_block] {
+    | for 'in' ~ ex=star_expressions_without_ternary cond=[loop_filter] ':' tc=[TYPE_COMMENT] b=block el=[loop_else_block] {
         _PyPegen_make_filtered_for(p, 0, _PyAST_Name(_PyPegen_new_identifier(p, "_dollar_item"), Store, EXTRA), ex, cond, b, el, NEW_TYPE_COMMENT(p, tc), EXTRA) }
     | for t=star_targets ':=' ~ ex=star_expressions_without_ternary cond=[loop_filter] ':' tc=[TYPE_COMMENT] b=block el=[loop_else_block] {
         _PyPegen_make_filtered_for(p, 0, t, ex, cond, b, el, NEW_TYPE_COMMENT(p, tc), EXTRA) }
-    | for t=star_targets in ~ ex=star_expressions_without_ternary cond=[loop_filter] ':' tc=[TYPE_COMMENT] b=block el=[loop_else_block] {
+    | for t=star_targets 'in' ~ ex=star_expressions_without_ternary cond=[loop_filter] ':' tc=[TYPE_COMMENT] b=block el=[loop_else_block] {
         _PyPegen_make_filtered_for(p, 0, t, ex, cond, b, el, NEW_TYPE_COMMENT(p, tc), EXTRA) }
 
-    | async for (in | ':=') ~ ex=star_expressions_without_ternary cond=[loop_filter] ':' tc=[TYPE_COMMENT] b=block el=[loop_else_block] {
+    | async for ('in' | ':=') ~ ex=star_expressions_without_ternary cond=[loop_filter] ':' tc=[TYPE_COMMENT] b=block el=[loop_else_block] {
         CHECK_VERSION(stmt_ty, 5, "Async for loops are", _PyPegen_make_filtered_for(p, 1, _PyAST_Name(_PyPegen_new_identifier(p, "_dollar_item"), Store, EXTRA), ex, cond, b, el, NEW_TYPE_COMMENT(p, tc), EXTRA)) }
-    | async for t=star_targets (in | ':=') ~ ex=star_expressions_without_ternary cond=[loop_filter] ':' tc=[TYPE_COMMENT] b=block el=[loop_else_block] {
+    | async for t=star_targets ('in' | ':=') ~ ex=star_expressions_without_ternary cond=[loop_filter] ':' tc=[TYPE_COMMENT] b=block el=[loop_else_block] {
         CHECK_VERSION(stmt_ty, 5, "Async for loops are", _PyPegen_make_filtered_for(p, 1, t, ex, cond, b, el, NEW_TYPE_COMMENT(p, tc), EXTRA)) }
     | invalid_for_target
 
@@ -1077,7 +1077,7 @@ lte_bitwise_or[CmpopExprPair*]: '<=' a=range_expression { _PyPegen_cmpop_expr_pa
 lt_bitwise_or[CmpopExprPair*]: '<' a=range_expression { _PyPegen_cmpop_expr_pair(p, Lt, a) }
 gte_bitwise_or[CmpopExprPair*]: '>=' a=range_expression { _PyPegen_cmpop_expr_pair(p, GtE, a) }
 gt_bitwise_or[CmpopExprPair*]: '>' a=range_expression { _PyPegen_cmpop_expr_pair(p, Gt, a) }
-notin_bitwise_or[CmpopExprPair*]: not in a=range_expression { _PyPegen_cmpop_expr_pair(p, NotIn, a) }
+notin_bitwise_or[CmpopExprPair*]: ((not in) | ('not' | '!') in) a=range_expression { _PyPegen_cmpop_expr_pair(p, NotIn, a) }
 in_bitwise_or[CmpopExprPair*]: in a=range_expression { _PyPegen_cmpop_expr_pair(p, In, a) }
 isnot_bitwise_or[CmpopExprPair*]: ((is not)|is_not) a=range_expression  { _PyPegen_cmpop_expr_pair(p, IsNot, a) }
 is_bitwise_or[CmpopExprPair*]: is a=range_expression { _PyPegen_cmpop_expr_pair(p, Is, a) }
@@ -1376,15 +1376,15 @@ for_if_clauses[asdl_comprehension_seq*]:
     | a[asdl_comprehension_seq*]=for_if_clause+ { a }
 
 for_if_clause[comprehension_ty]:
-    | async for a=star_targets (in | ':=') ~ b=disjunction c[asdl_expr_seq*]=(if z=disjunction { z })* {
+    | async for a=star_targets ('in' | ':=') ~ b=disjunction c[asdl_expr_seq*]=(if z=disjunction { z })* {
         CHECK_VERSION(comprehension_ty, 6, "Async comprehensions are", _PyAST_comprehension(a, b, c, 1, p->arena)) }
-    | for a=star_targets (in | ':=') ~ b=disjunction c[asdl_expr_seq*]=(if z=disjunction { z })* {
+    | for a=star_targets ('in' | ':=') ~ b=disjunction c[asdl_expr_seq*]=(if z=disjunction { z })* {
         _PyAST_comprehension(a, b, c, 0, p->arena) }
-    | '$$$' (in | ':=') ~ b=disjunction c[asdl_expr_seq*]=(if z=disjunction { z })* {
+    | '$$$' ('in' | ':=') ~ b=disjunction c[asdl_expr_seq*]=(if z=disjunction { z })* {
         _PyAST_comprehension(_PyPegen_make_implicit_target(p, 3), b, c, 0, p->arena) }
-    | '$$' (in | ':=') ~ b=disjunction c[asdl_expr_seq*]=(if z=disjunction { z })* {
+    | '$$' ('in' | ':=') ~ b=disjunction c[asdl_expr_seq*]=(if z=disjunction { z })* {
         _PyAST_comprehension(_PyPegen_make_implicit_target(p, 2), b, c, 0, p->arena) }
-    | '$' (in | ':=') ~ b=disjunction c[asdl_expr_seq*]=(if z=disjunction { z })* {
+    | '$' ('in' | ':=') ~ b=disjunction c[asdl_expr_seq*]=(if z=disjunction { z })* {
         _PyAST_comprehension(_PyPegen_make_implicit_target(p, 1), b, c, 0, p->arena) }
     | ':=' ~ b=disjunction c[asdl_expr_seq*]=(if z=disjunction { z })* {
         _PyAST_comprehension(_PyPegen_make_implicit_target(p, 1), b, c, 0, p->arena) }
@@ -1416,7 +1416,7 @@ arguments[expr_ty] (memo):
     | invalid_arguments
 
 args[expr_ty]:
-    | a[asdl_expr_seq*]=','.(starred_expression | (!('**') ( assignment_expression | expression !':=') !('=' | '+' | '-' | '~')))+ b=[',' k=kwargs {k}] {
+    | a[asdl_expr_seq*]=','.(starred_expression | (!('**') ( assignment_expression | expression !':=') !('=' | '+' | '-' | ('~' !'~'))))+ b=[',' k=kwargs {k}] {
         _PyPegen_collect_call_seqs(p, a, b, EXTRA) }
     | a=kwargs { _PyAST_Call(_PyPegen_dummy_name(p),
                            CHECK_NULL_ALLOWED(asdl_expr_seq*, _PyPegen_seq_extract_starred_exprs(p, a)),

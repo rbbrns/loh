@@ -184,3 +184,5 @@
      - ``"***"``
    * - .. data:: DOUBLEPERCENT
      - ``"%%"``
+   * - .. data:: LESSEQUALEQUAL
+     - ``"<=="``

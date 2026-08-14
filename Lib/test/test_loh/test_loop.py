@@ -73,26 +73,26 @@ class Tests(unittest.TestCase):
 
     def test_for_comprehension(self):
         self.assertEqual([ i $ i in range(10) ], list(range(10)))
-        self.assertEqual([ i $ i <~ range(10) ], list(range(10)))
+        self.assertEqual([ i $ i := range(10) ], list(range(10)))
 
         self.assertEqual([i$i in range(10)], list(range(10)))
-        self.assertEqual([i$i<~range(10)], list(range(10)))
+        self.assertEqual([i$i:=range(10)], list(range(10)))
 
-        self.assertEqual([ i $ i <~ range(10) if i < 5], list(range(5)))
-        self.assertEqual([ i $ i <~ range(10) ? i < 5], list(range(5)))
+        self.assertEqual([ i $ i := range(10) if i < 5], list(range(5)))
+        self.assertEqual([ i $ i := range(10) ? i < 5], list(range(5)))
 
-        self.assertEqual([ i+1 $ i <~ range(10) ], list(range(1,11)))
+        self.assertEqual([ i+1 $ i := range(10) ], list(range(1,11)))
 
         data = [(1, 2, 3), (4, 5, 6, 7)]
         first = [first for first, *rest in data]
         self.assertEqual(first, [1, 4])
 
-        first = [first $ first, *rest <~ data]
+        first = [first $ first, *rest := data]
         self.assertEqual(first, [1, 4])
 
     def test_for_if_comprehension(self):
         self.assertEqual([i $ i in range(10) if i < 5], list(range(5)))
-        self.assertEqual([i $ i <~ range(10) ? i < 5], list(range(5)))
+        self.assertEqual([i $ i := range(10) ? i < 5], list(range(5)))
 
     def test_while(self):
         i = 0
@@ -154,7 +154,7 @@ class Tests(unittest.TestCase):
     def test_implicit_loop(self):
         items = [1, 2, 3]
         res = []
-        $ <~ items:
+        $ := items:
             res.append($)
         self.assertEqual(res, [1, 2, 3])
 
@@ -167,7 +167,7 @@ class Tests(unittest.TestCase):
     def test_loop_filter(self):
         items = [1, 2, 3, 4, 5]
         res = []
-        $ item <~ items ? item > 2:
+        $ item := items ? item > 2:
             res.append(item)
         self.assertEqual(res, [3, 4, 5])
 
@@ -179,7 +179,7 @@ class Tests(unittest.TestCase):
     def test_combined_implicit_and_filter(self):
         items = [1, 2, 3, 4, 5]
         res = []
-        $ <~ items ? $ % 2 == 0:
+        $ := items ? $ % 2 == 0:
             res.append($)
         self.assertEqual(res, [2, 4])
 
@@ -199,12 +199,12 @@ class Tests(unittest.TestCase):
     def test_dollar_invalid_expression(self):
         items = [1, None, 2]
         res = []
-        $ <~ items ? $ !~:
+        $ := items ? $ !~:
             res.append($)
         self.assertEqual(res, [1, 2])
 
         res_identity = []
-        $ <~ items ? $ !~~:
+        $ := items ? $ !~~:
             res_identity.append($)
         self.assertEqual(res_identity, [1, 2])
 

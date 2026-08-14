@@ -84,9 +84,9 @@ class Tests(unittest.TestCase):
 
     
     def test_in(self):
-        assert 'a' <~ 'abc'
-        assert 'a' not <~ 'def'
-        assert 'a' !<~ 'def'        
+        assert 'a' <== 'abc'
+        assert 'a' not <== 'def'
+        assert 'a' !<== 'def'        
 
     def test_just_if_expression(self):
         assert (True if True) is True

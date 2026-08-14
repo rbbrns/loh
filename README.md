@@ -61,8 +61,8 @@ Loh maps Python's verbose keywords and structures to elegant, symbol-based alter
 | `not` | `!` | Logical NOT |
 | `is` | `===` | Identity comparison |
 | `is not` | `!==` | Negated identity comparison |
-| `in` | `<~` | Membership check |
-| `not in` | `!<~` *(or `not <~`)*| Negated membership check |
+| `in` | `<==` | Membership check |
+| `not in` | `!<==` *(or `not <==`)*| Negated membership check |
 | `range(start, stop)` | `start..stop` | Range / sequence literal |
 | `del` | `<>` | Delete statement |
 | `if` | `?` | Conditional branch |
@@ -70,8 +70,8 @@ Loh maps Python's verbose keywords and structures to elegant, symbol-based alter
 | `else` | `??` | Else branch |
 | `a if a else b` | `a ?? b` | Truthy-coalescing expression |
 | `for` | `$` | For loop |
-| Implicit Loop | `$ <~ items:` / `$ := items:` | Implicit loop targeting `$` (e.g. `print($)`) |
-| Filtered Loop | `$ t <~ ex ? cond:` | Loop with inline filter check (e.g. `? item > 2:`) |
+| Implicit Loop | `$ := items:` | Implicit loop targeting `$` (e.g. `print($)`) |
+| Filtered Loop | `$ t := ex ? cond:` | Loop with inline filter check (e.g. `? item > 2:`) |
 | `while` | `$?` | While loop |
 | `break` | `$>` | Break statement |
 | `continue` | `$<` | Continue statement |
@@ -125,7 +125,7 @@ Loh maps Python's verbose keywords and structures to elegant, symbol-based alter
 
 ### **1. Logic & Comparisons**
 
-> **Motivation:** Symbols like `&&`, `||`, and strict identity `===` align Python with standard mathematical logic and modern programming conventions. Operators like `<~` (pointing into a collection) and `<>` (removal/deletion) use visual cues that match the developer's mental model of collection scanning and variable cleanup.
+> **Motivation:** Symbols like `&&`, `||`, and strict identity `===` align Python with standard mathematical logic and modern programming conventions. Operators like `<==` (membership evaluation) and `<>` (removal/deletion) use visual cues that match the developer's mental model of collection scanning and variable cleanup.
 
 Loh provides sleek, compact symbols for logic, identity, and membership testing.
 
@@ -141,7 +141,7 @@ if x not in my_list:
 ```python
 ? (x+++ && !y---) || z~~~:
     <> val
-? x !<~ my_list:
+? x !<== my_list:
     ...
 ```
 
@@ -207,7 +207,7 @@ else:
 #### **Loh**
 ```python
 total = 0
-$ i <~ 0..10:
+$ i := 0..10:
     ? i == 5:
         $<
     ? i == 8:
@@ -221,7 +221,7 @@ $ i <~ 0..10:
 
 Loh supports short-form implicit loops and inline header filtering to reduce boilerplate nesting:
 
-1. **Implicit Loops (`$ <~` / `$ :=`)**: Omitting the target variable name binds the loop sigil `$` to the current element inside the loop body.
+1. **Implicit Loops (`$ :=`)**: Omitting the target variable name binds the loop sigil `$` to the current element inside the loop body.
 2. **Inline Loop Filters (`? condition`)**: Allows placing a query filter directly in the loop signature row, avoiding an indented `if` check.
 
 ##### **Python**
@@ -236,7 +236,7 @@ for user in users:
 ##### **Loh**
 ```python
 # Implicit target, inline filter, and accessing current item as '$'
-$ <~ users ? $.is_active:
+$ := users ? $.is_active:
     send_email($)
 ```
 
@@ -260,8 +260,8 @@ firsts = [first for first, *rest in data]
 # Alternative loop syntax and comprehensions
 $ i := 0..10:
     ...
-evens = [i $ i <~ 0..10 ? i % 2 == 0]
-firsts = [first $ first, *rest <~ data]
+evens = [i $ i := 0..10 ? i % 2 == 0]
+firsts = [first $ first, *rest := data]
 ```
 
 ---
@@ -810,11 +810,11 @@ if x in range(1, 100):
 #### **Loh**
 ```python
 # Loop 0 to 9
-$ i <~ 0..10:
+$ i := 0..10:
     print(i)
 
 # Check if value in range
-? x <~ 1..100:
+? x <== 1..100:
     print("In bounds")
 ```
 

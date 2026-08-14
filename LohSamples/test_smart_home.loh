@@ -65,8 +65,8 @@ TestSmartHomeComponents:unittest.TestCase:
         # Retrieve using multi-key subscripting
         devices = room.get_devices(["light_1", "lock_1"])
         .assertEqual(len(devices), 2)
-        .assertTrue(light <~ devices)
-        .assertTrue(lock <~ devices)
+        .assertTrue(light <== devices)
+        .assertTrue(lock <== devices)
 
         # Nonexistent key fallback
         missing = room.get_devices(["light_999"])
