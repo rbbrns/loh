@@ -77,6 +77,53 @@ descriptions = map(-=> (200 -> "OK", 404 -> "Missing", _ -> "Error"), statuses)
 
 ---
 
+## 2. Replace `<~` and `!<~` with `<==` and `!<==` (Membership) and `$ ... :=` (Loops & Comprehensions)
+
+### Motivation
+Previously, Loh used `<~` for both standalone membership testing (`x <~ items`) and loop variable binding (`$ x <~ items:`).
+
+This feature replaces `<~` and `!<~` with distinct, purpose-built syntaxes:
+1. **`<==` / `!<==`**: Dedicated operators for standalone membership testing (`in`) and negated membership testing (`not in`).
+2. **`$ ... :=`**: Universal variable binding syntax for standard `for` loops and comprehensions.
+
+### Proposed Syntax
+
+#### 1. Membership Testing (`<==` and `!<==`)
+- **Membership Check (`<==`)**: Replaces `in` / `<~` in expression contexts.
+  ```python
+  ? 'a' <== 'abc':
+      print("Found")
+  ```
+- **Negated Membership Check (`!<==`)**: Replaces `not in` / `!<~` in expression contexts.
+  ```python
+  ? 'a' !<== 'def':
+      print("Not found")
+  ```
+
+#### 2. Loop Variable Binding (`$ ... :=`)
+Standard loop variable binding uses `:=`:
+
+```python
+# Standard loop variable binding (:=)
+$ item := items:
+    print(item)
+
+# Implicit loop item binding (:=)
+$ := items:
+    print($)
+
+# Standard list comprehension (:=)
+evens = [i $ i := 0..10 ? i % 2 == 0]
+```
+
+### Compile-Time Desugaring & Parser Updates
+- Define tokens `<==` (`LESSEQUALEQUAL`) and `!<==` (`EXCLAMATIONLESSEQUALEQUAL`) in `Grammar/Tokens`.
+- Update `in` comparison grammar to use `<==` and `notin_bitwise_or` to accept `!<==`.
+- Update `for_stmt` and comprehension grammar to use `:=` as the loop binding operator.
+- Deprecate token `<~` from `in` and loop rules.
+
+---
+
 
 
 ## 4. Parameter Pattern Destructuring, Multi-Clause Functions, and Signature Guards
