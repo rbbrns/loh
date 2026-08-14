@@ -2492,6 +2492,28 @@ has_admin = any(_item.is_admin for _item in users)
 
 ```
 
+---
+
+## 83. Alternative Membership Operator Syntax (`<==` / `!<==`)
+
+### Motivation
+Previously, a proposal was explored to replace `<~` with `<==` for standalone membership testing (`x <== items`) and `!<==` for negated membership testing (`x !<== items`). This was proposed to avoid visual overlap between membership checks and flow sigils.
+
+### Proposed Syntax
+```python
+# Standalone Membership Check (<==)
+? 'a' <== 'abc':
+    print("Found")
+
+# Negated Membership Check (!<==)
+? 'a' !<== 'def':
+    print("Not found")
+```
+
+### Compile-Time Desugaring
+- Define tokens `<==` (`LESSEQUALEQUAL`) and `!<==` in parser grammar to map to AST `In` and `NotIn` comparison operators.
+
+
 
 
 
