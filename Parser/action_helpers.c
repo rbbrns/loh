@@ -4558,6 +4558,164 @@ _PyPegen_make_task_gather(Parser *p, Token *tok, expr_ty expr)
     }
 }
 
+stmt_ty
+_PyPegen_make_single_pattern_if(Parser *p, expr_ty target, pattern_ty pattern, expr_ty guard, asdl_stmt_seq *body, asdl_stmt_seq *orelse) {
+    if (!target || !pattern || !body) return NULL;
+    int lineno = target->lineno;
+    int col = target->col_offset;
+    int end_lineno = target->end_lineno;
+    int end_col = target->end_col_offset;
+
+    int num_cases = (orelse && asdl_seq_LEN(orelse) > 0) ? 2 : 1;
+    asdl_match_case_seq *cases = _Py_asdl_match_case_seq_new(num_cases, p->arena);
+    if (!cases) return NULL;
+
+    match_case_ty case1 = _PyAST_match_case(pattern, guard, body, p->arena);
+    if (!case1) return NULL;
+    asdl_seq_SET(cases, 0, case1);
+
+    if (num_cases == 2) {
+        pattern_ty wildcard = _PyAST_MatchAs(NULL, NULL, lineno, col, end_lineno, end_col, p->arena);
+        if (!wildcard) return NULL;
+        match_case_ty case2 = _PyAST_match_case(wildcard, NULL, orelse, p->arena);
+        if (!case2) return NULL;
+        asdl_seq_SET(cases, 1, case2);
+    }
+
+    return _PyAST_Match(target, cases, lineno, col, end_lineno, end_col, p->arena);
+}
+
+static expr_ty
+_PyPegen_pattern_to_test_expr(Parser *p, expr_ty subj_var, pattern_ty pattern) {
+    int lineno = subj_var->lineno;
+    int col = subj_var->col_offset;
+    int end_lineno = subj_var->end_lineno;
+    int end_col = subj_var->end_col_offset;
+
+    if (!pattern) {
+        return _PyAST_Constant(Py_True, NULL, lineno, col, end_lineno, end_col, p->arena);
+    }
+
+    switch (pattern->kind) {
+        case MatchValue_kind: {
+            asdl_int_seq *ops = _Py_asdl_int_seq_new(1, p->arena);
+            asdl_seq_SET(ops, 0, Eq);
+            asdl_expr_seq *comps = _Py_asdl_expr_seq_new(1, p->arena);
+            asdl_seq_SET(comps, 0, pattern->v.MatchValue.value);
+            return _PyAST_Compare(subj_var, ops, comps, lineno, col, end_lineno, end_col, p->arena);
+        }
+        case MatchSingleton_kind: {
+            asdl_int_seq *ops = _Py_asdl_int_seq_new(1, p->arena);
+            asdl_seq_SET(ops, 0, Is);
+            asdl_expr_seq *comps = _Py_asdl_expr_seq_new(1, p->arena);
+            expr_ty val_const = _PyAST_Constant(pattern->v.MatchSingleton.value, NULL, lineno, col, end_lineno, end_col, p->arena);
+            asdl_seq_SET(comps, 0, val_const);
+            return _PyAST_Compare(subj_var, ops, comps, lineno, col, end_lineno, end_col, p->arena);
+        }
+        case MatchAs_kind: {
+            if (!pattern->v.MatchAs.pattern && !pattern->v.MatchAs.name) {
+                return _PyAST_Constant(Py_True, NULL, lineno, col, end_lineno, end_col, p->arena);
+            }
+            expr_ty inner_test = NULL;
+            if (pattern->v.MatchAs.pattern) {
+                inner_test = _PyPegen_pattern_to_test_expr(p, subj_var, pattern->v.MatchAs.pattern);
+            }
+            if (pattern->v.MatchAs.name) {
+                expr_ty target_name = _PyAST_Name(pattern->v.MatchAs.name, Store, lineno, col, end_lineno, end_col, p->arena);
+                expr_ty bind_expr = _PyAST_NamedExpr(target_name, subj_var, lineno, col, end_lineno, end_col, p->arena);
+                if (inner_test) {
+                    asdl_expr_seq *elts = _Py_asdl_expr_seq_new(2, p->arena);
+                    asdl_seq_SET(elts, 0, inner_test);
+                    asdl_seq_SET(elts, 1, bind_expr);
+                    return _PyAST_BoolOp(And, elts, lineno, col, end_lineno, end_col, p->arena);
+                }
+                return bind_expr;
+            }
+            return inner_test ? inner_test : _PyAST_Constant(Py_True, NULL, lineno, col, end_lineno, end_col, p->arena);
+        }
+        case MatchOr_kind: {
+            int len = asdl_seq_LEN(pattern->v.MatchOr.patterns);
+            asdl_expr_seq *elts = _Py_asdl_expr_seq_new(len, p->arena);
+            for (int i = 0; i < len; i++) {
+                pattern_ty pat = asdl_seq_GET(pattern->v.MatchOr.patterns, i);
+                asdl_seq_SET(elts, i, _PyPegen_pattern_to_test_expr(p, subj_var, pat));
+            }
+            return _PyAST_BoolOp(Or, elts, lineno, col, end_lineno, end_col, p->arena);
+        }
+        default: {
+            return _PyAST_Constant(Py_True, NULL, lineno, col, end_lineno, end_col, p->arena);
+        }
+    }
+}
+
+static expr_ty
+_PyPegen_build_match_arms_ifexp(Parser *p, expr_ty subj_var, asdl_seq *arms, int idx) {
+    asdl_match_case_seq *arms_seq = (asdl_match_case_seq *)arms;
+    int len = arms_seq ? asdl_seq_LEN(arms_seq) : 0;
+    if (idx >= len) {
+        return _PyAST_Constant(Py_None, NULL, subj_var->lineno, subj_var->col_offset, subj_var->end_lineno, subj_var->end_col_offset, p->arena);
+    }
+
+    match_case_ty arm = asdl_seq_GET(arms_seq, idx);
+    expr_ty body_expr = NULL;
+    if (arm->body && asdl_seq_LEN(arm->body) > 0) {
+        stmt_ty first_stmt = asdl_seq_GET(arm->body, 0);
+        if (first_stmt->kind == Expr_kind) {
+            body_expr = first_stmt->v.Expr.value;
+        } else if (first_stmt->kind == Return_kind) {
+            body_expr = first_stmt->v.Return.value;
+        }
+    }
+    if (!body_expr) {
+        body_expr = _PyAST_Constant(Py_None, NULL, subj_var->lineno, subj_var->col_offset, subj_var->end_lineno, subj_var->end_col_offset, p->arena);
+    }
+
+    expr_ty test = _PyPegen_pattern_to_test_expr(p, subj_var, arm->pattern);
+    if (arm->guard) {
+        asdl_expr_seq *elts = _Py_asdl_expr_seq_new(2, p->arena);
+        asdl_seq_SET(elts, 0, test);
+        asdl_seq_SET(elts, 1, arm->guard);
+        test = _PyAST_BoolOp(And, elts, subj_var->lineno, subj_var->col_offset, subj_var->end_lineno, subj_var->end_col_offset, p->arena);
+    }
+
+    if (idx == len - 1 && arm->pattern && arm->pattern->kind == MatchAs_kind && !arm->pattern->v.MatchAs.pattern && !arm->pattern->v.MatchAs.name && !arm->guard) {
+        return body_expr;
+    }
+
+    expr_ty orelse_expr = _PyPegen_build_match_arms_ifexp(p, subj_var, arms, idx + 1);
+    return _PyAST_IfExp(test, body_expr, orelse_expr, subj_var->lineno, subj_var->col_offset, subj_var->end_lineno, subj_var->end_col_offset, p->arena);
+}
+
+expr_ty
+_PyPegen_make_match_expr(Parser *p, expr_ty subject, asdl_seq *arms) {
+    if (!subject || !arms) return NULL;
+    int lineno = subject->lineno;
+    int col = subject->col_offset;
+    int end_lineno = subject->end_lineno;
+    int end_col = subject->end_col_offset;
+
+    static unsigned int counter = 0;
+    char name_buf[64];
+    snprintf(name_buf, sizeof(name_buf), "_loh_match_subj_%u", counter++);
+    PyObject *param_id = _PyPegen_new_identifier(p, name_buf);
+    if (!param_id) return NULL;
+
+    arg_ty arg = _PyAST_arg(param_id, NULL, NULL, lineno, col, end_lineno, end_col, p->arena);
+    asdl_arg_seq *posargs = _Py_asdl_arg_seq_new(1, p->arena);
+    asdl_seq_SET(posargs, 0, arg);
+    arguments_ty params = _PyAST_arguments(posargs, NULL, NULL, NULL, NULL, NULL, NULL, p->arena);
+
+    expr_ty subj_var = _PyAST_Name(param_id, Load, lineno, col, end_lineno, end_col, p->arena);
+    expr_ty body_expr = _PyPegen_build_match_arms_ifexp(p, subj_var, arms, 0);
+
+    expr_ty lambda_node = _PyAST_Lambda(params, body_expr, lineno, col, end_lineno, end_col, p->arena);
+
+    asdl_expr_seq *args = _Py_asdl_expr_seq_new(1, p->arena);
+    asdl_seq_SET(args, 0, subject);
+
+    return _PyAST_Call(lambda_node, args, NULL, lineno, col, end_lineno, end_col, p->arena);
+}
+
 
 
 

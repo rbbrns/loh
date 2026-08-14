@@ -431,6 +431,8 @@ asdl_comprehension_seq *_PyPegen_adjust_comprehension_arity(Parser *p, expr_ty e
 asdl_comprehension_seq *_PyPegen_adjust_dict_comprehension_arity(Parser *p, expr_ty key, expr_ty val, asdl_comprehension_seq *clauses);
 expr_ty _PyPegen_make_task_spawn(Parser *p, expr_ty expr);
 expr_ty _PyPegen_make_task_gather(Parser *p, Token *tok, expr_ty expr);
+stmt_ty _PyPegen_make_single_pattern_if(Parser *p, expr_ty target, pattern_ty pattern, expr_ty guard, asdl_stmt_seq *body, asdl_stmt_seq *orelse);
+expr_ty _PyPegen_make_match_expr(Parser *p, expr_ty subject, asdl_seq *arms);
 
 #endif
 

@@ -91,7 +91,7 @@ LightingSystem::
     .set_preset(preset: str):
         # Structural pattern matching on preset names
         levels = {}
-        ?== preset:
+        preset =>:
             "Morning":
                 levels = {"dining": 30, "bar": 10, "patio": 0, "kitchen": 80}
             "Lunch":

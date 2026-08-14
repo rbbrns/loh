@@ -102,25 +102,6 @@ reduce(lambda _1, _2: _1 + _2, numbers)
 
 ---
 
-## 3. None-Coalescing Assignment Operator (`~~=`)
-
-### Motivation
-In Loh, `~~` acts as the binary None-coalescing operator. Developers frequently need to assign a fallback value to a variable or attribute if and only if its current value is `None`. This avoids verbose conditional checks or repeating the variable name.
-
-### Proposed Syntax
-```python
-config.timeout ~~= 30
-self.display_name ~~= "Guest"
-```
-
-### Compile-Time Desugaring
-At parse/compile time, this operator desugars into:
-```python
-config.timeout = (30 ? config.timeout is None ?? config.timeout)
-```
-
-
-
 ## 5. Destructuring Assignment with Default Values
 
 ### Motivation
@@ -214,46 +195,6 @@ coord = {"x": x, "y": y}
 
 ---
 
-## 9. None-Safe Callable Invocation (`func~()`)
-
-### Motivation
-Often a callback, event handler, or configuration strategy might be optional (`None`). Calling `callback()` directly throws a `TypeError: 'NoneType' object is not callable` if it is missing.
-
-### Proposed Syntax
-```python
-# Safe execution of optional callback
-on_complete~()
-
-# With arguments
-on_error~(code, message)
-```
-
-### Compile-Time Desugaring
-```python
-on_complete() if on_complete is not None else None
-```
-
----
-
-## 10. Range Slice Notation (`lst[start..stop]`)
-
-### Motivation
-Standard Python uses `lst[start:stop]`. Since we already planned range literals `start..stop`, we should allow them to be used inside subscripts as a clean alternative to standard slicing.
-
-### Proposed Syntax
-```python
-# Get elements from index 1 to 4 (exclusive stop)
-subset = lst[1..5]
-
-# Open bounds
-first_three = lst[..3]
-from_index_five = lst[5..]
-```
-
-### Compile-Time Desugaring
-Translates `a..b` inside subscript brackets to standard Python slice AST nodes: `slice(a, b, None)`.
-
----
 
 ## 11. Parenthesized Expression Blocks (`(expr; expr; expr)`)
 
@@ -447,29 +388,6 @@ process_text = lambda *args, **kwargs: (lambda s: s.replace(" ", "_"))(str.upper
 
 ---
 
-## 19. Parameter Internal Aliasing (`external_name => internal_name`)
-
-### Motivation
-Exposing long, descriptive argument names to API callers is best practice for readability (e.g. `principal_amount`), but repeating these verbose names inside the function body clutters the logic. By allowing parameters to specify an internal alias using Loh's `=>` arrow symbol (which maps to `as`), functions can expose clean external names while keeping their internal implementation extremely concise.
-
-### Proposed Syntax
-```python
-def calculate_interest(principal_amount => p, interest_rate => r, duration_years => t):
-    # Inside the function, we use the short, clean internal aliases:
-    return p * r * t
-```
-
-### Compile-Time Desugaring
-The compiler keeps the external names in the function signature, and prepends local variable bindings at the top of the function body:
-```python
-def calculate_interest(principal_amount, interest_rate, duration_years):
-    p = principal_amount
-    r = interest_rate
-    t = duration_years
-    return p * r * t
-```
-
----
 
 ## 20. Inline Expression Loops & Comprehensions
 
@@ -725,29 +643,6 @@ clean_results = [_item for _item in fetch_results() if _item is not None]
 
 ---
 
-## 29. Call-Site Attribute Initializer Shorthand (`Circle(.radius = 5.0)`)
-
-### Motivation
-When constructing an object, setting several initial attributes usually requires writing explicit parameters in the constructor or declaring variable assignments on separate lines after instantiation. Using dot-prefixed arguments in the call-site argument list allows directly initializing object attributes inline, providing clean symmetry with constructor parameter properties.
-
-### Proposed Syntax
-```python
-# Create an instance and set attributes directly
-c = Circle(.radius = 5.0, .color = "blue")
-```
-
-### Compile-Time Desugaring
-At parse-time, call-site arguments prefixed with a dot are extracted and compiled into an immediately invoked helper function that assigns properties to the instantiated object:
-```python
-def _init_Circle():
-    _temp = Circle()
-    _temp.radius = 5.0
-    _temp.color = "blue"
-    return _temp
-c = _init_Circle()
-```
-
----
 
 ## 30. Variable Swap Operator (`a <=> b`)
 
@@ -878,32 +773,6 @@ class Helper:
 
 ---
 
-## 35. Unified Dict/Object Safe Navigation (`obj~.key`)
-
-### Motivation
-When working with heterogeneous data sources (like dynamic JSON payloads or ORM models), developers must write separate code paths to handle attribute lookup versus dictionary key lookup. Extending safe navigation `~.` to dynamically fall back to dictionary key access if the target is a dictionary provides a single, unified safe lookup.
-
-### Proposed Syntax
-```python
-# Works whether 'user' is a custom object or a dictionary
-role = user~.profile~.role
-```
-
-### Compile-Time Desugaring
-The parser desugars `~.` into helper lookups that check for attribute presence first, falling back to dictionary get if applicable:
-```python
-_temp1 = user
-if _temp1 is not None:
-    _temp2 = _temp1.profile if hasattr(_temp1, "profile") else (_temp1.get("profile") if isinstance(_temp1, dict) else None)
-    if _temp2 is not None:
-        role = _temp2.role if hasattr(_temp2, "role") else (_temp2.get("role") if isinstance(_temp2, dict) else None)
-    else:
-        role = None
-else:
-    role = None
-```
-
----
 
 ## 36. None-Safe Destructuring Assignment (`~[a, b] = target`)
 
@@ -2490,6 +2359,31 @@ total_age = sum(_item.age for _item in users)
 has_admin = any(_item.is_admin for _item in users)
 ```
 
+---
+
+## 83. Pattern-Matching Lambda (`(x) -=> (pattern -> expr, ...)` / `-=> (pattern -> expr, ...)`)
+
+### Motivation
+Standard Python requires creating named functions or verbose `lambda x: match x...` blocks when passing pattern-matching transformers into higher-order functions (such as `map()`, `filter()`, or pipeline operators `|>`). 
+
+This feature introduces a dedicated pattern-matching lambda arrow `-=>` that creates anonymous pattern-matching functions directly in expression context.
+
+### Proposed Syntax
+```python
+# Named parameter pattern lambda
+format_status = (x) -=> (200 -> "Success", 404 -> "Not Found", _ -> "Error")
+
+# Anonymous parameter pattern lambda
+format_status = -=> (200 -> "Success", 404 -> "Not Found", _ -> "Error")
+
+# Higher-order function usage
+descriptions = map(-=> (200 -> "OK", 404 -> "Missing", _ -> "Error"), statuses)
+```
+
+### Compile-Time Desugaring
+At parse-time, `-=> (pattern -> expr)` compiles into an anonymous lambda receiving an item and executing a subject match expression:
+```python
+lambda _item: _item => (200 -> "OK", 404 -> "Missing", _ -> "Error")
 ```
 
 

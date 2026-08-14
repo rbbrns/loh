@@ -154,7 +154,7 @@ import: ( 'import' | '/' )
 lambda_postfix: ( '->' )
 type: ( "type" | ':' )
 in: ( 'in' | '<==' )
-match: ( "match" | '?==' )
+match: "match"
 
 
 dot[expr_ty]:
@@ -568,11 +568,19 @@ default[expr_ty]:
 
 if_stmt[stmt_ty]:
     | invalid_if_stmt
+    | if target=subject_expr '=>' pattern=patterns guard=guard? ':' b=block c=elif_stmt {
+        _PyPegen_make_single_pattern_if(p, target, pattern, guard, b, CHECK(asdl_stmt_seq*, _PyPegen_singleton_seq(p, c))) }
+    | if target=subject_expr '=>' pattern=patterns guard=guard? ':' b=block c=[else_block] {
+        _PyPegen_make_single_pattern_if(p, target, pattern, guard, b, c) }
     | if a=named_expression ':' b=block c=elif_stmt {
         _PyAST_If(a, b, CHECK(asdl_stmt_seq*, _PyPegen_singleton_seq(p, c)), EXTRA) }
     | if a=named_expression ':' b=block c=[else_block] { _PyAST_If(a, b, c, EXTRA) }
 elif_stmt[stmt_ty]:
     | invalid_elif_stmt
+    | elif target=subject_expr '=>' pattern=patterns guard=guard? ':' b=block c=elif_stmt {
+        _PyPegen_make_single_pattern_if(p, target, pattern, guard, b, CHECK(asdl_stmt_seq*, _PyPegen_singleton_seq(p, c))) }
+    | elif target=subject_expr '=>' pattern=patterns guard=guard? ':' b=block c=[else_block] {
+        _PyPegen_make_single_pattern_if(p, target, pattern, guard, b, c) }
     | elif a=named_expression ':' b=block c=elif_stmt {
         _PyAST_If(a, b, CHECK(asdl_stmt_seq*, _PyPegen_singleton_seq(p, c)), EXTRA) }
     | elif a=named_expression ':' b=block c=[else_block] { _PyAST_If(a, b, c, EXTRA) }
@@ -698,6 +706,8 @@ finally_block[asdl_stmt_seq*]:
 # ---------------
 
 match_stmt[stmt_ty]:
+    | subject=subject_expr '=>' ':' NEWLINE INDENT cases[asdl_match_case_seq*]=case_block+ DEDENT {
+        _PyAST_Match(subject, cases, EXTRA) }
     | match subject=subject_expr ':' NEWLINE INDENT cases[asdl_match_case_seq*]=case_block+ DEDENT {
         CHECK_VERSION(stmt_ty, 10, "Pattern matching is", _PyAST_Match(subject, cases, EXTRA)) }
     | invalid_match_stmt
@@ -954,7 +964,13 @@ pipe_expression[expr_ty]:
     | a=expression '|>' b=expression { _PyAST_Pipe(a, b, EXTRA) }
 
 coalesce_expression[expr_ty]:
+    | subject=disjunction '=>' '(' arms=','.match_expr_arm+ [','] ')' {
+        _PyPegen_make_match_expr(p, subject, arms) }
     | a=disjunction '~~' b=expression { _PyPegen_none_coalesce(p, a, b) }
+
+match_expr_arm[match_case_ty]:
+    | pattern=patterns guard=guard? '->' body=expression {
+        _PyAST_match_case(pattern, guard, _PyPegen_singleton_seq(p, _PyAST_Expr(body, EXTRA)), p->arena) }
 
 yield_expr[expr_ty]:
     | yield from a=expression { _PyAST_YieldFrom(a, EXTRA) }
@@ -990,6 +1006,8 @@ pipe_expression_without_ternary[expr_ty]:
     | a=expression '|>' b=expression_without_ternary { _PyAST_Pipe(a, b, EXTRA) }
 
 coalesce_expression_without_ternary[expr_ty]:
+    | subject=disjunction '=>' '(' arms=','.match_expr_arm+ [','] ')' {
+        _PyPegen_make_match_expr(p, subject, arms) }
     | a=disjunction '~~' b=expression_without_ternary { _PyPegen_none_coalesce(p, a, b) }
 
 rescue_expression_without_ternary[expr_ty]:

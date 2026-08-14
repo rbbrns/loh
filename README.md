@@ -101,8 +101,7 @@ Loh maps Python's verbose keywords and structures to elegant, symbol-based alter
 | Parameter Keyword-Only Alias | `primary \| alias` | Keyword-only parameter alias (e.g. `limit \| l = 100`) |
 | `super()` | `..` | Parent class reference shorthand |
 | `type` | `:` | Type alias declaration |
-| `match` | `?==` | Structural pattern matching subject |
-| `case` | *(omit)* | Pattern case declaration |
+| `match` / `case` | `target =>:` / `? target => pattern:` / `target => (...)` | Unified structural pattern matching |
 | Inline initializer | `obj { .prop = val }` | Scope initializer block |
 | Implicit f-strings | `from __loh__ import auto_fstrings` | Future import defaulting strings with braces to f-strings |
 | Implicit returns | `from __loh__ import implicit_returns` | Future import returning the final expression of a function |
@@ -118,6 +117,41 @@ Loh maps Python's verbose keywords and structures to elegant, symbol-based alter
 
 
 
+---
+
+### **2b. Unified Structural Pattern Matching**
+
+> **Motivation:** Standard Python structural pattern matching (`match` / `case`) relies on verbose keywords and deep indentation. Loh unifies structural pattern matching across single-pattern condition checks, multi-arm statement blocks, and inline expression evaluation using Loh's core `?` (query) and `=>` (flow/branch) symbols.
+
+#### **1. Single-Pattern Condition Check (`? target => pattern:`)**
+```python
+? response => {"status": 200, "data": payload}:
+    process(payload)
+?? response => {"status": 404}:
+    print("Not Found")
+??:
+    print("Error")
+```
+
+#### **2. Multi-Line Statement Block (`target =>:`)**
+```python
+status =>:
+    200:
+        print("Success")
+    404:
+        print("Not Found")
+    _:
+        print("Error")
+```
+
+#### **3. Subject Match Expression (`target => (pattern -> expr, ...)`)**
+```python
+msg = status => (
+    200 -> "Success",
+    404 -> "Not Found",
+    _   -> "Error"
+)
+```
 
 ---
 

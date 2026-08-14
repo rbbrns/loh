@@ -4,80 +4,7 @@ This document tracks features that have been approved for implementation in **Lo
 
 ---
 
-## 1. Unified Structural Pattern Matching (`? target`, `=> pattern:`, `? target => (pattern: expr)`)
-
-
-### Motivation
-Standard Python structural pattern matching (`match` / `case`) forces two levels of indentation and relies on verbose keywords. Loh's previous `?==` syntax felt unnatural for both statement blocks and inline expression contexts.
-
-This feature unifies pattern matching across single-pattern checks, multi-arm statement blocks, and inline expression evaluation using Loh's core `?` (query) and `=>` (flow/branch) symbols.
-
-### Proposed Syntax
-
-#### 1. Single-Pattern Condition Check (`? target => pattern:`)
-Evaluates whether `target` matches `pattern`, binding pattern variables into scope if true:
-```python
-? response => {"status": 200, "data": payload}:
-    process(payload)
-```
-
-#### 2. Multi-Line Statement Block (`target =>:`)
-Header ends with `=>:`, opening an indented block of pattern arms:
-```python
-status =>:
-    200:
-        print("Success")
-    404:
-        print("Not Found")
-    500:
-        print("Server Error")
-    _:
-        print("Unknown Error")
-```
-
-#### 3. Subject Match Expression (`target => (pattern -> expr, ...)`)
-Evaluates expressions using return-arrow mapped arms (`pattern -> expr`) bounded inside parentheses `(...)`. Works for single-line assignments, multi-line formatted expressions, and direct action calls:
-```python
-# Single-line assignment
-msg = status => (200 -> "Success", 404 -> "Not Found", _ -> "Error")
-
-# Multi-line formatted actions or expressions
-status => (
-    200 -> print("Success"),
-    404 -> print("Not Found"),
-    _   -> print("Unknown Error")
-)
-
-# Direct expression flow without pipe
-fetch_user_profile(user_id) => (
-    {"status": 200, "user": u} -> u,
-    {"status": 404}            -> GuestUser(),
-    _                          -> DefaultUser()
-)
-```
-
-#### 4. Pattern-Matching Lambda (`(x) -=> (pattern -> expr, ...)` / `-=> (pattern -> expr, ...)`)
-Creates a first-class anonymous pattern-matching function using the `-=>` lambda arrow:
-```python
-# Named parameter pattern lambda
-format_status = (x) -=> (200 -> "Success", 404 -> "Not Found", _ -> "Error")
-
-# Anonymous parameter pattern lambda
-format_status = -=> (200 -> "Success", 404 -> "Not Found", _ -> "Error")
-
-# Higher-order function usage
-descriptions = map(-=> (200 -> "OK", 404 -> "Missing", _ -> "Error"), statuses)
-```
-
-### Compile-Time Desugaring
-- `? target => pattern:` desugars to a single-case `match target:` block.
-- `target =>:` desugars to a CPython `match target:` statement with `case pattern:` blocks.
-- `target => (pattern -> expr)` desugars to an inline self-evaluating match expression.
-- `-=> (pattern -> expr)` desugars to an anonymous lambda `lambda _item: match _item ...`.
-
----
-
-## 2. Parameter Pattern Destructuring, Multi-Clause Functions, and Signature Guards
+## 1. Parameter Pattern Destructuring, Multi-Clause Functions, and Signature Guards
 
 ### Motivation
 Standard Python requires manually unpacking dictionaries or objects inside function bodies (`name = user['name']`) and wrapping polymorphic handlers or recursive base-cases in nested `match` statements.
@@ -143,7 +70,7 @@ Consecutive functions sharing an identifier are merged into a single AST functio
 
 ---
 
-## 5. Multi-Dispatch Function Overloads (`func(...)+:`) & Parameter Pattern Matching (`(=> pattern)`)
+## 2. Multi-Dispatch Function Overloads (`func(...)+:`) & Parameter Pattern Matching (`(=> pattern)`)
 
 ### Motivation
 Standard Python lacks built-in syntax for multiple dispatch and function overloading across argument types, pattern stencils, and guard contracts.

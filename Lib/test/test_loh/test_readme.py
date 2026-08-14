@@ -401,6 +401,33 @@ class TestReadmeExamples(unittest.TestCase):
             active = True
         self.assertTrue(active)
 
+    def test_unified_pattern_matching(self):
+        res = []
+        response = {"status": 200, "data": "payload_data"}
+
+        ? response => {"status": 200, "data": payload}:
+            res.append(payload)
+
+        self.assertEqual(res, ["payload_data"])
+
+        status = 404
+        msg = ""
+        status =>:
+            200:
+                msg = "Success"
+            404:
+                msg = "Not Found"
+            _:
+                msg = "Error"
+        self.assertEqual(msg, "Not Found")
+
+        msg_expr = status => (
+            200 -> "Success",
+            404 -> "Not Found",
+            _   -> "Error"
+        )
+        self.assertEqual(msg_expr, "Not Found")
+
     def test_auto_fstrings(self):
         code = r"""from __loh__ import auto_fstrings
 name = "Loh"

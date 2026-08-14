@@ -96,11 +96,11 @@ SmartHomeManager::
 
     .execute_scene(scene: str):
         # Structural pattern matching to transition device states
-        ?== scene:
+        scene =>:
             "Away":
                 # Lock all locks, turn off all lights
                 $ d := .devices.values():
-                    ?== d.type:
+                    d.type =>:
                         "Lock":
                             d.lock()
                         "Light":
@@ -108,7 +108,7 @@ SmartHomeManager::
             "Evening":
                 # Lock locks, dim lights
                 $ d := .devices.values():
-                    ?== d.type:
+                    d.type =>:
                         "Lock":
                             d.lock()
                         "Light":
@@ -197,7 +197,7 @@ SmartHomeManager::
     audit_report = manager.audit_connectivity()
     ^?! "Diagnostic Alert" <== audit_report, "Connectivity audit failed to detect offline device"
 
-    # Run "Away" scene using structural pattern matching ?==
+    # Run "Away" scene using structural pattern matching =>:
     manager.execute_scene("Away")
     ^?! lock1.locked+++, "Away scene failed to lock Front Door"
     ^?! light1.online---, "Away scene failed to turn off Ceiling Light"
